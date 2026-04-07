@@ -46,6 +46,7 @@
     --radius-2xl: calc(var(--radius) * 1.8);
     --radius-3xl: calc(var(--radius) * 2.2);
     --radius-4xl: calc(var(--radius) * 2.6);
+    --custom-colour: oklch(37.9% 0.146 265.522);
 }
 
 :root {
@@ -127,4 +128,13 @@
   html {
     @apply font-sans;
     }
+
+    /* hide scrollbar */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
 }
