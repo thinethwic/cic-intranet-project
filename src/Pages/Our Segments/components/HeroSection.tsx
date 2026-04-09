@@ -1,14 +1,6 @@
 import { useState, useEffect } from "react";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { Wheat, Pill, Bird, Syringe } from "lucide-react";
-
-import slide1 from "../../assets/slide1.png";
-import slide2 from "../../assets/slide2.png";
-import slide3 from "../../assets/slide3.png";
-
-import { Link } from "react-router-dom";
 
 interface Slide {
   title: string;
@@ -16,33 +8,13 @@ interface Slide {
   image: string;
 }
 
-const slides: Slide[] = [
-  {
-    title: "Welcome to CIC Feeds Group",
-    subtitle: "Sri Lanka's Leading Livestock Solutions Provider",
-    image: slide1,
-  },
-  {
-    title: "Quality You Can Trust",
-    subtitle: "Delivering excellence in animal nutrition since 1964",
-    image: slide2,
-  },
-  {
-    title: "Innovation in Agriculture",
-    subtitle: "Empowering farmers with cutting-edge solutions",
-    image: slide3,
-  },
-];
+interface Props {
+  slides: Slide[];
+}
 
-const categories = [
-  { label: "CIC Feeds", icon: Wheat, Link: "/our-segments/cic-feeds" },
-  { label: "CIC Vetcare", icon: Pill, Link: "/our-segments/cic-vetcare" },
-  { label: "CIC Poultry", icon: Bird, Link: "/our-segments/cic-poulry" },
-  { label: "Asia Vet", icon: Syringe, Link: "/our-segments/asia-vet" },
-];
 const AUTO_SLIDE_INTERVAL = 8000;
 
-export default function HeroSection() {
+export default function HeroSectionSegments({ slides }: Props) {
   const [currentSlide, setCurrentSlide] = useState(0);
 
   useEffect(() => {
@@ -54,7 +26,7 @@ export default function HeroSection() {
   }, []);
 
   return (
-    <section className="relative w-full h-105 md:h-130 overflow-hidden">
+    <section className="relative w-full h-105 md:h-150 overflow-hidden">
       {/* Background */}
       {slides.map((slide, i) => (
         <div
@@ -67,19 +39,19 @@ export default function HeroSection() {
             alt={slide.title}
             className="w-full h-full object-cover scale-105"
           />
-          <div className="absolute inset-0 bg-black/35" />
+          <div className="absolute inset-0 bg-black/30" />
         </div>
       ))}
 
       {/* Gradient */}
-      <div className="absolute inset-0 bg-linear-to-r from-black/70 via-black/30 to-transparent z-10" />
+      <div className="absolute inset-0 bg-linear-to-r from-black/50 via-black/20 to-transparent z-10" />
 
       {/* Content */}
       <div className="relative z-20 flex flex-col items-center justify-center text-center h-full px-6">
         {/* Title */}
         <h1
           key={currentSlide}
-          className="text-3xl md:text-5xl font-semibold text-white mb-4 animate-fade-in"
+          className="text-3xl md:text-6xl font-bold text-white mb-4 animate-fade-in"
         >
           {slides[currentSlide].title}
         </h1>
@@ -90,24 +62,6 @@ export default function HeroSection() {
         >
           {slides[currentSlide].subtitle}
         </p>
-        {/* 🔥 Professional Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-3xl w-full">
-          {categories.map(({ label, icon: Icon, Link: link }, i) => (
-            <Card
-              key={i}
-              className="bg-white/10 backdrop-blur-xl border-white/20 text-white hover:bg-white/20 transition-all cursor-pointer group"
-            >
-              <CardContent className="flex flex-col items-center justify-center py-6">
-                <div className="mb-3 p-2.5 rounded-xl bg-white/10 group-hover:bg-white/20 transition-all group-hover:scale-110">
-                  <Icon className="w-6 h-6 stroke-[1.5] text-white" />
-                </div>
-                <p className="text-sm font-medium tracking-wide">
-                  <Link to={link}>{label}</Link>
-                </p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
       </div>
 
       {/* Navigation */}

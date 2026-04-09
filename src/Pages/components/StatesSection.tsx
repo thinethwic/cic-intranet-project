@@ -64,7 +64,7 @@ export default function StatsSection() {
             className="rounded-xl p-6 bg-white shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 text-center"
           >
             {/* Animated Number */}
-            <h3 className="text-6xl font-bold text-[var(--custom-colour)]">
+            <h3 className="text-6xl font-bold text-(--custom-colour)">
               <Counter end={item.value} start={isVisible} />
               {item.suffix}
             </h3>

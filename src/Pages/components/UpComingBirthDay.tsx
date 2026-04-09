@@ -23,7 +23,7 @@ export default function UpcomingBirthdays({ list }: Props) {
       </div>
 
       {/* List */}
-      <div className="space-y-2">
+      <div className="space-y-2 max-h-[12.5rem] overflow-y-auto pr-1">
         {list.map((item, i) => (
           <div
             key={i}

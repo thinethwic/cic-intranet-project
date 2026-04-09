@@ -37,7 +37,7 @@ export default function GallerySection({ images }: GalleryProps) {
         {main && (
           <div
             onClick={() => openSlider(0)}
-            className="md:col-span-2 h-[300px] md:h-[400px] rounded-2xl overflow-hidden group cursor-pointer"
+            className="md:col-span-2 h-75 md:h-100 rounded-2xl overflow-hidden group cursor-pointer"
           >
             <img
               src={main}
@@ -55,7 +55,7 @@ export default function GallerySection({ images }: GalleryProps) {
                 <div
                   key={i}
                   onClick={() => openSlider(i + 1)}
-                  className="h-[140px] md:h-[190px] rounded-2xl overflow-hidden group cursor-pointer"
+                  className="h-35 md:h-47.5 rounded-2xl overflow-hidden group cursor-pointer"
                 >
                   <img
                     src={img}
