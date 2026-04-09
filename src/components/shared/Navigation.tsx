@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -14,17 +13,30 @@ import { Separator } from "@/components/ui/separator";
 import { Menu } from "lucide-react";
 
 import logo from "../../assets/Logo.jpg";
+import { Link } from "react-router-dom";
 
-const navLinks = ["Home", "About Us", "News", "Contact"];
+const navLinks = [
+  { NavKey: "Home", Link: "/" },
+  { NavKey: "About Us", Link: "/Abouts" },
+  { NavKey: "News", Link: "/News" },
+  { NavKey: "Contact", Link: "/Contact" },
+];
 
-const segments = ["CIC Feeds", "CIC Vetcare", "CIC Poultry", "Asia Vet"];
+const segments = [
+  { SegKey: "CIC Feeds", Link: "/our-segments/cic-feeds" },
+  { SegKey: "CIC Vetcare", Link: "/our-segments/cic-vetcare" },
+  { SegKey: "CIC Poultry", Link: "/our-segments/cic-poulry" },
+  { SegKey: "Asia Vet", Link: "/our-segments/asia-vet" },
+];
+
+const customColor = "oklch(37.9% 0.146 265.522)";
 
 export default function Navbar() {
   const [activeNav, setActiveNav] = useState("Home");
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <nav className="bg-white shadow-md sticky top-0 z-50 border-b border-green-100">
+    <nav className="bg-white shadow-md sticky top-0 z-50 border-b border-blue-100">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
@@ -41,43 +53,77 @@ export default function Navbar() {
             <NavigationMenu>
               <NavigationMenuList className="gap-1">
                 {/* Normal Links */}
-                {navLinks.map((link) => (
+                {navLinks.map(({ NavKey: link, Link: navigation }) => (
                   <NavigationMenuItem key={link}>
-                    <button
-                      onClick={() => setActiveNav(link)}
-                      className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${
-                        activeNav === link
-                          ? "bg-green-700 text-white shadow-md"
-                          : "text-gray-600 hover:bg-green-50 hover:text-green-800"
-                      }`}
-                    >
-                      {link}
-                    </button>
+                    <Link to={navigation}>
+                      <button
+                        onClick={() => setActiveNav(link)}
+                        style={
+                          activeNav === link
+                            ? { backgroundColor: customColor, color: "white" }
+                            : {}
+                        }
+                        className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${
+                          activeNav === link
+                            ? "shadow-md"
+                            : "text-gray-600 hover:bg-blue-50"
+                        }`}
+                        onMouseEnter={(e) => {
+                          if (activeNav !== link)
+                            e.currentTarget.style.color = customColor;
+                        }}
+                        onMouseLeave={(e) => {
+                          if (activeNav !== link)
+                            e.currentTarget.style.color = "";
+                        }}
+                      >
+                        {link}
+                      </button>
+                    </Link>
                   </NavigationMenuItem>
                 ))}
 
                 {/* 🔽 Our Segments Dropdown */}
                 <NavigationMenuItem>
                   <NavigationMenuTrigger
-                    className={`px-4 py-2 rounded-lg text-sm font-semibold ${
+                    style={
                       activeNav === "Our Segments"
-                        ? "bg-green-700 text-white"
-                        : "text-gray-600 hover:bg-green-50 hover:text-green-800"
+                        ? { backgroundColor: customColor, color: "white" }
+                        : { color: "rgb(75 85 99)" }
+                    }
+                    className={`px-4 py-2 rounded-lg text-sm font-semibold ${
+                      activeNav === "Our Segments" ? "" : "hover:bg-blue-50"
                     }`}
+                    onMouseEnter={(e) => {
+                      if (activeNav !== "Our Segments")
+                        e.currentTarget.style.color = customColor;
+                    }}
+                    onMouseLeave={(e) => {
+                      if (activeNav !== "Our Segments")
+                        e.currentTarget.style.color = "rgb(75 85 99)";
+                    }}
                   >
                     Our Segments
                   </NavigationMenuTrigger>
 
                   <NavigationMenuContent>
                     <div className="w-[200px] p-2 space-y-1">
-                      {segments.map((item) => (
-                        <button
-                          key={item}
-                          onClick={() => setActiveNav("Our Segments")}
-                          className="w-full text-left px-3 py-2 rounded-md text-sm text-gray-600 hover:bg-green-50 hover:text-green-800 transition"
-                        >
-                          {item}
-                        </button>
+                      {segments.map(({ SegKey: item, Link: navigation }) => (
+                        <Link to={navigation}>
+                          <button
+                            key={item}
+                            onClick={() => setActiveNav("Our Segments")}
+                            className="w-full text-left px-3 py-2 rounded-md text-sm text-gray-600 hover:bg-blue-50 transition"
+                            onMouseEnter={(e) =>
+                              (e.currentTarget.style.color = customColor)
+                            }
+                            onMouseLeave={(e) =>
+                              (e.currentTarget.style.color = "")
+                            }
+                          >
+                            {item}
+                          </button>
+                        </Link>
                       ))}
                     </div>
                   </NavigationMenuContent>
@@ -90,12 +136,17 @@ export default function Navbar() {
           <div className="hidden md:flex items-center gap-3">
             <Button
               variant="ghost"
-              className="text-green-700 font-semibold hover:text-green-900 hover:bg-green-50"
+              style={{ color: customColor }}
+              className="font-semibold hover:bg-blue-50"
+              onMouseEnter={(e) => (e.currentTarget.style.color = customColor)}
             >
               Login
             </Button>
 
-            <Button className="bg-green-700 hover:bg-green-800 text-white font-bold shadow-sm">
+            <Button
+              style={{ backgroundColor: customColor }}
+              className="text-white font-bold shadow-sm hover:opacity-90"
+            >
               Get Started
             </Button>
           </div>
@@ -107,7 +158,8 @@ export default function Navbar() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="text-green-700 hover:bg-green-50"
+                  style={{ color: customColor }}
+                  className="hover:bg-blue-50"
                 >
                   <Menu className="w-5 h-5" />
                 </Button>
@@ -115,27 +167,42 @@ export default function Navbar() {
 
               <SheetContent side="right" className="w-72 p-0">
                 {/* Logo */}
-                <div className="px-6 py-5 border-b border-green-100">
+                <div className="px-6 py-5 border-b border-blue-100">
                   <img src={logo} className="h-9" />
                 </div>
 
                 {/* Links */}
                 <div className="px-4 py-4 space-y-1">
-                  {navLinks.map((link) => (
-                    <button
-                      key={link}
-                      onClick={() => {
-                        setActiveNav(link);
-                        setMobileOpen(false);
-                      }}
-                      className={`w-full text-left px-4 py-2.5 rounded-lg text-sm font-semibold ${
-                        activeNav === link
-                          ? "bg-green-700 text-white"
-                          : "text-gray-600 hover:bg-green-50 hover:text-green-800"
-                      }`}
-                    >
-                      {link}
-                    </button>
+                  {navLinks.map(({ NavKey: link, Link: navigation }) => (
+                    <Link to={navigation}>
+                      <button
+                        key={link}
+                        onClick={() => {
+                          setActiveNav(link);
+                          setMobileOpen(false);
+                        }}
+                        style={
+                          activeNav === link
+                            ? { backgroundColor: customColor, color: "white" }
+                            : {}
+                        }
+                        className={`w-full text-left px-4 py-2.5 rounded-lg text-sm font-semibold ${
+                          activeNav === link
+                            ? ""
+                            : "text-gray-600 hover:bg-blue-50"
+                        }`}
+                        onMouseEnter={(e) => {
+                          if (activeNav !== link)
+                            e.currentTarget.style.color = customColor;
+                        }}
+                        onMouseLeave={(e) => {
+                          if (activeNav !== link)
+                            e.currentTarget.style.color = "";
+                        }}
+                      >
+                        {link}
+                      </button>
+                    </Link>
                   ))}
 
                   {/* 🔽 Mobile Segments */}
@@ -148,7 +215,11 @@ export default function Navbar() {
                       <button
                         key={item}
                         onClick={() => setMobileOpen(false)}
-                        className="w-full text-left px-6 py-2 text-sm text-gray-600 hover:bg-green-50 hover:text-green-800 rounded-md"
+                        className="w-full text-left px-6 py-2 text-sm text-gray-600 hover:bg-blue-50 rounded-md"
+                        onMouseEnter={(e) =>
+                          (e.currentTarget.style.color = customColor)
+                        }
+                        onMouseLeave={(e) => (e.currentTarget.style.color = "")}
                       >
                         {item}
                       </button>
@@ -162,12 +233,16 @@ export default function Navbar() {
                 <div className="px-4 py-4 flex flex-col gap-2">
                   <Button
                     variant="outline"
-                    className="w-full border-green-700 text-green-700 hover:bg-green-50"
+                    style={{ color: customColor, borderColor: customColor }}
+                    className="w-full hover:bg-blue-50"
                   >
                     Login
                   </Button>
 
-                  <Button className="w-full bg-green-700 hover:bg-green-800 text-white">
+                  <Button
+                    style={{ backgroundColor: customColor }}
+                    className="w-full text-white hover:opacity-90"
+                  >
                     Get Started
                   </Button>
                 </div>
