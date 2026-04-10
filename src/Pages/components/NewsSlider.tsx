@@ -1,5 +1,3 @@
-// components/home/NewsSlider.tsx
-
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -26,10 +24,9 @@ export default function NewsSlider({
   autoInterval = 3500,
 }: Props) {
   const [index, setIndex] = useState(0);
-  const [visible, setVisible] = useState(visibleCount);
+  const [visible, setVisible] = useState(1);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // ✅ Responsive visible count
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth < 640) setVisible(1);
@@ -42,18 +39,13 @@ export default function NewsSlider({
     return () => window.removeEventListener("resize", handleResize);
   }, [visibleCount]);
 
-  // ✅ Safe max index
   const maxIndex = Math.max(0, items.length - visible);
 
-  // ✅ Navigation
   const next = () => setIndex((prev) => (prev >= maxIndex ? 0 : prev + 1));
-
   const prev = () => setIndex((prev) => (prev <= 0 ? maxIndex : prev - 1));
 
-  // ✅ Auto Slide
   const startAutoSlide = () => {
     if (timerRef.current) clearInterval(timerRef.current);
-
     timerRef.current = setInterval(() => {
       setIndex((prev) => (prev >= maxIndex ? 0 : prev + 1));
     }, autoInterval);
@@ -66,7 +58,6 @@ export default function NewsSlider({
     };
   }, [maxIndex]);
 
-  // ✅ Card width
   const cardWidthPercent = 100 / visible;
 
   return (
@@ -77,60 +68,56 @@ export default function NewsSlider({
       }}
       onMouseLeave={startAutoSlide}
     >
-      {/* Left Button */}
-      <Button
-        size="icon"
-        variant="secondary"
-        onClick={prev}
-        disabled={items.length <= visible}
-        className="absolute left-0 top-1/2 -translate-y-1/2 z-10 shadow"
-      >
-        <ChevronLeft />
-      </Button>
-
-      {/* Viewport */}
-      <div className="overflow-hidden rounded-2xl">
+      {/* Viewport — horizontal padding clears the nav buttons */}
+      <div className="overflow-hidden rounded-2xl px-10">
         {/* Track */}
         <div
           className="flex transition-transform duration-500 ease-in-out"
-          style={{
-            transform: `translateX(-${index * (100 / visible)}%)`,
-          }}
+          style={{ transform: `translateX(-${index * cardWidthPercent}%)` }}
         >
           {items.map((item, i) => (
             <div
               key={i}
-              className="flex-shrink-0 px-3"
-              style={{
-                width: `${cardWidthPercent}%`,
-              }}
+              className="flex-shrink-0 px-2"
+              style={{ width: `${cardWidthPercent}%` }}
             >
               <HotNewsCard
                 id={item.id}
                 title={item.title}
                 description={item.description}
                 image={item.image}
-                date={item.date} // ✅ add
-                category={item.category} // ✅ add
+                date={item.date}
+                category={item.category}
               />
             </div>
           ))}
         </div>
       </div>
 
-      {/* Right Button */}
+      {/* Left button — sits inside the px-10 gutter */}
+      <Button
+        size="icon"
+        variant="secondary"
+        onClick={prev}
+        disabled={items.length <= visible}
+        className="absolute left-0 top-1/2 -translate-y-1/2 z-10 shadow w-8 h-8 md:w-10 md:h-10"
+      >
+        <ChevronLeft className="w-4 h-4" />
+      </Button>
+
+      {/* Right button */}
       <Button
         size="icon"
         variant="secondary"
         onClick={next}
         disabled={items.length <= visible}
-        className="absolute right-0 top-1/2 -translate-y-1/2 z-10 shadow"
+        className="absolute right-0 top-1/2 -translate-y-1/2 z-10 shadow w-8 h-8 md:w-10 md:h-10"
       >
-        <ChevronRight />
+        <ChevronRight className="w-4 h-4" />
       </Button>
 
       {/* Dots */}
-      <div className="flex justify-center mt-6 gap-2">
+      <div className="flex justify-center mt-5 gap-2">
         {Array.from({ length: maxIndex + 1 }).map((_, i) => (
           <button
             key={i}
