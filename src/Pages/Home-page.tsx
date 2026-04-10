@@ -71,13 +71,16 @@ function HomePage() {
       <HeroSection />
       {/* Hot News */}
 
-      <section className="max-w-7xl mx-auto px-2 py-4">
+      <section className="max-w-7xl mx-auto px-4 py-4">
         <div className="flex items-center gap-3 mb-6">
-          <h2 className="text-4xl font-bold text-blue-900">Hot News</h2>
+          <h2 className="text-2xl md:text-4xl font-bold text-blue-900">
+            Hot News
+          </h2>
         </div>
 
-        <div className="grid md:grid-cols-4 gap-6 items-stretch">
-          <div className="md:col-span-3">
+        <div className="flex flex-col md:grid md:grid-cols-4 gap-6">
+          {/* News Slider */}
+          <div className="w-full md:col-span-3">
             {hotNews.length > 0 ? (
               <NewsSlider
                 items={hotNews}
@@ -85,7 +88,7 @@ function HomePage() {
                 autoInterval={4000}
               />
             ) : (
-              <div className="w-full h-full min-h-[220px] flex flex-col items-center justify-center gap-3 border border-dashed border-slate-200 rounded-2xl bg-slate-50">
+              <div className="w-full min-h-[220px] flex flex-col items-center justify-center gap-3 border border-dashed border-slate-200 rounded-2xl bg-slate-50">
                 <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center">
                   <Flame className="w-5 h-5 text-slate-300" />
                 </div>
@@ -99,15 +102,18 @@ function HomePage() {
             )}
           </div>
 
-          <CEOMessageCard
-            name="Mr. Ajith Weerasinghe"
-            image="/ceo.jpg"
-            messages={[
-              "Our journey is one of purpose and progress. As we embrace new challenges, I am confident that the dedication of our people and the strength of our values will continue to drive CIC towards a future of lasting impact.",
-              "The heart of CIC has always been its people. Every day, I am inspired by the commitment and passion of our teams across the island, working together to make a meaningful difference in the communities we serve.",
-              "Innovation, integrity, and inclusion — these are not just words at CIC. They are the principles that guide every decision we make as we build a better tomorrow for Sri Lanka.",
-            ]}
-          />
+          {/* CEO Card */}
+          <div className="w-full md:col-span-1">
+            <CEOMessageCard
+              name="Mr. Ajith Weerasinghe"
+              image="/ceo.jpg"
+              messages={[
+                "Our journey is one of purpose and progress. As we embrace new challenges, I am confident that the dedication of our people and the strength of our values will continue to drive CIC towards a future of lasting impact.",
+                "The heart of CIC has always been its people. Every day, I am inspired by the commitment and passion of our teams across the island, working together to make a meaningful difference in the communities we serve.",
+                "Innovation, integrity, and inclusion — these are not just words at CIC. They are the principles that guide every decision we make as we build a better tomorrow for Sri Lanka.",
+              ]}
+            />
+          </div>
         </div>
       </section>
 
