@@ -17,9 +17,9 @@ import logo from "../../assets/Logo.jpg";
 
 const navLinks = [
   { NavKey: "Home", Link: "/" },
-  { NavKey: "About Us", Link: "/Abouts" },
-  { NavKey: "News", Link: "/News" },
-  { NavKey: "Contact", Link: "/Contact" },
+  { NavKey: "---", Link: "" },
+  { NavKey: "---", Link: "" },
+  { NavKey: "---", Link: "" },
 ];
 
 const segments = [

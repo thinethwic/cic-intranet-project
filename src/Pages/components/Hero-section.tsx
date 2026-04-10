@@ -98,14 +98,16 @@ export default function HeroSection() {
               key={i}
               className="bg-white/10 backdrop-blur-md border-white/20 text-white hover:bg-white/20 transition-all cursor-pointer group"
             >
-              <CardContent className="flex flex-col items-center justify-center py-4 md:py-6 px-2">
-                <div className="mb-2 p-2 rounded-xl bg-white/10 group-hover:bg-white/20 transition-all group-hover:scale-110">
-                  <Icon className="w-5 h-5 md:w-6 md:h-6 stroke-[1.5] text-white" />
-                </div>
-                <p className="text-xs sm:text-sm font-medium tracking-wide text-center leading-tight">
-                  <Link to={link}>{label}</Link>
-                </p>
-              </CardContent>
+              <Link to={link}>
+                <CardContent className="flex flex-col items-center justify-center py-4 md:py-6 px-2">
+                  <div className="mb-2 p-2 rounded-xl bg-white/10 group-hover:bg-white/20 transition-all group-hover:scale-110">
+                    <Icon className="w-5 h-5 md:w-6 md:h-6 stroke-[1.5] text-white" />
+                  </div>
+                  <p className="text-xs sm:text-sm font-medium tracking-wide text-center leading-tight">
+                    {label}
+                  </p>
+                </CardContent>
+              </Link>
             </Card>
           ))}
         </div>
