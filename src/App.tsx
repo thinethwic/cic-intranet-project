@@ -12,6 +12,7 @@ import AdminDashboard from "./Pages/Admin/AdminDashboard";
 import AdminVideosPage from "./Pages/Admin/AdminVideo";
 import AdminDocumentsPage from "./Pages/Admin/AdminDocumentsPage";
 import NewsDetailPage from "./components/NewsDetailPage";
+import AdminNewsPage from "./Pages/Admin/AdminNewsPage";
 
 function App() {
   return (
@@ -29,6 +30,7 @@ function App() {
         <Route index element={<AdminDashboard />} />
         <Route path="/admin/videos" element={<AdminVideosPage />} />
         <Route path="/admin/documents" element={<AdminDocumentsPage />} />
+        <Route path="/admin/news" element={<AdminNewsPage />} />
       </Route>
     </Routes>
   );

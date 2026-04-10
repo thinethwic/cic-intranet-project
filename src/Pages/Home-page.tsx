@@ -5,6 +5,7 @@ import StatsSection from "./components/StatesSection";
 import BirthdayCard from "./components/BirthdayCard";
 import UpcomingBirthdays from "./components/UpComingBirthDay";
 import { Card } from "@/components/ui/card";
+import { Flame, Newspaper, Calendar } from "lucide-react";
 
 import visionImg from "@/assets/vision.jpg"; // eye image
 import missionImg from "@/assets/mission.jpg";
@@ -21,10 +22,9 @@ import FaqCalendarSection from "@/components/shared/FaqCalendarSection";
 import NewsSlider from "./components/NewsSlider";
 import WelcomeCarousel from "./components/WelcomeMembers";
 import { newsList } from "@/Mock-data";
-import { HotnewsList } from "@/Mock-data";
 import { members } from "@/Mock-data";
 import { people } from "@/Mock-data";
-import { upcoming } from "@/Mock-data";
+import { upcoming, events } from "@/Mock-data";
 import { videos } from "@/Mock-data";
 import EventsSlider from "./components/EventsSlider";
 import OurPeopleCard from "./components/OurPeople";
@@ -32,6 +32,9 @@ import OurPeopleCard from "./components/OurPeople";
 function HomePage() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [activeVideo, setActiveVideo] = useState<string | null>(null);
+
+  const hotNews = newsList.filter((n) => n.isHot);
+  const standardNews = newsList.filter((n) => !n.isHot);
 
   const isYouTube =
     activeVideo &&
@@ -66,32 +69,75 @@ function HomePage() {
   return (
     <div>
       <HeroSection />
+      {/* Hot News */}
+
       <section className="max-w-7xl mx-auto px-2 py-4">
-        <h2 className="text-4xl font-bold text-blue-900 mb-6">Hot News</h2>
+        <div className="flex items-center gap-3 mb-6">
+          <h2 className="text-4xl font-bold text-blue-900">Hot News</h2>
+        </div>
 
         <div className="grid md:grid-cols-4 gap-6 items-stretch">
           <div className="md:col-span-3">
+            {hotNews.length > 0 ? (
+              <NewsSlider
+                items={hotNews}
+                visibleCount={3}
+                autoInterval={4000}
+              />
+            ) : (
+              <div className="w-full h-full min-h-[220px] flex flex-col items-center justify-center gap-3 border border-dashed border-slate-200 rounded-2xl bg-slate-50">
+                <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center">
+                  <Flame className="w-5 h-5 text-slate-300" />
+                </div>
+                <p className="text-sm font-medium text-slate-400">
+                  No hot news available
+                </p>
+                <p className="text-xs text-slate-300">
+                  Articles marked as hot will appear here
+                </p>
+              </div>
+            )}
+          </div>
+
+          <CEOMessageCard
+            name="Mr. Ajith Weerasinghe"
+            image="/ceo.jpg"
+            messages={[
+              "Our journey is one of purpose and progress. As we embrace new challenges, I am confident that the dedication of our people and the strength of our values will continue to drive CIC towards a future of lasting impact.",
+              "The heart of CIC has always been its people. Every day, I am inspired by the commitment and passion of our teams across the island, working together to make a meaningful difference in the communities we serve.",
+              "Innovation, integrity, and inclusion — these are not just words at CIC. They are the principles that guide every decision we make as we build a better tomorrow for Sri Lanka.",
+            ]}
+          />
+        </div>
+      </section>
+
+      {/* News Events */}
+      <section className="max-w-7xl mx-auto px-2 py-4">
+        <div className="flex items-center gap-3 mb-6">
+          <h2 className="text-4xl font-bold text-blue-900">News Events</h2>
+        </div>
+
+        {standardNews.length > 0 ? (
+          <div className="md:col-span-3">
             <NewsSlider
-              items={HotnewsList}
+              items={standardNews}
               visibleCount={3}
               autoInterval={4000}
             />
           </div>
-
-          {/* CEO Message */}
-          <CEOMessageCard message="Lorem Ipsum Lorem Ipsum Lorem Ipsum Lorem Ipsum Lorem Ipsum Lorem Ipsum Lorem Ipsum" />
-        </div>
-      </section>
-
-      <section className="max-w-7xl mx-auto px-2 py-4">
-        <h2 className="text-4xl font-bold text-blue-900 mb-6">News Events </h2>
-
-        <div className="grid md:grid-cols-3 gap-6">
-          {/* Dynamic News Cards */}
-          <div className="md:col-span-3">
-            <NewsSlider items={newsList} visibleCount={3} autoInterval={4000} />
+        ) : (
+          <div className="w-full min-h-[220px] flex flex-col items-center justify-center gap-3 border border-dashed border-slate-200 rounded-2xl bg-slate-50">
+            <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center">
+              <Newspaper className="w-5 h-5 text-slate-300" />
+            </div>
+            <p className="text-sm font-medium text-slate-400">
+              No news events available
+            </p>
+            <p className="text-xs text-slate-300">
+              Published articles will appear here
+            </p>
           </div>
-        </div>
+        )}
       </section>
 
       <section className="max-w-7xl mx-auto px-2 py-4">
@@ -102,14 +148,34 @@ function HomePage() {
       </section>
 
       <section className="max-w-7xl mx-auto px-2 py-4">
-        <h2 className="text-4xl font-bold text-blue-900 mb-6">
-          Up Coming Events
-        </h2>
-        <div className="grid md:grid-cols-4 gap-6">
-          <div className="md:col-span-3">
-            <EventsSlider />
+        <div className="flex items-center gap-3 mb-6">
+          <h2 className="text-4xl font-bold text-blue-900">Upcoming Events</h2>
+        </div>
+
+        {/* ✅ FIX: On mobile, stack vertically. OurPeopleCard goes below and is centered. */}
+        <div className="flex flex-col md:grid md:grid-cols-4 gap-6">
+          <div className="md:col-span-3 order-1">
+            {events.length > 0 ? (
+              <EventsSlider />
+            ) : (
+              <div className="w-full min-h-[220px] flex flex-col items-center justify-center gap-3 border border-dashed border-slate-200 rounded-2xl bg-slate-50">
+                <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center">
+                  <Calendar className="w-5 h-5 text-slate-300" />
+                </div>
+                <p className="text-sm font-medium text-slate-400">
+                  No upcoming events
+                </p>
+                <p className="text-xs text-slate-300">
+                  Scheduled events will appear here
+                </p>
+              </div>
+            )}
           </div>
-          <OurPeopleCard />
+
+          {/* ✅ order-2 keeps it below the slider on mobile */}
+          <div className="order-2 flex justify-center md:block">
+            <OurPeopleCard />
+          </div>
         </div>
       </section>
 

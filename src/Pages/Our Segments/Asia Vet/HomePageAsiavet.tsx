@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import { useMemo } from "react";
 import HeroSectionSegments from "../components/HeroSection";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";

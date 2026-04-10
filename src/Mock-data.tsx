@@ -13,17 +13,17 @@ interface Document {
 }
 
 // In your Mock-data types
-interface NewsItem {
+export interface NewsItem {
   id: number;
   title: string;
   description: string;
+  content: string;
   image: string;
-  date?: string;
+  category: string;
+  author: string;
+  date: string;
   readTime: string;
   isHot: boolean;
-  author?: string;
-  category?: string;
-  content?: string; // full article body
 }
 
 export const announcements = [
@@ -115,129 +115,105 @@ export const newsList: NewsItem[] = [
     title:
       "Poultry Production Sri Lanka | Poultry Feed Additives | CIC Holdings",
     description:
-      "CIC Holdings continues to lead the way in poultry production across Sri Lanka, offering world-class feed additives that enhance productivity and animal health nationwide.",
+      "CIC Holdings continues to lead the way in poultry production across Sri Lanka, offering world-class feed additives that enhance productivity and animal health.",
+    content: `CIC Holdings has long been a cornerstone of Sri Lanka's agricultural sector, and its poultry division continues to set benchmarks for quality and innovation.\n\nThe company's range of poultry feed additives is formulated to meet international standards, supporting farmers in achieving higher yield and healthier flocks.\n\nIn recent quarters, CIC has expanded its distribution network to reach smallholder farmers in the Northern and Eastern provinces.`,
     image: news1,
     category: "Agriculture",
     author: "CIC Editorial",
-    date: "April 7, 2026",
+    date: "2026-04-07",
     readTime: "4 min read",
     isHot: false,
-    content: `CIC Holdings has long been a cornerstone of Sri Lanka's agricultural sector, and its poultry division continues to set benchmarks for quality and innovation across the island.
-
-The company's range of poultry feed additives is formulated to meet international standards, supporting farmers in achieving higher yield and healthier flocks. From vitamins and minerals to specialized growth supplements, CIC's product line addresses the full lifecycle of poultry farming.
-
-In recent quarters, CIC has expanded its distribution network to reach smallholder farmers in the Northern and Eastern provinces, a move that has been welcomed by rural farming communities who previously had limited access to premium-grade inputs.
-
-The company's research and development team has also been working closely with the Department of Animal Production and Health to develop locally optimized formulas that account for Sri Lanka's tropical climate and indigenous feed sources.
-
-Looking ahead, CIC Holdings plans to invest further in precision nutrition technologies and expand its cold-chain logistics to ensure product integrity from factory to farm.`,
   },
   {
     id: 2,
     title: "Pre School Development Programme Launched Across Rural Districts",
     description:
-      "A new pre-school development initiative supported by CIC aims to improve early childhood education infrastructure in underserved rural communities across Sri Lanka.",
+      "A new pre-school development initiative supported by CIC aims to improve early childhood education infrastructure in underserved rural communities.",
+    content: `CIC Holdings has announced the launch of a comprehensive pre-school development programme targeting rural districts with limited access to quality early childhood education.\n\nThe initiative will fund the construction and renovation of pre-school facilities in Anuradhapura, Polonnaruwa, and Monaragala districts during its first phase.\n\nEach facility will be equipped with age-appropriate learning materials, trained educators, and nutritious meal programmes.`,
     image: news3,
     category: "Education",
     author: "CSR Desk",
-    date: "April 5, 2026",
+    date: "2026-04-05",
     readTime: "3 min read",
     isHot: false,
-    content: `CIC Holdings has announced the launch of a comprehensive pre-school development programme targeting rural districts with limited access to quality early childhood education.
-
-The initiative, part of the company's broader corporate social responsibility agenda, will fund the construction and renovation of pre-school facilities in Anuradhapura, Polonnaruwa, and Monaragala districts during its first phase.
-
-Each facility will be equipped with age-appropriate learning materials, trained educators, and nutritious meal programmes — all of which have been shown to significantly improve long-term educational outcomes for children aged three to five.
-
-The programme will be implemented in partnership with local government bodies and community organizations, ensuring that initiatives are culturally relevant and sustainably managed beyond the initial funding period.
-
-CIC's Group Chairman noted that investing in early childhood is one of the highest-return social investments a company can make, and that the programme reflects the company's long-term commitment to the communities in which it operates.`,
   },
   {
     id: 3,
-    title:
-      "Poultry Production Sri Lanka | Poultry Feed Additives | CIC Holdings",
+    title: "CIC Holdings Reports Strong Q1 Performance Across Key Divisions",
     description:
-      "CIC's latest poultry feed formulations have demonstrated measurable improvements in broiler growth rates and feed conversion ratios in independent trials conducted this quarter.",
+      "CIC Holdings has posted strong first-quarter results, with the agriculture and health divisions leading growth as the company continues its strategic expansion.",
+    content: `CIC Holdings PLC has reported a robust performance for the first quarter of 2026, with consolidated revenue growing across its agriculture, healthcare, and consumer goods divisions.\n\nThe agriculture segment remained the largest contributor to group revenue, benefiting from strong domestic demand and improved export volumes.\n\nThe board has also approved a capital expenditure plan for the remainder of the year.`,
+    image: news2,
+    category: "Corporate",
+    author: "Finance Desk",
+    date: "2026-04-01",
+    readTime: "4 min read",
+    isHot: false,
+  },
+  {
+    id: 4,
+    title: "Sustainable Farming Initiative Gains Momentum in Northern Province",
+    description:
+      "CIC's sustainable agriculture programme is gaining strong traction in the Northern Province, with over 400 farmers enrolled in the latest growing season.",
+    content: `CIC Holdings' sustainable farming initiative has now enrolled over 400 smallholder farmers across the Northern Province for the current growing season.\n\nThe programme provides participating farmers with subsidized inputs, agronomic training, and access to CIC's extension officer network.\n\nEarly results showed that participants achieved comparable yields while reducing input costs by an average of 18%.`,
     image: news2,
     category: "Agriculture",
     author: "CIC Editorial",
-    date: "April 3, 2026",
-    readTime: "5 min read",
+    date: "2026-03-29",
+    readTime: "3 min read",
     isHot: false,
-    content: `Independent trials conducted in partnership with the University of Peradeniya's Faculty of Veterinary Medicine and Animal Science have confirmed that CIC's latest broiler feed formulation delivers a 12% improvement in feed conversion ratio compared to the previous generation product.
-
-The trials, which ran over a 16-week period across three farms in the Kurunegala district, also recorded a notable reduction in mortality rates and improved uniformity of flock weight at the point of slaughter.
-
-These results are significant for Sri Lankan poultry farmers who operate on tight margins and for whom feed efficiency directly determines profitability. CIC's technical team worked iteratively throughout the trial, adjusting amino acid profiles and enzyme combinations based on real-time performance data.
-
-The new formulation is now available across CIC's nationwide distributor network and is compatible with both conventional and cage-free production systems. A dedicated on-farm advisory service will also accompany the product rollout to assist farmers with transition planning.`,
   },
-];
-
-export const HotnewsList: NewsItem[] = [
   {
-    id: 1,
-    title:
-      "Poultry Production Sri Lanka | Poultry Feed Additives | CIC Holdings",
+    id: 101,
+    title: "Poultry Production Sri Lanka | Next-Gen Feed Additives Unveiled",
     description:
-      "CIC Holdings continues to lead the way in poultry production across Sri Lanka, offering world-class feed additives that enhance productivity and animal health nationwide.",
+      "CIC Holdings unveils a next-generation line of poultry feed additives engineered for Sri Lanka's tropical conditions, promising better flock health and higher farm profitability.",
+    content: `CIC Holdings has unveiled its next-generation poultry feed additive line at a press event held at its Colombo headquarters.\n\nThe new product range incorporates advanced probiotic and prebiotic compounds designed specifically for Sri Lanka's high-humidity, tropical climate conditions.\n\nThe launch marks a significant milestone for CIC's animal nutrition business, which has invested heavily in R&D over the past three years.`,
     image: news1,
     category: "Agriculture",
     author: "CIC Editorial",
-    date: "April 7, 2026",
+    date: "2026-04-09",
     readTime: "4 min read",
-    isHot: false,
-    content: `CIC Holdings has long been a cornerstone of Sri Lanka's agricultural sector, and its poultry division continues to set benchmarks for quality and innovation across the island.
-
-The company's range of poultry feed additives is formulated to meet international standards, supporting farmers in achieving higher yield and healthier flocks. From vitamins and minerals to specialized growth supplements, CIC's product line addresses the full lifecycle of poultry farming.
-
-In recent quarters, CIC has expanded its distribution network to reach smallholder farmers in the Northern and Eastern provinces, a move that has been welcomed by rural farming communities who previously had limited access to premium-grade inputs.
-
-The company's research and development team has also been working closely with the Department of Animal Production and Health to develop locally optimized formulas that account for Sri Lanka's tropical climate and indigenous feed sources.
-
-Looking ahead, CIC Holdings plans to invest further in precision nutrition technologies and expand its cold-chain logistics to ensure product integrity from factory to farm.`,
+    isHot: true,
   },
   {
-    id: 2,
-    title: "Pre School Development Programme Launched Across Rural Districts",
+    id: 102,
+    title: "Pre School Network Expansion: 20 New Centres to Open by Mid-2026",
     description:
-      "A new pre-school development initiative supported by CIC aims to improve early childhood education infrastructure in underserved rural communities across Sri Lanka.",
+      "CIC's education arm confirms the opening of 20 new pre-school centres by mid-2026 as part of an accelerated rollout in response to community demand.",
+    content: `Following overwhelming community interest in its initial pilot centres, CIC Holdings has confirmed the accelerated opening of 20 new pre-school facilities by June 2026.\n\nThe expansion responds directly to feedback gathered through community consultations held in late 2025.\n\nStaffing for the new centres is already underway, with CIC partnering with three teacher training colleges to fast-track the certification of 60 new educators.`,
     image: news3,
     category: "Education",
     author: "CSR Desk",
-    date: "April 5, 2026",
+    date: "2026-04-08",
     readTime: "3 min read",
-    isHot: false,
-    content: `CIC Holdings has announced the launch of a comprehensive pre-school development programme targeting rural districts with limited access to quality early childhood education.
-
-The initiative, part of the company's broader corporate social responsibility agenda, will fund the construction and renovation of pre-school facilities in Anuradhapura, Polonnaruwa, and Monaragala districts during its first phase.
-
-Each facility will be equipped with age-appropriate learning materials, trained educators, and nutritious meal programmes — all of which have been shown to significantly improve long-term educational outcomes for children aged three to five.
-
-The programme will be implemented in partnership with local government bodies and community organizations, ensuring that initiatives are culturally relevant and sustainably managed beyond the initial funding period.
-
-CIC's Group Chairman noted that investing in early childhood is one of the highest-return social investments a company can make, and that the programme reflects the company's long-term commitment to the communities in which it operates.`,
+    isHot: true,
   },
   {
-    id: 3,
-    title:
-      "Poultry Production Sri Lanka | Poultry Feed Additives | CIC Holdings",
+    id: 103,
+    title: "CIC Wins National Export Award for Agricultural Products Division",
     description:
-      "CIC's latest poultry feed formulations have demonstrated measurable improvements in broiler growth rates and feed conversion ratios in independent trials conducted this quarter.",
-    image: news2,
+      "CIC Holdings has been recognised at the National Export Awards for outstanding performance in the agricultural products category.",
+    content: `CIC Holdings PLC received the Gold Award in the Agricultural Products category at this year's National Export Awards ceremony.\n\nThe award recognises the company's consistent growth in export volumes over the past three years, with particular commendation for its expansion into Bangladesh, the Maldives, and Southeast Asian markets.\n\nExport revenue from CIC's agricultural division grew by 34% year-on-year.`,
+    image: news3,
+    category: "Corporate",
+    author: "CIC Editorial",
+    date: "2026-04-06",
+    readTime: "3 min read",
+    isHot: true,
+  },
+  {
+    id: 104,
+    title: "New Crop Protection Range Targets Climate-Resilient Farming",
+    description:
+      "CIC launches a new range of crop protection products designed to support farmers dealing with increasingly unpredictable weather patterns.",
+    content: `CIC Holdings has introduced a new line of crop protection products specifically formulated to help farmers manage the growing challenges posed by climate variability.\n\nThe CIC ClimaSafe range includes fungicides, insecticides, and biostimulants trialled across multiple agroclimatic zones in Sri Lanka.\n\nCIC will support the rollout with a series of farmer field days across the major agricultural districts.`,
+    image: news3,
     category: "Agriculture",
     author: "CIC Editorial",
-    date: "April 3, 2026",
-    readTime: "5 min read",
+    date: "2026-04-04",
+    readTime: "4 min read",
     isHot: false,
-    content: `Independent trials conducted in partnership with the University of Peradeniya's Faculty of Veterinary Medicine and Animal Science have confirmed that CIC's latest broiler feed formulation delivers a 12% improvement in feed conversion ratio compared to the previous generation product.
-
-The trials, which ran over a 16-week period across three farms in the Kurunegala district, also recorded a notable reduction in mortality rates and improved uniformity of flock weight at the point of slaughter.
-
-These results are significant for Sri Lankan poultry farmers who operate on tight margins and for whom feed efficiency directly determines profitability. CIC's technical team worked iteratively throughout the trial, adjusting amino acid profiles and enzyme combinations based on real-time performance data.
-
-The new formulation is now available across CIC's nationwide distributor network and is compatible with both conventional and cage-free production systems. A dedicated on-farm advisory service will also accompany the product rollout to assist farmers with transition planning.`,
   },
 ];
 

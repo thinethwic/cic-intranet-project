@@ -12,47 +12,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link } from "react-router-dom";
 
 // ✅ Import your mock data
-import { newsList, HotnewsList, members, events, videos } from "@/Mock-data";
+import { newsList, members, events, videos } from "@/Mock-data";
 
 // ── Dynamic Stats ─────────────────────────────────────────────
-const stats = [
-  {
-    label: "News",
-    value: newsList.length,
-    change: `${HotnewsList.length} hot news`,
-    icon: Megaphone,
-    iconBg: "bg-amber-50",
-    iconColor: "text-amber-600",
-    trend: true,
-  },
-  {
-    label: "Videos",
-    value: videos.length,
-    change: "From social media",
-    icon: Video,
-    iconBg: "bg-teal-50",
-    iconColor: "text-teal-600",
-    trend: true,
-  },
-  {
-    label: "Events",
-    value: events.length,
-    change: "Upcoming events",
-    icon: Calendar,
-    iconBg: "bg-blue-50",
-    iconColor: "text-blue-600",
-    trend: false,
-  },
-  {
-    label: "Management",
-    value: members.length,
-    change: "Team members",
-    icon: Users,
-    iconBg: "bg-violet-50",
-    iconColor: "text-violet-600",
-    trend: true,
-  },
-];
 
 // ── Quick Links ──────────────────────────────────────────────
 const quickLinks = [
@@ -70,6 +32,48 @@ export default function AdminDashboard() {
   const hour = now.getHours();
   const greeting =
     hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+
+  // ✅ Move stats inside component so hotCount is in scope
+  const hotCount = newsList.filter((n) => n.isHot).length;
+
+  const stats = [
+    {
+      label: "News",
+      value: newsList.length,
+      change: `${hotCount} hot news`,
+      icon: Megaphone,
+      iconBg: "bg-amber-50",
+      iconColor: "text-amber-600",
+      trend: true,
+    },
+    {
+      label: "Videos",
+      value: videos.length,
+      change: "From social media",
+      icon: Video,
+      iconBg: "bg-teal-50",
+      iconColor: "text-teal-600",
+      trend: true,
+    },
+    {
+      label: "Events",
+      value: events.length,
+      change: "Upcoming events",
+      icon: Calendar,
+      iconBg: "bg-blue-50",
+      iconColor: "text-blue-600",
+      trend: false,
+    },
+    {
+      label: "Management",
+      value: members.length,
+      change: "Team members",
+      icon: Users,
+      iconBg: "bg-violet-50",
+      iconColor: "text-violet-600",
+      trend: true,
+    },
+  ];
 
   return (
     <div className="space-y-8">

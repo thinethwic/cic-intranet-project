@@ -9,15 +9,14 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { newsList, HotnewsList } from "@/Mock-data";
+import { newsList } from "@/Mock-data"; // ✅ single import
 
 export default function NewsDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  // Search in both news lists
-  const allNews = [...newsList, ...HotnewsList];
-  const news = allNews.find((n) => n.id === Number(id));
+  // ✅ Search in single list — no merging needed
+  const news = newsList.find((n) => n.id === Number(id));
 
   if (!news) {
     return (
@@ -33,6 +32,23 @@ export default function NewsDetailPage() {
     );
   }
 
+  // Related articles — same category, exclude current
+  const related = newsList
+    .filter((n) => n.id !== news.id && n.category === news.category)
+    .slice(0, 3);
+
+  const fmtDate = (d: string) => {
+    try {
+      return new Date(d).toLocaleDateString("en-GB", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      });
+    } catch {
+      return d;
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-50">
       {/* ── Top nav bar ──────────────────────────────────── */}
@@ -43,9 +59,8 @@ export default function NewsDetailPage() {
             className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-800 transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
-            Back to News
+            Back to news
           </button>
-
           <div className="flex items-center gap-2">
             <Button
               variant="ghost"
@@ -67,7 +82,7 @@ export default function NewsDetailPage() {
 
       {/* ── Main content ─────────────────────────────────── */}
       <div className="max-w-4xl mx-auto px-6 py-10">
-        {/* Category + meta */}
+        {/* Badges */}
         <div className="flex flex-wrap items-center gap-3 mb-5">
           {news.category && (
             <Badge className="bg-blue-50 text-blue-700 border border-blue-200 text-xs font-medium hover:bg-blue-50">
@@ -99,7 +114,7 @@ export default function NewsDetailPage() {
           {news.date && (
             <span className="flex items-center gap-1.5">
               <Calendar className="w-3.5 h-3.5" />
-              {news.date}
+              {fmtDate(news.date)}
             </span>
           )}
           {news.readTime && (
@@ -111,35 +126,79 @@ export default function NewsDetailPage() {
         </div>
 
         {/* Hero image */}
-        <div className="rounded-2xl overflow-hidden mb-8">
-          <img
-            src={news.image}
-            alt={news.title}
-            className="w-full object-cover max-h-[460px]"
-          />
-        </div>
+        {news.image && (
+          <div className="rounded-2xl overflow-hidden mb-8">
+            <img
+              src={news.image}
+              alt={news.title}
+              className="w-full object-cover max-h-[460px]"
+            />
+          </div>
+        )}
 
-        {/* Description (lead paragraph) */}
+        {/* Lead paragraph */}
         <p className="text-lg text-slate-600 leading-relaxed mb-6 font-medium">
           {news.description}
         </p>
 
-        {/* Full content body */}
+        {/* Full content */}
         {news.content ? (
-          <div className="prose prose-slate max-w-none text-slate-700 leading-relaxed space-y-4">
+          <div className="space-y-4">
             {news.content.split("\n\n").map((para, i) => (
-              <p key={i} className="text-base leading-7">
+              <p key={i} className="text-base text-slate-700 leading-7">
                 {para}
               </p>
             ))}
           </div>
         ) : (
-          // Fallback if no content field — repeats description as placeholder
-          <div className="space-y-4 text-slate-700">
-            <p className="text-base leading-7">{news.description}</p>
-            <p className="text-base leading-7 text-slate-400 italic">
+          <div className="space-y-4">
+            <p className="text-base text-slate-700 leading-7">
+              {news.description}
+            </p>
+            <p className="text-base text-slate-400 italic leading-7">
               Full article content coming soon.
             </p>
+          </div>
+        )}
+
+        {/* ── Related articles ─────────────────────────── */}
+        {related.length > 0 && (
+          <div className="mt-14">
+            <h2 className="text-lg font-semibold text-slate-800 mb-5">
+              Related articles
+            </h2>
+            <div className="grid sm:grid-cols-3 gap-5">
+              {related.map((item) => (
+                <div
+                  key={item.id}
+                  onClick={() => navigate(`/news/${item.id}`)}
+                  className="bg-white border border-slate-200 rounded-xl overflow-hidden cursor-pointer hover:border-slate-300 hover:shadow-sm transition-all group"
+                >
+                  {item.image && (
+                    <img
+                      src={item.image}
+                      alt={item.title}
+                      className="h-36 w-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                  )}
+                  <div className="p-3">
+                    {item.category && (
+                      <span className="text-[10px] font-medium text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full mb-1.5 inline-block">
+                        {item.category}
+                      </span>
+                    )}
+                    <p className="text-sm font-medium text-slate-800 line-clamp-2 leading-snug">
+                      {item.title}
+                    </p>
+                    {item.date && (
+                      <p className="text-xs text-slate-400 mt-1.5">
+                        {fmtDate(item.date)}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>

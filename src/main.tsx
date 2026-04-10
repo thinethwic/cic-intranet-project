@@ -6,10 +6,12 @@ import { BrowserRouter } from "react-router-dom";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import App from "./App";
 import "./index.css";
+import { ScrollToTop } from "./components/ScrollToTop";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <BrowserRouter>
+      <ScrollToTop />
       <TooltipProvider>
         <App />
       </TooltipProvider>

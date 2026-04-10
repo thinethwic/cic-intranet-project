@@ -1,11 +1,9 @@
-import {
-  Accordion,
-  AccordionItem,
-  AccordionTrigger,
-  AccordionContent,
-} from "@/components/ui/accordion";
+import { useState } from "react";
+import { ChevronDown } from "lucide-react";
 
 export default function FaqCalendarSection() {
+  const [openItem, setOpenItem] = useState<number | null>(null);
+
   const faqs = [
     {
       question: "What services does CIC provide?",
@@ -30,27 +28,29 @@ export default function FaqCalendarSection() {
   return (
     <section className="max-w-7xl mx-auto px-2 py-4">
       <div>
-        {/* ================= FAQ ================= */}
-        <div>
-          <h2 className="text-4xl font-bold text-blue-900 mb-6">FAQ</h2>
-
-          <Accordion type="single" collapsible className="space-y-3">
-            {faqs.map((faq, i) => (
-              <AccordionItem
-                key={i}
-                value={`item-${i}`}
-                className="border rounded-lg px-4"
-              >
-                <AccordionTrigger className="text-left font-medium text-lg md:text-lg">
+        <h2 className="text-4xl font-bold text-blue-900 mb-6">FAQ</h2>
+        <div className="space-y-3">
+          {faqs.map((faq, i) => {
+            const isOpen = openItem === i;
+            return (
+              <div key={i} className="border rounded-lg px-4">
+                <button
+                  onClick={() => setOpenItem(isOpen ? null : i)}
+                  className="flex w-full items-center justify-between py-4 text-left font-medium text-lg md:text-lg"
+                >
                   {faq.question}
-                </AccordionTrigger>
-
-                <AccordionContent className="text-gray-600">
-                  {faq.answer}
-                </AccordionContent>
-              </AccordionItem>
-            ))}
-          </Accordion>
+                  <ChevronDown
+                    className={`h-5 w-5 shrink-0 transition-transform duration-200 ${
+                      isOpen ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
+                {isOpen && (
+                  <div className="pb-4 text-gray-600">{faq.answer}</div>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
     </section>

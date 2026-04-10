@@ -1,6 +1,6 @@
 // components/admin/AdminSidebar.tsx
 
-import { NavLink, useLocation } from "react-router-dom";
+import { Link, NavLink, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
   FileText,
@@ -26,6 +26,8 @@ import {
 } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
+import logo from "../../assets/Logo.jpg";
+
 const navItems = [
   { name: "Dashboard", icon: LayoutDashboard, path: "/admin" },
   { name: "Documents", icon: FileText, path: "/admin/documents" },
@@ -46,12 +48,17 @@ export default function AdminSidebar() {
 
   return (
     <Sidebar className="border-r-0 bg-slate-900 text-slate-100">
-      {/* ── Logo ── */}
       <SidebarHeader className="px-5 py-5 border-b border-slate-700/60">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-blue-500 flex items-center justify-center shadow-md shadow-blue-500/30">
-            <LayoutDashboard className="w-4 h-4 text-white" />
-          </div>
+          {/* ── Logo image ── */}
+          <Link to="/">
+            <img
+              src={logo}
+              alt="CIC Intranet"
+              className="w-8 h-8 object-contain"
+            />
+          </Link>
+
           <div>
             <p className="text-sm font-semibold text-black leading-none">
               CIC Intranet

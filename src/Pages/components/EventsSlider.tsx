@@ -8,26 +8,30 @@ import { events } from "@/Mock-data";
 
 const VISIBLE_COUNT = 3;
 const INTERVAL = 3500;
+const GAP_PX = 16; // matches gap-4
 
 export default function EventsSlider() {
   const [current, setCurrent] = useState(0);
   const [visible, setVisible] = useState(VISIBLE_COUNT);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Responsive visible count
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth < 640) setVisible(1);
       else if (window.innerWidth < 1024) setVisible(2);
       else setVisible(VISIBLE_COUNT);
     };
-
     handleResize();
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
   const maxIndex = Math.max(0, events.length - visible);
+
+  // ✅ FIX: Reset current when visible count changes (e.g. resize past maxIndex)
+  useEffect(() => {
+    setCurrent((p) => Math.min(p, maxIndex));
+  }, [maxIndex]);
 
   const next = () => setCurrent((p) => (p >= maxIndex ? 0 : p + 1));
   const prev = () => setCurrent((p) => (p <= 0 ? maxIndex : p - 1));
@@ -45,8 +49,6 @@ export default function EventsSlider() {
       if (timerRef.current) clearInterval(timerRef.current);
     };
   }, [maxIndex]);
-
-  const cardWidthPercent = 100 / visible;
 
   return (
     <div
@@ -67,27 +69,37 @@ export default function EventsSlider() {
         <ChevronLeft />
       </Button>
 
-      {/* Viewport */}
-      {/* Viewport */}
+      {/* Viewport — px-10 reserves space for the nav buttons */}
       <div className="overflow-hidden px-10">
-        {/* Track */}
+        {/*
+          ✅ FIX: Use a CSS custom property for the gap so the translation
+          accounts for the actual rendered gap, not just a percentage guess.
+          Each card slot = (100% - gap * (visible-1)) / visible
+          We translate by (cardSlotWidth + gap) * current
+        */}
         <div
-          className="flex gap-4 transition-transform duration-500 ease-in-out" // gap instead of px on cards
+          className="flex transition-transform duration-500 ease-in-out"
           style={{
-            transform: `translateX(-${current * (100 / visible)}%)`,
+            gap: `${GAP_PX}px`,
+            // Translate exactly one card-slot + one gap per step
+            transform: `translateX(calc(-${current} * (${100 / visible}% + ${
+              GAP_PX - GAP_PX / visible // distributes gap correctly
+            }px)))`,
           }}
         >
           {events.map((event, i) => (
             <div
               key={i}
-              className="shrink-0 px-3"
-              style={{ width: `${cardWidthPercent}%` }}
+              // ✅ FIX: No extra px padding — gap handles spacing
+              className="shrink-0"
+              style={{
+                // Subtract the total gap distributed among visible cards
+                width: `calc(${100 / visible}% - ${
+                  (GAP_PX * (visible - 1)) / visible
+                }px)`,
+              }}
             >
-              <div className="h-full">
-                {" "}
-                {/* ← wrap to enforce consistent height */}
-                <EventCard {...event} />
-              </div>
+              <EventCard {...event} />
             </div>
           ))}
         </div>
