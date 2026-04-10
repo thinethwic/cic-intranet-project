@@ -5,9 +5,16 @@ interface Props {
   month: string;
   title: string;
   time: string;
+  location: string;
 }
 
-export default function EventItem({ day, month, title, time }: Props) {
+export default function EventItem({
+  day,
+  month,
+  title,
+  time,
+  location,
+}: Props) {
   return (
     <div className="flex items-center gap-4 border rounded-xl p-4 bg-white">
       {/* Date */}
@@ -20,6 +27,7 @@ export default function EventItem({ day, month, title, time }: Props) {
       <div>
         <h3 className="text-sm font-semibold">{title}</h3>
         <p className="text-xs text-gray-500">{time}</p>
+        <p className="text-xs text-gray-500">Location : {location}</p>
       </div>
     </div>
   );

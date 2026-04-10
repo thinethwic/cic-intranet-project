@@ -1,62 +1,42 @@
-// components/home/NewsSlider.tsx
+// components/home/EventsSlider.tsx
 
 import { useEffect, useRef, useState } from "react";
-import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import HotNewsCard from "@/components/HotnewsCrad";
+import { Button } from "@/components/ui/button";
+import EventCard from "@/components/EventCard";
+import { events } from "@/Mock-data";
 
-interface NewsItem {
-  id: number;
-  title: string;
-  description: string;
-  image: string;
-  date?: string;
-  category?: string;
-}
+const VISIBLE_COUNT = 3;
+const INTERVAL = 3500;
 
-interface Props {
-  items: NewsItem[];
-  visibleCount?: number;
-  autoInterval?: number;
-}
-
-export default function NewsSlider({
-  items,
-  visibleCount = 3,
-  autoInterval = 3500,
-}: Props) {
-  const [index, setIndex] = useState(0);
-  const [visible, setVisible] = useState(visibleCount);
+export default function EventsSlider() {
+  const [current, setCurrent] = useState(0);
+  const [visible, setVisible] = useState(VISIBLE_COUNT);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // ✅ Responsive visible count
+  // Responsive visible count
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth < 640) setVisible(1);
       else if (window.innerWidth < 1024) setVisible(2);
-      else setVisible(visibleCount);
+      else setVisible(VISIBLE_COUNT);
     };
 
     handleResize();
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
-  }, [visibleCount]);
+  }, []);
 
-  // ✅ Safe max index
-  const maxIndex = Math.max(0, items.length - visible);
+  const maxIndex = Math.max(0, events.length - visible);
 
-  // ✅ Navigation
-  const next = () => setIndex((prev) => (prev >= maxIndex ? 0 : prev + 1));
+  const next = () => setCurrent((p) => (p >= maxIndex ? 0 : p + 1));
+  const prev = () => setCurrent((p) => (p <= 0 ? maxIndex : p - 1));
 
-  const prev = () => setIndex((prev) => (prev <= 0 ? maxIndex : prev - 1));
-
-  // ✅ Auto Slide
   const startAutoSlide = () => {
     if (timerRef.current) clearInterval(timerRef.current);
-
     timerRef.current = setInterval(() => {
-      setIndex((prev) => (prev >= maxIndex ? 0 : prev + 1));
-    }, autoInterval);
+      setCurrent((p) => (p >= maxIndex ? 0 : p + 1));
+    }, INTERVAL);
   };
 
   useEffect(() => {
@@ -66,7 +46,6 @@ export default function NewsSlider({
     };
   }, [maxIndex]);
 
-  // ✅ Card width
   const cardWidthPercent = 100 / visible;
 
   return (
@@ -82,37 +61,33 @@ export default function NewsSlider({
         size="icon"
         variant="secondary"
         onClick={prev}
-        disabled={items.length <= visible}
+        disabled={events.length <= visible}
         className="absolute left-0 top-1/2 -translate-y-1/2 z-10 shadow"
       >
         <ChevronLeft />
       </Button>
 
       {/* Viewport */}
-      <div className="overflow-hidden rounded-2xl">
+      {/* Viewport */}
+      <div className="overflow-hidden px-10">
         {/* Track */}
         <div
-          className="flex transition-transform duration-500 ease-in-out"
+          className="flex gap-4 transition-transform duration-500 ease-in-out" // gap instead of px on cards
           style={{
-            transform: `translateX(-${index * (100 / visible)}%)`,
+            transform: `translateX(-${current * (100 / visible)}%)`,
           }}
         >
-          {items.map((item, i) => (
+          {events.map((event, i) => (
             <div
               key={i}
-              className="flex-shrink-0 px-3"
-              style={{
-                width: `${cardWidthPercent}%`,
-              }}
+              className="shrink-0 px-3"
+              style={{ width: `${cardWidthPercent}%` }}
             >
-              <HotNewsCard
-                id={item.id}
-                title={item.title}
-                description={item.description}
-                image={item.image}
-                date={item.date} // ✅ add
-                category={item.category} // ✅ add
-              />
+              <div className="h-full">
+                {" "}
+                {/* ← wrap to enforce consistent height */}
+                <EventCard {...event} />
+              </div>
             </div>
           ))}
         </div>
@@ -123,7 +98,7 @@ export default function NewsSlider({
         size="icon"
         variant="secondary"
         onClick={next}
-        disabled={items.length <= visible}
+        disabled={events.length <= visible}
         className="absolute right-0 top-1/2 -translate-y-1/2 z-10 shadow"
       >
         <ChevronRight />
@@ -134,9 +109,12 @@ export default function NewsSlider({
         {Array.from({ length: maxIndex + 1 }).map((_, i) => (
           <button
             key={i}
-            onClick={() => setIndex(i)}
+            onClick={() => {
+              setCurrent(i);
+              startAutoSlide();
+            }}
             className={`transition-all duration-300 rounded-full ${
-              i === index ? "w-6 h-2 bg-blue-900" : "w-2 h-2 bg-gray-300"
+              i === current ? "w-6 h-2 bg-blue-900" : "w-2 h-2 bg-gray-300"
             }`}
           />
         ))}

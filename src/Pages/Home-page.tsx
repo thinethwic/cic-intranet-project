@@ -1,12 +1,6 @@
 import HeroSection from "./components/Hero-section";
-import news1 from "@/assets/slide1.png";
-import news2 from "@/assets/slide2.png";
-import news3 from "@/assets/Pre School-1.jpg";
 import { CEOMessageCard } from "./components/MessageCard";
 import MembersGrid from "./components/MembersGrid";
-import type { Member } from "./components/MembersGrid";
-import EventCard from "./components/EventCard";
-import OurPeopleCard from "./components/OurPeople";
 import StatsSection from "./components/StatesSection";
 import BirthdayCard from "./components/BirthdayCard";
 import UpcomingBirthdays from "./components/UpComingBirthDay";
@@ -26,6 +20,14 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import FaqCalendarSection from "@/components/shared/FaqCalendarSection";
 import NewsSlider from "./components/NewsSlider";
 import WelcomeCarousel from "./components/WelcomeMembers";
+import { newsList } from "@/Mock-data";
+import { HotnewsList } from "@/Mock-data";
+import { members } from "@/Mock-data";
+import { people } from "@/Mock-data";
+import { upcoming } from "@/Mock-data";
+import { videos } from "@/Mock-data";
+import EventsSlider from "./components/EventsSlider";
+import OurPeopleCard from "./components/OurPeople";
 
 function HomePage() {
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -50,196 +52,7 @@ function HomePage() {
     }
   };
 
-  const newsList = [
-    {
-      title:
-        "Poultry Production Sri Lanka | Poultry Feed Additives | CIC Holdings",
-      description:
-        "Lorem Ipsum Lorem Ipsum Lorem Ipsum Lorem Ipsum Lorem Ipsum",
-      image: news1,
-    },
-    {
-      title: "Pre School",
-      description:
-        "Lorem Ipsum Lorem Ipsum Lorem Ipsum Lorem Ipsum Lorem Ipsum",
-      image: news3,
-    },
-    {
-      title:
-        "Poultry Production Sri Lanka | Poultry Feed Additives | CIC Holdings",
-      description:
-        "Lorem Ipsum Lorem Ipsum Lorem Ipsum Lorem Ipsum Lorem Ipsum",
-      image: news2,
-    },
-    {
-      title:
-        "Poultry Production Sri Lanka | Poultry Feed Additives | CIC Holdings",
-      description:
-        "Lorem Ipsum Lorem Ipsum Lorem Ipsum Lorem Ipsum Lorem Ipsum",
-      image: news2,
-    },
-    {
-      title:
-        "Poultry Production Sri Lanka | Poultry Feed Additives | CIC Holdings",
-      description:
-        "Lorem Ipsum Lorem Ipsum Lorem Ipsum Lorem Ipsum Lorem Ipsum",
-      image: news2,
-    },
-  ];
-
-  const HotnewsList = [
-    {
-      title:
-        "Poultry Production Sri Lanka | Poultry Feed Additives | CIC Holdings",
-      description:
-        "Lorem Ipsum Lorem Ipsum Lorem Ipsum Lorem Ipsum Lorem Ipsum",
-      image: news1,
-    },
-    {
-      title: "Pre School",
-      description:
-        "Lorem Ipsum Lorem Ipsum Lorem Ipsum Lorem Ipsum Lorem Ipsum",
-      image: news3,
-    },
-    {
-      title: "Pre School",
-      description:
-        "Lorem Ipsum Lorem Ipsum Lorem Ipsum Lorem Ipsum Lorem Ipsum",
-      image: news3,
-    },
-    {
-      title: "Pre School",
-      description:
-        "Lorem Ipsum Lorem Ipsum Lorem Ipsum Lorem Ipsum Lorem Ipsum",
-      image: news3,
-    },
-  ];
-
-  const members: Member[] = [
-    {
-      name: "John Silva",
-      role: "Chief Executive Officer",
-    },
-    {
-      name: "Nimal Perera",
-      role: "Chief Operating Officer",
-    },
-    {
-      name: "Kasun Fernando",
-      role: "Head of Agriculture",
-    },
-    {
-      name: "Saman Jayasinghe",
-      role: "Finance Director",
-    },
-    {
-      name: "John Silva",
-      role: "Chief Executive Officer",
-    },
-    {
-      name: "Nimal Perera",
-      role: "Chief Operating Officer",
-    },
-    {
-      name: "Kasun Fernando",
-      role: "Head of Agriculture",
-    },
-    {
-      name: "Saman Jayasinghe",
-      role: "Finance Director",
-    },
-  ];
-
-  const events = [
-    {
-      image: news1,
-      title: "Tech Conference 2026",
-      date: "Aug 25, 2026",
-      time: "6:00 PM",
-      location: "Colombo",
-    },
-    {
-      image: news1,
-      title: "Startup Meetup",
-      date: "Sep 02, 2026",
-      time: "4:30 PM",
-      location: "Negombo",
-    },
-    {
-      image: news1,
-      title: "AI Workshop",
-      date: "Sep 10, 2026",
-      time: "10:00 AM",
-      location: "Colombo",
-    },
-  ];
-
-  const people = [
-    "Thineth Wickramarachchi",
-    "John Silva",
-    "Nimal Perera",
-    "Kasun Fernando",
-    "Kasun Fernando",
-    "Kasun Fernando",
-    "Kasun Fernando",
-  ];
-
-  const upcoming = [
-    {
-      name: "Thineth Wickramarachchi",
-      role: "Intern - IT",
-      date: "Apr 30",
-    },
-    {
-      name: "John Silva",
-      role: "Manager",
-      date: "May 02",
-    },
-    {
-      name: "Nimal Perera",
-      role: "Engineer",
-      date: "May 05",
-    },
-    {
-      name: "Nimal Perera",
-      role: "Engineer",
-      date: "May 05",
-    },
-  ];
-
   const images = [img1, img2, img3, img1, img2, img1, img3, img2, img1, img3];
-
-  const videos = [
-    {
-      title:
-        "Eid table with our scrumptious Chicken Cheese Balls – a delicious twist that promises to enchant your taste buds!",
-      description: "",
-      videoLink: "https://web.facebook.com/reel/911559260770038",
-    },
-    {
-      title: "Honey Glazed Chicken With CIC Besto Chicken",
-      description: "",
-      videoLink: "https://web.facebook.com/reel/1150142429761266",
-    },
-    {
-      title:
-        "🏏 Elevate your T20 cricket viewing with our Crispy Chicken Bites! 🔥",
-      description:
-        "Watch our latest recipe video to learn how to make these crunchy, mouth-watering chicken bites that are perfect for game time snacking.",
-      videoLink: "https://web.facebook.com/reel/853507733294017",
-    },
-    {
-      title:
-        "New Recipe Alert: Sri Lankan Chili Chicken with CIC Besto Pre-Cut Whole Chicken.",
-      description: "",
-      videoLink: "https://facebook.com/reel/702338548325656",
-    },
-    {
-      title: "New Recipe Alert: Creamy Chicken Drumsticks",
-      description: "",
-      videoLink: "https://facebook.com/reel/7305548436180301",
-    },
-  ];
 
   const scroll = (dir: "left" | "right") => {
     if (!scrollRef.current) return;
@@ -258,7 +71,11 @@ function HomePage() {
 
         <div className="grid md:grid-cols-4 gap-6 items-stretch">
           <div className="md:col-span-3">
-            <NewsSlider items={HotnewsList} />
+            <NewsSlider
+              items={HotnewsList}
+              visibleCount={3}
+              autoInterval={4000}
+            />
           </div>
 
           {/* CEO Message */}
@@ -286,14 +103,12 @@ function HomePage() {
 
       <section className="max-w-7xl mx-auto px-2 py-4">
         <h2 className="text-4xl font-bold text-blue-900 mb-6">
-          Upcoming Events{" "}
+          Up Coming Events
         </h2>
-
         <div className="grid md:grid-cols-4 gap-6">
-          {events.map((event, i) => (
-            <EventCard key={i} {...event} />
-          ))}
-
+          <div className="md:col-span-3">
+            <EventsSlider />
+          </div>
           <OurPeopleCard />
         </div>
       </section>

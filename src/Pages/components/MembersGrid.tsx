@@ -66,7 +66,7 @@ export default function MembersCarousel({ members }: Props) {
         {members.map((member, i) => (
           <Card
             key={i}
-            className={`min-w-[220px] transition-all duration-300 ${
+            className={`min-w-[200px] transition-all duration-300 ${
               i === index ? "scale-105 shadow-xl" : "opacity-70"
             }`}
           >

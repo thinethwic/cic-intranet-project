@@ -7,8 +7,8 @@ import {
   Video,
   Calendar,
   Image,
+  Newspaper,
   Users,
-  Settings,
   LogOut,
   ChevronRight,
 } from "lucide-react";
@@ -30,13 +30,10 @@ const navItems = [
   { name: "Dashboard", icon: LayoutDashboard, path: "/admin" },
   { name: "Documents", icon: FileText, path: "/admin/documents" },
   { name: "Videos", icon: Video, path: "/admin/videos" },
+  { name: "News", icon: Newspaper, path: "/admin/news" },
   { name: "Events", icon: Calendar, path: "/admin/events" },
   { name: "Gallery", icon: Image, path: "/admin/gallery" },
   { name: "Management", icon: Users, path: "/admin/management" },
-];
-
-const bottomItems = [
-  { name: "Settings", icon: Settings, path: "/admin/settings" },
 ];
 
 export default function AdminSidebar() {
@@ -77,7 +74,6 @@ export default function AdminSidebar() {
               {navItems.map((item) => (
                 <SidebarMenuItem key={item.name}>
                   <SidebarMenuButton
-                    asChild
                     isActive={isActive(item.path)}
                     className={`
                       group relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm
@@ -85,7 +81,7 @@ export default function AdminSidebar() {
                       ${
                         isActive(item.path)
                           ? "bg-blue-600 text-white shadow-md shadow-blue-600/20"
-                          : "text-slate-400 hover:bg-slate-800 hover:text-slate-100"
+                          : "text-slate-400 hover:bg-slate-400 hover:text-slate-100"
                       }
                     `}
                   >
@@ -97,7 +93,7 @@ export default function AdminSidebar() {
                         className={`w-4 h-4 shrink-0 ${
                           isActive(item.path)
                             ? "text-black"
-                            : "text-slate-500 group-hover:text-slate-300"
+                            : "text-slate-500 group-hover:text-slate-500"
                         }`}
                       />
                       <span className="font-medium">{item.name}</span>
@@ -111,48 +107,21 @@ export default function AdminSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-
-        {/* ── System ── */}
-        <SidebarGroup className="mt-6">
-          <SidebarGroupLabel className="text-[10px] font-semibold tracking-widest text-slate-500 uppercase px-2 mb-1">
-            System
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {bottomItems.map((item) => (
-                <SidebarMenuItem key={item.name}>
-                  <SidebarMenuButton
-                    asChild
-                    className="group flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-slate-400 hover:bg-slate-800 hover:text-slate-100 transition-all duration-150"
-                  >
-                    <NavLink
-                      to={item.path}
-                      className="flex items-center gap-3 w-full"
-                    >
-                      <item.icon className="w-4 h-4 shrink-0 text-slate-500 group-hover:text-slate-300" />
-                      <span className="font-medium">{item.name}</span>
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
       </SidebarContent>
 
       {/* ── User Footer ── */}
       <SidebarFooter className="px-4 py-4 border-t border-slate-700/60">
         <div className="flex items-center gap-3">
           <Avatar className="w-8 h-8 shrink-0">
-            <AvatarFallback className="bg-blue-500/20 text-blue-300 text-xs font-semibold">
+            <AvatarFallback className="bg-blue-500/30 text-blue-400 text-xs font-semibold">
               AD
             </AvatarFallback>
           </Avatar>
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-medium text-slate-200 truncate">
+            <p className="text-xs font-medium text-slate-500 truncate">
               Admin User
             </p>
-            <p className="text-[10px] text-slate-500 truncate">admin@cic.lk</p>
+            <p className="text-[10px] text-slate-700 truncate">admin@cic.lk</p>
           </div>
           <button className="p-1.5 rounded-md hover:bg-slate-800 text-slate-500 hover:text-slate-300 transition-colors">
             <LogOut className="w-3.5 h-3.5" />

@@ -9,6 +9,9 @@ import HomePagePoulry from "./Pages/Our Segments/CIC Poulry/HomePagePoulry";
 import HomePageAsiavet from "./Pages/Our Segments/Asia Vet/HomePageAsiavet";
 import AdminLayout from "./components/AdminLayout";
 import AdminDashboard from "./Pages/Admin/AdminDashboard";
+import AdminVideosPage from "./Pages/Admin/AdminVideo";
+import AdminDocumentsPage from "./Pages/Admin/AdminDocumentsPage";
+import NewsDetailPage from "./components/NewsDetailPage";
 
 function App() {
   return (
@@ -19,10 +22,13 @@ function App() {
         <Route path="/our-segments/cic-vetcare" element={<HomePageVetcare />} />
         <Route path="/our-segments/cic-poulry" element={<HomePagePoulry />} />
         <Route path="/our-segments/asia-vet" element={<HomePageAsiavet />} />
+        <Route path="/news/:id" element={<NewsDetailPage />} />
       </Route>
 
       <Route path="/admin" element={<AdminLayout />}>
         <Route index element={<AdminDashboard />} />
+        <Route path="/admin/videos" element={<AdminVideosPage />} />
+        <Route path="/admin/documents" element={<AdminDocumentsPage />} />
       </Route>
     </Routes>
   );
