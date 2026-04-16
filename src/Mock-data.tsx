@@ -2,6 +2,10 @@ import news1 from "@/assets/slide1.png";
 import news2 from "@/assets/slide2.png";
 import news3 from "@/assets/Pre School-1.jpg";
 
+import img1 from "@/assets/cic feeds.jpg";
+import img2 from "@/assets/slide2.png";
+import img3 from "@/assets/slide3.png";
+
 interface Document {
   id: number;
   title: string;
@@ -25,6 +29,35 @@ export interface NewsItem {
   readTime: string;
   isHot: boolean;
 }
+
+export interface CEOMessageConfig {
+  name: string;
+  image: string;
+  messages: string[];
+}
+
+export const ceoMessage: CEOMessageConfig = {
+  name: "Mr. Ajith Weerasinghe",
+  image: "/ceo.jpg",
+  messages: [
+    "Our journey is one of purpose and progress. As we embrace new challenges, I am confident that the dedication of our people and the strength of our values will continue to drive CIC towards a future of lasting impact.",
+    "The heart of CIC has always been its people. Every day, I am inspired by the commitment and passion of our teams across the island, working together to make a meaningful difference in the communities we serve.",
+    "Innovation, integrity, and inclusion - these are not just words at CIC. They are the principles that guide every decision we make as we build a better tomorrow for Sri Lanka.",
+  ],
+};
+
+export const images = [
+  { key: img1, description: "ABCD" },
+  { key: img2, description: "" },
+  { key: img3, description: "" },
+  { key: img1, description: "" },
+  { key: img2, description: "" },
+  { key: img1, description: "" },
+  { key: img3, description: "" },
+  { key: img2, description: "" },
+  { key: img1, description: "" },
+  { key: img3, description: "" },
+];
 
 export const announcements = [
   {
@@ -221,34 +254,42 @@ export const members = [
   {
     name: "John Silva",
     role: "Chief Executive Officer",
+    dob: "2000-05-28",
   },
   {
     name: "Nimal Perera",
     role: "Chief Operating Officer",
+    dob: "1995-04-16",
   },
   {
     name: "Kasun Fernando",
     role: "Head of Agriculture",
+    dob: "2000-04-20",
   },
   {
     name: "Saman Jayasinghe",
     role: "Finance Director",
+    dob: "1995-04-14",
   },
   {
     name: "John Silva",
     role: "Chief Executive Officer",
+    dob: "1995-04-30",
   },
   {
     name: "Nimal Perera",
     role: "Chief Operating Officer",
+    dob: "1995-04-14",
   },
   {
     name: "Kasun Fernando",
     role: "Head of Agriculture",
+    dob: "1995-04-26",
   },
   {
     name: "Saman Jayasinghe",
     role: "Finance Director",
+    dob: "1995-04-20",
   },
 ];
 

@@ -1,249 +1,238 @@
 import {
-  Users,
-  FileText,
-  Megaphone,
   Calendar,
   Clock,
-  TrendingUp,
+  FileText,
+  Image,
+  Megaphone,
+  Newspaper,
+  Plus,
+  Users,
   Video,
 } from "lucide-react";
-
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link } from "react-router-dom";
 
-// ✅ Import your mock data
-import { newsList, members, events, videos } from "@/Mock-data";
+import { CardContent } from "@/components/ui/card";
+import { newsList, members, events, videos, documents } from "@/Mock-data";
 
-// ── Dynamic Stats ─────────────────────────────────────────────
+import {
+  AdminCard,
+  AdminCardTitle,
+  AdminSectionHeader,
+  StatCard,
+  StatusBadge,
+} from "./admin-components";
 
-// ── Quick Links ──────────────────────────────────────────────
 const quickLinks = [
-  { label: "Manage Documents", path: "/admin/documents", icon: FileText },
-  { label: "Manage Videos", path: "/admin/videos", icon: Video },
-  { label: "Manage Events", path: "/admin/events", icon: Calendar },
-  { label: "Manage Gallery", path: "/admin/gallery", icon: FileText },
-  { label: "Management", path: "/admin/management", icon: Users },
-  { label: "News", path: "/admin/news", icon: Megaphone },
+  {
+    label: "Create News",
+    description: "Publish a company update",
+    path: "/admin/news",
+    icon: Newspaper,
+    tone: "bg-blue-50 text-blue-600",
+  },
+  {
+    label: "Upload Document",
+    description: "Add files for segments",
+    path: "/admin/documents",
+    icon: FileText,
+    tone: "bg-emerald-50 text-emerald-600",
+  },
+  {
+    label: "Add Video",
+    description: "Share media content",
+    path: "/admin/videos",
+    icon: Video,
+    tone: "bg-violet-50 text-violet-600",
+  },
+  {
+    label: "Schedule Event",
+    description: "Create an upcoming event",
+    path: "/admin/events",
+    icon: Calendar,
+    tone: "bg-amber-50 text-amber-600",
+  },
+  {
+    label: "Manage Gallery",
+    description: "Curate visual content",
+    path: "/admin/gallery",
+    icon: Image,
+    tone: "bg-rose-50 text-rose-600",
+  },
+  {
+    label: "Management",
+    description: "Update leadership profiles",
+    path: "/admin/management",
+    icon: Users,
+    tone: "bg-slate-100 text-slate-700",
+  },
 ];
 
-// ── Component ────────────────────────────────────────────────
 export default function AdminDashboard() {
   const now = new Date();
-  const hour = now.getHours();
   const greeting =
-    hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
-
-  // ✅ Move stats inside component so hotCount is in scope
-  const hotCount = newsList.filter((n) => n.isHot).length;
-
-  const stats = [
-    {
-      label: "News",
-      value: newsList.length,
-      change: `${hotCount} hot news`,
-      icon: Megaphone,
-      iconBg: "bg-amber-50",
-      iconColor: "text-amber-600",
-      trend: true,
-    },
-    {
-      label: "Videos",
-      value: videos.length,
-      change: "From social media",
-      icon: Video,
-      iconBg: "bg-teal-50",
-      iconColor: "text-teal-600",
-      trend: true,
-    },
-    {
-      label: "Events",
-      value: events.length,
-      change: "Upcoming events",
-      icon: Calendar,
-      iconBg: "bg-blue-50",
-      iconColor: "text-blue-600",
-      trend: false,
-    },
-    {
-      label: "Management",
-      value: members.length,
-      change: "Team members",
-      icon: Users,
-      iconBg: "bg-violet-50",
-      iconColor: "text-violet-600",
-      trend: true,
-    },
-  ];
+    now.getHours() < 12
+      ? "Good morning"
+      : now.getHours() < 17
+        ? "Good afternoon"
+        : "Good evening";
+  const hotCount = newsList.filter((item) => item.isHot).length;
 
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div className="flex justify-between flex-wrap gap-3">
-        <div>
-          <p className="text-sm text-slate-500">{greeting}, Admin 👋</p>
-          <h1 className="text-2xl font-bold">Dashboard Overview</h1>
-        </div>
+    <div className="space-y-6 p-6">
+      <AdminSectionHeader
+        title="Dashboard Overview"
+        description={`${greeting}, Admin. Here is what is happening across the intranet.`}
+        action={
+          <div className="flex items-center gap-2 rounded-2xl border bg-background px-4 py-2 text-sm text-muted-foreground shadow-sm">
+            <Clock className="h-4 w-4" />
+            {now.toLocaleDateString("en-GB", {
+              day: "numeric",
+              month: "short",
+              year: "numeric",
+            })}
+          </div>
+        }
+      />
 
-        <div className="flex items-center gap-2 text-xs text-slate-400 bg-white border px-3 py-2 rounded-lg">
-          <Clock className="w-3 h-3" />
-          {now.toDateString()}
-        </div>
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <StatCard
+          title="News"
+          value={newsList.length}
+          description={`${hotCount} hot updates`}
+          icon={Megaphone}
+          tone="amber"
+        />
+        <StatCard
+          title="Videos"
+          value={videos.length}
+          description="Published media items"
+          icon={Video}
+          tone="violet"
+        />
+        <StatCard
+          title="Events"
+          value={events.length}
+          description="Scheduled activities"
+          icon={Calendar}
+          tone="blue"
+        />
+        <StatCard
+          title="Documents"
+          value={documents.length}
+          description={`${members.length} management profiles`}
+          icon={FileText}
+          tone="emerald"
+        />
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5">
-        {stats.map((stat) => (
-          <Card key={stat.label}>
-            <CardContent className="p-5">
-              <div className="flex justify-between mb-3">
-                <div className={`p-2 rounded ${stat.iconBg}`}>
-                  <stat.icon className={stat.iconColor} />
-                </div>
-
-                {stat.trend && (
-                  <span className="text-xs text-green-600 flex items-center gap-1">
-                    <TrendingUp className="w-3 h-3" /> Up
-                  </span>
-                )}
-              </div>
-
-              <p className="text-2xl font-bold">{stat.value}</p>
-              <p className="text-sm text-gray-500">{stat.label}</p>
-              <p className="text-xs text-gray-400">{stat.change}</p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {/* Quick Links */}
-      <div>
-        <h2 className="text-sm font-semibold mb-3">Quick Actions</h2>
-
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+      <AdminCard>
+        <AdminCardTitle title="Quick Actions" meta="Admin shortcuts" />
+        <CardContent className="grid grid-cols-1 gap-4 px-6 sm:grid-cols-2 lg:grid-cols-3">
           {quickLinks.map((link) => (
             <Link
               key={link.label}
               to={link.path}
-              className="flex flex-col items-center gap-2 border rounded-xl p-3 hover:shadow-md"
+              className="group flex items-center gap-4 rounded-2xl border border-border/70 bg-background p-4 transition-all hover:scale-[1.02] hover:border-primary/30 hover:shadow-md"
             >
-              <link.icon className="w-5 h-5" />
-              <span className="text-xs text-center">{link.label}</span>
+              <div className={`rounded-2xl p-3 ${link.tone}`}>
+                <link.icon className="h-5 w-5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium">{link.label}</p>
+                <p className="truncate text-xs text-muted-foreground">
+                  {link.description}
+                </p>
+              </div>
+              <Plus className="h-4 w-4 text-muted-foreground transition-transform group-hover:rotate-90 group-hover:text-primary" />
             </Link>
           ))}
-        </div>
-      </div>
+        </CardContent>
+      </AdminCard>
 
-      {/* Bottom Sections */}
-      <div className="grid md:grid-cols-3 gap-6">
-        {/* Events */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle>Upcoming Events</CardTitle>
-            <span className="text-xs text-gray-400 bg-slate-100 px-2 py-0.5 rounded-full">
-              {events.length} items
-            </span>
-          </CardHeader>
-
-          {/* In your Card's CardContent, replace with: */}
-          <CardContent className="p-0">
-            <div
-              className="flex flex-col gap-0 overflow-y-auto"
-              style={{ maxHeight: "260px" }}
-            >
-              {events.map((event, i) => {
-                const date = new Date(event.date);
-                return (
-                  <div
-                    key={i}
-                    className="flex gap-3 items-center px-4 py-3 border-b last:border-b-0"
-                  >
-                    <div className="text-center w-10 bg-slate-50 rounded-md py-1 flex-shrink-0">
-                      <p className="text-xs text-slate-400 uppercase tracking-wide">
-                        {date.toLocaleString("default", { month: "short" })}
-                      </p>
-                      <p className="font-bold text-base leading-tight">
-                        {date.getDate()}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">{event.title}</p>
-                      <p className="text-xs text-gray-400">
-                        {event.time} · {event.location}
-                      </p>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* News */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Latest News</CardTitle>
-            <span className="text-xs text-gray-400 bg-slate-100 px-2 py-0.5 rounded-full">
-              {newsList.length} items
-            </span>
-          </CardHeader>
-
-          <CardContent className="p-0">
-            <div
-              className="flex flex-col overflow-y-auto"
-              style={{ maxHeight: "260px" }}
-            >
-              {newsList.map((news, i) => (
+      <div className="grid gap-6 lg:grid-cols-3">
+        <AdminCard>
+          <AdminCardTitle title="Upcoming Events" meta={`${events.length} items`} />
+          <CardContent className="max-h-[320px] space-y-0 overflow-y-auto px-6">
+            {events.map((event, index) => {
+              const date = new Date(event.date);
+              return (
                 <div
-                  key={i}
-                  className="flex gap-3 items-start px-4 py-3 border-b last:border-b-0"
+                  key={`${event.title}-${index}`}
+                  className="flex gap-4 border-b py-4 last:border-b-0"
                 >
-                  <img
-                    src={news.image}
-                    className="w-11 h-11 rounded-md object-cover flex-shrink-0"
-                  />
-                  <div>
-                    <p className="text-sm font-medium line-clamp-2 leading-snug">
-                      {news.title}
+                  <div className="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-2xl bg-blue-50 text-blue-700">
+                    <span className="text-xs font-medium uppercase">
+                      {date.toLocaleString("default", { month: "short" })}
+                    </span>
+                    <span className="text-lg font-semibold">
+                      {date.getDate()}
+                    </span>
+                  </div>
+                  <div className="min-w-0">
+                    <p className="line-clamp-1 text-sm font-medium">
+                      {event.title}
+                    </p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {event.time} / {event.location}
                     </p>
                   </div>
                 </div>
-              ))}
-            </div>
+              );
+            })}
           </CardContent>
-        </Card>
+        </AdminCard>
 
-        {/* Videos */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Recent Videos</CardTitle>
-            <span className="text-xs text-gray-400 bg-slate-100 px-2 py-0.5 rounded-full">
-              {videos.length} videos
-            </span>
-          </CardHeader>
-
-          <CardContent className="p-0">
-            <div
-              className="flex flex-col overflow-y-auto"
-              style={{ maxHeight: "260px" }}
-            >
-              {videos.map((video, i) => (
-                <div
-                  key={i}
-                  className="flex gap-3 items-center px-4 py-3 border-b last:border-b-0"
-                >
-                  <div className="w-14 h-9 bg-slate-100 rounded-md flex-shrink-0 flex items-center justify-center">
-                    <Video className="w-4 h-4 text-slate-400" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium line-clamp-2 leading-snug">
-                      {video.title}
-                    </p>
+        <AdminCard>
+          <AdminCardTitle title="Latest News" meta={`${newsList.length} items`} />
+          <CardContent className="max-h-[320px] space-y-0 overflow-y-auto px-6">
+            {newsList.slice(0, 8).map((news) => (
+              <div
+                key={news.id}
+                className="flex gap-4 border-b py-4 last:border-b-0"
+              >
+                <img
+                  src={news.image}
+                  alt=""
+                  className="h-12 w-12 shrink-0 rounded-2xl object-cover"
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="line-clamp-2 text-sm font-medium leading-snug">
+                    {news.title}
+                  </p>
+                  <div className="mt-2 flex items-center gap-2">
+                    <StatusBadge tone={news.isHot ? "rose" : "slate"}>
+                      {news.isHot ? "Hot" : news.category}
+                    </StatusBadge>
                   </div>
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
           </CardContent>
-        </Card>
+        </AdminCard>
+
+        <AdminCard>
+          <AdminCardTitle title="Recent Videos" meta={`${videos.length} videos`} />
+          <CardContent className="max-h-[320px] space-y-0 overflow-y-auto px-6">
+            {videos.slice(0, 8).map((video, index) => (
+              <div
+                key={`${video.title}-${index}`}
+                className="flex gap-4 border-b py-4 last:border-b-0"
+              >
+                <div className="flex h-12 w-16 shrink-0 items-center justify-center rounded-2xl bg-violet-50 text-violet-600">
+                  <Video className="h-5 w-5" />
+                </div>
+                <div className="min-w-0">
+                  <p className="line-clamp-2 text-sm font-medium leading-snug">
+                    {video.title}
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Social media video
+                  </p>
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </AdminCard>
       </div>
     </div>
   );

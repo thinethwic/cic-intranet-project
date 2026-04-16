@@ -6,7 +6,8 @@ import DocumentCard from "../components/DocumentCard";
 import EventItem from "../components/EventItem";
 import PinnedCard from "../components/PinnedCard";
 
-import slide1 from "../../../assets/slide1.png";
+import slide1 from "../../../assets/cic poulry slide.jpg";
+import slide2 from "../../../assets/cic poulry slide 2.jpg";
 import HeroSectionSegments from "../components/HeroSection";
 
 import { events, documents, announcements } from "@/Mock-data";
@@ -66,7 +67,7 @@ export default function HomePagePoulry() {
     {
       title: "Quality You Can Trust",
       subtitle: "Delivering excellence in animal nutrition since 1964",
-      image: slide1,
+      image: slide2,
     },
   ];
 

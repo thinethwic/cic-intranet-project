@@ -13,6 +13,10 @@ import AdminVideosPage from "./Pages/Admin/AdminVideo";
 import AdminDocumentsPage from "./Pages/Admin/AdminDocumentsPage";
 import NewsDetailPage from "./components/NewsDetailPage";
 import AdminNewsPage from "./Pages/Admin/AdminNewsPage";
+import AdminEventsPage from "./Pages/Admin/AdminEventsPage";
+import AdminGalleryPage from "./Pages/Admin/AdminGalleryPage";
+import AdminManagementPage from "./Pages/Admin/AdminManagementPage";
+import AdminLogin from "./Pages/Admin/AdminLogin";
 
 function App() {
   return (
@@ -26,11 +30,16 @@ function App() {
         <Route path="/news/:id" element={<NewsDetailPage />} />
       </Route>
 
+      <Route path="/admin/login" element={<AdminLogin />} />
+
       <Route path="/admin" element={<AdminLayout />}>
         <Route index element={<AdminDashboard />} />
         <Route path="/admin/videos" element={<AdminVideosPage />} />
         <Route path="/admin/documents" element={<AdminDocumentsPage />} />
         <Route path="/admin/news" element={<AdminNewsPage />} />
+        <Route path="/admin/events" element={<AdminEventsPage />} />
+        <Route path="/admin/gallery" element={<AdminGalleryPage />} />
+        <Route path="/admin/management" element={<AdminManagementPage />} />
       </Route>
     </Routes>
   );

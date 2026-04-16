@@ -9,25 +9,28 @@ import { Flame, Newspaper, Calendar } from "lucide-react";
 
 import visionImg from "@/assets/vision.jpg"; // eye image
 import missionImg from "@/assets/mission.jpg";
-
-import img1 from "@/assets/cic feeds.jpg";
-import img2 from "@/assets/slide2.png";
-import img3 from "@/assets/slide3.png";
 import GallerySection from "./components/GallerySection";
-import { useRef, useState } from "react";
+import { useRef, useState, useMemo } from "react";
 import VideoCard from "./components/VideoCard";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import FaqCalendarSection from "@/components/shared/FaqCalendarSection";
 import NewsSlider from "./components/NewsSlider";
 import WelcomeCarousel from "./components/WelcomeMembers";
-import { newsList } from "@/Mock-data";
-import { members } from "@/Mock-data";
-import { people } from "@/Mock-data";
-import { upcoming, events } from "@/Mock-data";
-import { videos } from "@/Mock-data";
+import {
+  newsList,
+  members,
+  people,
+  ceoMessage,
+  events,
+  videos,
+  images,
+} from "@/Mock-data";
 import EventsSlider from "./components/EventsSlider";
 import OurPeopleCard from "./components/OurPeople";
+
+import NoBirthdayCard from "./components/NoBirthdayCard";
+import { getTodayBirthdays, getUpcomingBirthdays } from "@/utils/birthday";
 
 function HomePage() {
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -35,6 +38,9 @@ function HomePage() {
 
   const hotNews = newsList.filter((n) => n.isHot);
   const standardNews = newsList.filter((n) => !n.isHot);
+
+  const todayBirthdays = useMemo(() => getTodayBirthdays(members), []);
+  const upcomingList = useMemo(() => getUpcomingBirthdays(members, 5), []);
 
   const isYouTube =
     activeVideo &&
@@ -54,8 +60,6 @@ function HomePage() {
       )}&show_text=false&width=800`;
     }
   };
-
-  const images = [img1, img2, img3, img1, img2, img1, img3, img2, img1, img3];
 
   const scroll = (dir: "left" | "right") => {
     if (!scrollRef.current) return;
@@ -105,13 +109,9 @@ function HomePage() {
           {/* CEO Card */}
           <div className="w-full md:col-span-1">
             <CEOMessageCard
-              name="Mr. Ajith Weerasinghe"
-              image="/ceo.jpg"
-              messages={[
-                "Our journey is one of purpose and progress. As we embrace new challenges, I am confident that the dedication of our people and the strength of our values will continue to drive CIC towards a future of lasting impact.",
-                "The heart of CIC has always been its people. Every day, I am inspired by the commitment and passion of our teams across the island, working together to make a meaningful difference in the communities we serve.",
-                "Innovation, integrity, and inclusion — these are not just words at CIC. They are the principles that guide every decision we make as we build a better tomorrow for Sri Lanka.",
-              ]}
+              name={ceoMessage.name}
+              image={ceoMessage.image}
+              messages={ceoMessage.messages}
             />
           </div>
         </div>
@@ -147,13 +147,6 @@ function HomePage() {
       </section>
 
       <section className="max-w-7xl mx-auto px-2 py-4">
-        <h2 className="text-4xl font-bold text-blue-900 mb-6">Top Manegment</h2>
-
-        {/* 👇 Reusable Grid */}
-        <MembersGrid members={members} />
-      </section>
-
-      <section className="max-w-7xl mx-auto px-2 py-4">
         <div className="flex items-center gap-3 mb-6">
           <h2 className="text-4xl font-bold text-blue-900">Upcoming Events</h2>
         </div>
@@ -186,28 +179,40 @@ function HomePage() {
       </section>
 
       <section className="max-w-7xl mx-auto px-2 py-4">
+        <h2 className="text-4xl font-bold text-blue-900 mb-6">Top Manegment</h2>
+
+        {/* 👇 Reusable Grid */}
+        <MembersGrid members={members} />
+      </section>
+
+      <StatsSection />
+
+      <section className="max-w-7xl mx-auto px-2 py-4">
         <h2 className="text-4xl font-bold text-blue-900 mb-6">
-          Welcome to CIC
+          Welcome to CIC Feeds Group
         </h2>
         <WelcomeCarousel people={people} />
       </section>
-      <StatsSection />
       <section className="max-w-7xl mx-auto px-2 py-4">
-        <h2 className="text-4xl font-bold text-blue-900 mb-6">Birthdays </h2>
+        <h2 className="text-4xl font-bold text-blue-900 mb-6">Birthdays</h2>
 
         <div className="grid md:grid-cols-3 gap-6">
-          {/* Left Main Card */}
-          <div className="md:col-span-2">
-            <BirthdayCard
-              name="Thineth Wickramarachchi"
-              role="Intern - IT Department"
-              message="Your dedication to excellence and commitment to quality continue to inspire us all. Here's to many more years of success and progress."
-              date="April 20, 2026 · 14 days away"
-            />
+          <div className="md:col-span-2 flex flex-col gap-4">
+            {todayBirthdays.length === 0 ? (
+              <NoBirthdayCard />
+            ) : (
+              todayBirthdays.map((m) => (
+                <BirthdayCard
+                  key={m.name}
+                  name={m.name}
+                  role={m.role}
+                  dob={m.dob}
+                />
+              ))
+            )}
           </div>
 
-          {/* Right List */}
-          <UpcomingBirthdays list={upcoming} />
+          <UpcomingBirthdays list={upcomingList} />
         </div>
       </section>
 

@@ -6,7 +6,7 @@ import DocumentCard from "../components/DocumentCard";
 import EventItem from "../components/EventItem";
 import PinnedCard from "../components/PinnedCard";
 
-import slide1 from "../../../assets/vetcare_slide.png";
+import slide1 from "../../../assets/cic vetcare slide.jpg";
 import HeroSectionSegments from "../components/HeroSection";
 import { useLocation } from "react-router-dom";
 

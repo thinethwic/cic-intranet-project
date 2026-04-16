@@ -2,36 +2,39 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { formatBirthdayDate, daysUntilBirthday } from "@/utils/birthday";
 
 interface Props {
   name: string;
   role: string;
-  message: string;
-  date: string;
-  daysAway?: string;
+  message?: string;
+  dob: string;
 }
 
-export default function BirthdayCard({
-  name,
-  role,
-  message,
-  date,
-  daysAway,
-}: Props) {
+const DEFAULT_MESSAGES = [
+  "Your dedication to excellence and commitment to quality continue to inspire us all. Here's to many more years of success and progress.",
+  "Thank you for everything you bring to the team. Wishing you a wonderful day filled with joy!",
+  "Your energy and passion make this a better place to work. Here's to celebrating you today!",
+];
+
+export default function BirthdayCard({ name, role, message, dob }: Props) {
   const initials = name.substring(0, 2).toUpperCase();
+  const days = daysUntilBirthday(dob);
+  const dateLabel = formatBirthdayDate(dob);
+  const daysLabel =
+    days === 0 ? "Today" : days === 1 ? "Tomorrow" : `${days} days away`;
+  const displayMessage = message ?? DEFAULT_MESSAGES[0];
 
   return (
-    <Card className="rounded-2xl bg-white border shadow-sm p-5 flex flex-col gap-4 ">
+    <Card className="rounded-2xl bg-white border shadow-sm p-5 flex flex-col gap-4">
       {/* Top section */}
       <div className="flex items-center gap-4 px-6 pt-6 pb-4">
-        {/* Avatar */}
         <Avatar className="w-16 h-16 border-2 border-orange-200 shrink-0">
           <AvatarFallback className="bg-orange-100 text-orange-600 font-bold text-lg">
             {initials}
           </AvatarFallback>
         </Avatar>
 
-        {/* Name & role */}
         <div className="flex-1">
           <p className="text-[11px] font-extrabold tracking-widest text-blue-600 uppercase mb-0.5">
             Today's Birthday
@@ -42,38 +45,28 @@ export default function BirthdayCard({
           <p className="text-xs text-gray-400 mt-0.5">{role}</p>
         </div>
 
-        {/* Balloon */}
         <div className="flex gap-0">
           <div className="text-4xl select-none">🎈</div>
           <div className="text-4xl select-none">🎈</div>
         </div>
       </div>
 
-      {/* Divider */}
       <div className="h-px bg-gray-100 mx-6" />
 
-      {/* Message */}
       <div className="px-6 py-4 flex-1">
         <p className="text-sm text-gray-500 italic leading-relaxed">
-          {message}
+          {displayMessage}
         </p>
       </div>
 
-      {/* Footer */}
       <div className="flex items-center justify-between px-6 pb-5">
-        {/* Date badge */}
         <div className="flex items-center gap-2 border border-gray-200 rounded-full px-3 py-1.5">
           <Calendar className="w-3.5 h-3.5 text-gray-400" />
-          <span className="text-xs font-medium text-gray-700">{date}</span>
-          {daysAway && (
-            <>
-              <span className="text-gray-300 text-xs">•</span>
-              <span className="text-xs text-gray-500">{daysAway}</span>
-            </>
-          )}
+          <span className="text-xs font-medium text-gray-700">{dateLabel}</span>
+          <span className="text-gray-300 text-xs">•</span>
+          <span className="text-xs text-gray-500">{daysLabel}</span>
         </div>
 
-        {/* CTA */}
         <Button
           variant="outline"
           size="sm"
