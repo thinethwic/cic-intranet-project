@@ -92,7 +92,7 @@ function HomePage() {
                 autoInterval={4000}
               />
             ) : (
-              <div className="w-full min-h-[220px] flex flex-col items-center justify-center gap-3 border border-dashed border-slate-200 rounded-2xl bg-slate-50">
+              <div className="w-full min-h-55 flex flex-col items-center justify-center gap-3 border border-dashed border-slate-200 rounded-2xl bg-slate-50">
                 <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center">
                   <Flame className="w-5 h-5 text-slate-300" />
                 </div>
@@ -132,7 +132,7 @@ function HomePage() {
             />
           </div>
         ) : (
-          <div className="w-full min-h-[220px] flex flex-col items-center justify-center gap-3 border border-dashed border-slate-200 rounded-2xl bg-slate-50">
+          <div className="w-full min-h-55 flex flex-col items-center justify-center gap-3 border border-dashed border-slate-200 rounded-2xl bg-slate-50">
             <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center">
               <Newspaper className="w-5 h-5 text-slate-300" />
             </div>
@@ -157,7 +157,7 @@ function HomePage() {
             {events.length > 0 ? (
               <EventsSlider />
             ) : (
-              <div className="w-full min-h-[220px] flex flex-col items-center justify-center gap-3 border border-dashed border-slate-200 rounded-2xl bg-slate-50">
+              <div className="w-full min-h-55 flex flex-col items-center justify-center gap-3 border border-dashed border-slate-200 rounded-2xl bg-slate-50">
                 <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center">
                   <Calendar className="w-5 h-5 text-slate-300" />
                 </div>
@@ -321,7 +321,7 @@ function HomePage() {
 
             <iframe
               src={getEmbedUrl(activeVideo)}
-              className="w-[90%] md:w-[800px] h-[300px] md:h-[450px] rounded-lg"
+              className="w-[90%] md:w-200 h-75 md:h-112.5 rounded-lg"
               allowFullScreen
             />
           </div>

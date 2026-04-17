@@ -14,6 +14,10 @@ interface Document {
   isPinned: boolean;
   fileUrl: string; // 👈 add this
   segment: string;
+
+  access: "public" | "private"; // 🔐 NEW
+  allowDownload: boolean; // ⬇️ NEW
+  allowView: boolean;
 }
 
 // In your Mock-data types
@@ -111,6 +115,9 @@ export const documents: Document[] = [
     isPinned: true,
     fileUrl: "/documents/employee-handbook-2026.pdf",
     segment: "our-segments/cic-feeds", // ✅ matches /our-segments/cic-feeds
+    access: "public", // 🔐 restricted
+    allowDownload: true, // ❌ cannot download
+    allowView: true,
   },
   {
     id: 2,
@@ -120,6 +127,9 @@ export const documents: Document[] = [
     isPinned: false,
     fileUrl: "/documents/finance-report-2026.xlsx",
     segment: "our-segments/cic-feeds", // ✅
+    access: "private",
+    allowDownload: false,
+    allowView: true,
   },
   {
     id: 3,
@@ -128,7 +138,10 @@ export const documents: Document[] = [
     type: "DOCS",
     isPinned: true,
     fileUrl: "/documents/leave-request-form.docx",
-    segment: "our-segments/cic-feeds", // ✅
+    segment: "our-segments/cic-feeds",
+    access: "public",
+    allowDownload: true,
+    allowView: true,
   },
   // Asia Vet docs
   {
@@ -138,7 +151,10 @@ export const documents: Document[] = [
     type: "PDF",
     isPinned: true,
     fileUrl: "/documents/asia-vet-handbook.pdf",
-    segment: "our-segments/asia-vet", // ✅ matches /our-segments/asia-vet
+    segment: "our-segments/asia-vet",
+    access: "public",
+    allowDownload: false,
+    allowView: true,
   },
 ];
 

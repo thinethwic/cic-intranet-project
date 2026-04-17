@@ -15,6 +15,8 @@ import AnnouncementItem from "../components/AnnouncementItem";
 
 import { useLocation } from "react-router-dom";
 
+import { LockIcon } from "lucide-react";
+
 interface Slide {
   title: string;
   subtitle: string;
@@ -31,6 +33,12 @@ export default function HomePagePoulry() {
 
   const [showAllAnnouncements, setShowAllAnnouncements] = useState(false);
 
+  const [showPrivate, setShowPrivate] = useState(false);
+  const [isAuthorized, setIsAuthorized] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+
   const tabs = ["All", "HR & Policies", "Finance", "Operations"];
 
   // ✅ Pinned docs for this segment only
@@ -43,20 +51,24 @@ export default function HomePagePoulry() {
     return documents.filter((doc) => {
       const matchesSegment = doc.segment === currentSegment;
 
+      const baseCategory = doc.category.split(" · ")[0];
       const matchesTab =
         activeTab === "All" ||
-        (activeTab === "HR & Policies" && doc.category.startsWith("HR")) ||
-        (activeTab === "Finance" && doc.category.startsWith("Finance")) ||
-        (activeTab === "Operations" && doc.category.startsWith("Operations"));
+        (activeTab === "HR & Policies" && baseCategory === "HR") ||
+        (activeTab === "Finance" && baseCategory === "Finance") ||
+        (activeTab === "Operations" && baseCategory === "Operations");
 
       const matchesSearch =
         searchQuery === "" ||
         doc.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         doc.category.toLowerCase().includes(searchQuery.toLowerCase());
 
-      return matchesSegment && matchesTab && matchesSearch;
+      const isPrivate = doc.access === "private";
+      const matchesAccess = !isPrivate || (showPrivate && isAuthorized);
+
+      return matchesSegment && matchesTab && matchesSearch && matchesAccess;
     });
-  }, [activeTab, searchQuery, currentSegment]);
+  }, [activeTab, searchQuery, currentSegment, showPrivate, isAuthorized]);
 
   const slides: Slide[] = [
     {
@@ -99,7 +111,33 @@ export default function HomePagePoulry() {
         <div className="grid md:grid-cols-2 gap-10 items-start">
           {/* ================= LEFT ================= */}
           <div>
-            <h2 className="text-3xl font-bold text-blue-900 mb-6">Documents</h2>
+            <div className="flex items-center gap-3 mb-6">
+              <h2 className="text-3xl font-bold text-blue-900">Documents</h2>
+
+              <button
+                onClick={() => setShowPrivate(false)}
+                className={`text-xs px-2 py-1 rounded-full border ${
+                  !showPrivate ? "bg-blue-900 text-white" : "text-gray-500"
+                }`}
+              >
+                👁 Public
+              </button>
+
+              <button
+                onClick={() => {
+                  if (!isAuthorized) {
+                    setShowAuthModal(true);
+                  } else {
+                    setShowPrivate(true);
+                  }
+                }}
+                className={`text-xs px-2 py-1 rounded-full border ${
+                  showPrivate ? "bg-red-600 text-white" : "text-gray-500"
+                }`}
+              >
+                🔒 Private
+              </button>
+            </div>
 
             {/* Search */}
             <Input
@@ -128,14 +166,17 @@ export default function HomePagePoulry() {
 
             {/* Documents Grid */}
             <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredDocuments.map(
-                (
-                  doc,
-                  i, // 5️⃣ CHANGE documents → filteredDocuments
-                ) => (
-                  <DocumentCard key={i} {...doc} />
-                ),
-              )}
+              {filteredDocuments.map((doc, i) => (
+                <DocumentCard
+                  key={i}
+                  title={doc.title}
+                  category={doc.category}
+                  type={doc.type}
+                  fileUrl={doc.fileUrl}
+                  allowDownload={doc.allowDownload}
+                  allowView={doc.allowView}
+                />
+              ))}
               {filteredDocuments.length === 0 && ( // 6️⃣ ADD empty state
                 <p className="text-sm text-gray-400 col-span-full py-6 text-center">
                   No documents found
@@ -239,6 +280,78 @@ export default function HomePagePoulry() {
           )}
         </div>
       </section>
+
+      {showAuthModal && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-zinc-900 p-7 rounded-2xl w-80 shadow-sm border border-zinc-100 dark:border-zinc-800">
+            {/* Header */}
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-9 h-9 rounded-full bg-blue-50 dark:bg-blue-950 flex items-center justify-center">
+                <LockIcon className="w-4 h-4 text-blue-500" />
+              </div>
+              <div>
+                <p className="font-medium text-sm text-zinc-900 dark:text-zinc-100">
+                  Private access
+                </p>
+                <p className="text-xs text-zinc-400">
+                  Enter your credentials to continue
+                </p>
+              </div>
+            </div>
+
+            {/* Fields */}
+            <div className="flex flex-col gap-3 mb-5">
+              <div>
+                <label className="text-xs text-zinc-400 mb-1 block">
+                  Username
+                </label>
+                <input
+                  placeholder="your username"
+                  className="w-full border border-zinc-200 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm bg-transparent focus:outline-none focus:ring-1 focus:ring-zinc-300"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="text-xs text-zinc-400 mb-1 block">
+                  Password
+                </label>
+                <input
+                  type="password"
+                  placeholder="••••••••"
+                  className="w-full border border-zinc-200 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm bg-transparent focus:outline-none focus:ring-1 focus:ring-zinc-300"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex justify-end items-center gap-2">
+              <button
+                onClick={() => setShowAuthModal(false)}
+                className="text-sm text-zinc-400 hover:text-zinc-600 px-3 py-1.5"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  if (username === "admin" && password === "1234") {
+                    setIsAuthorized(true);
+                    setShowPrivate(true);
+                    setShowAuthModal(false);
+                  } else {
+                    alert("Invalid credentials");
+                  }
+                }}
+                className="bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-sm font-medium px-4 py-1.5 rounded-lg hover:opacity-90 transition-opacity"
+              >
+                Sign in
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -42,6 +42,7 @@ import {
 } from "@/components/ui/table";
 import { documents as initialDocs } from "@/Mock-data";
 
+// FIX 1: proper types instead of literal value types
 interface Document {
   id: number;
   title: string;
@@ -49,7 +50,10 @@ interface Document {
   type: "PDF" | "DOCS" | "XLSX";
   isPinned: boolean;
   fileUrl: string;
-  segment: string; // stored as "cic-feeds" | "asia-vet" internally
+  segment: string;
+  access: "public" | "private";
+  allowDownload: boolean;
+  allowView: boolean;
 }
 
 const TYPE_STYLES: Record<string, string> = {
@@ -62,19 +66,17 @@ const SEGMENTS = ["All", "cic-feeds", "asia-vet"];
 const TYPES = ["All", "PDF", "DOCS", "XLSX"] as const;
 const CATEGORIES = ["All", "General", "Finance", "Legal", "Operations", "HR"];
 
-// Strip "our-segments/" prefix so all docs use the same short format internally
 function normalizeSegment(seg: string) {
   return seg.replace("our-segments/", "");
 }
 
-// ── Reusable dropdown filter ─────────────────────────────────
+// FIX 2: removed unused `label` prop from the interface
 function FilterDropdown({
   options,
   value,
   onChange,
   className,
 }: {
-  label: string;
   options: string[];
   value: string;
   onChange: (v: string) => void;
@@ -112,12 +114,10 @@ function FilterDropdown({
 }
 
 export default function AdminDocumentsPage() {
-  // ── Normalize mock data once on load ──────────────────────
   const [docs, setDocs] = useState<Document[]>(() =>
     initialDocs.map((d) => ({ ...d, segment: normalizeSegment(d.segment) })),
   );
 
-  // Persist to localStorage so edits survive refresh
   useEffect(() => {
     localStorage.setItem("admin-docs", JSON.stringify(docs));
   }, [docs]);
@@ -131,26 +131,30 @@ export default function AdminDocumentsPage() {
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  // Upload form state
   const [newName, setNewName] = useState("");
   const [newType, setNewType] = useState<"PDF" | "DOCS" | "XLSX">("PDF");
   const [newCat, setNewCat] = useState("General");
   const [newSeg, setNewSeg] = useState("cic-feeds");
   const [newPinned, setNewPinned] = useState(false);
   const [fileName, setFileName] = useState("");
+  const [newAccess, setNewAccess] = useState<"public" | "private">("public");
+  const [newAllowDownload, setNewAllowDownload] = useState(true);
+  const [newAllowView, setNewAllowView] = useState(true);
 
+  // FIX 4: use split(" · ")[0] for reliable category matching
   const filtered = docs.filter((d) => {
     const q = search.toLowerCase();
     return (
       d.title.toLowerCase().includes(q) &&
       (segFilter === "All" || d.segment === segFilter) &&
       (typeFilter === "All" || d.type === typeFilter) &&
-      (catFilter === "All" || d.category.startsWith(catFilter))
+      (catFilter === "All" || d.category.split(" · ")[0] === catFilter)
     );
   });
 
   const pinnedCount = docs.filter((d) => d.isPinned).length;
 
+  // FIX 3: reset access/download/view state too
   const resetUploadForm = () => {
     setNewName("");
     setNewType("PDF");
@@ -158,6 +162,9 @@ export default function AdminDocumentsPage() {
     setNewSeg("cic-feeds");
     setNewPinned(false);
     setFileName("");
+    setNewAccess("public");
+    setNewAllowDownload(true);
+    setNewAllowView(true);
   };
 
   const handleUpload = () => {
@@ -170,7 +177,10 @@ export default function AdminDocumentsPage() {
         type: newType,
         isPinned: newPinned,
         fileUrl: "#",
-        segment: newSeg, // already clean, no prefix
+        segment: newSeg,
+        access: newAccess,
+        allowDownload: newAllowDownload,
+        allowView: newAllowView,
       },
       ...prev,
     ]);
@@ -227,21 +237,18 @@ export default function AdminDocumentsPage() {
           />
         </div>
         <FilterDropdown
-          label="All segments"
           options={SEGMENTS}
           value={segFilter}
           onChange={setSegFilter}
           className="min-w-[140px]"
         />
         <FilterDropdown
-          label="All types"
           options={[...TYPES]}
           value={typeFilter}
           onChange={setTypeFilter}
           className="min-w-[120px]"
         />
         <FilterDropdown
-          label="All categories"
           options={CATEGORIES}
           value={catFilter}
           onChange={setCatFilter}
@@ -383,6 +390,7 @@ export default function AdminDocumentsPage() {
       )}
 
       {/* ── Upload Dialog ─────────────────────────────────── */}
+      {/* ── Upload Dialog ─────────────────────────────────── */}
       <Dialog
         open={showUpload}
         onOpenChange={(open) => {
@@ -390,37 +398,41 @@ export default function AdminDocumentsPage() {
           setShowUpload(open);
         }}
       >
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+        <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-lg max-h-[90dvh] flex flex-col p-0 gap-0 rounded-xl">
+          {/* Fixed header */}
+          <DialogHeader className="px-5 pt-5 pb-3 border-b border-slate-100 shrink-0">
+            <DialogTitle className="flex items-center gap-2 text-base">
               <Upload className="w-4 h-4 text-blue-600" /> Upload document
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-xs text-slate-500">
               Add a new document to a segment.
             </DialogDescription>
           </DialogHeader>
 
-          <div
-            className="border-2 border-dashed border-slate-200 rounded-xl p-6 text-center cursor-pointer hover:border-blue-400 hover:bg-blue-50/40 transition-colors"
-            onClick={() => fileRef.current?.click()}
-          >
-            <Upload className="w-7 h-7 text-blue-500 mx-auto mb-2" />
-            <p className="text-sm font-medium text-slate-700">
-              {fileName || "Click to upload or drag & drop"}
-            </p>
-            <p className="text-xs text-slate-400 mt-1">
-              PDF, DOCS, XLSX supported
-            </p>
-            <input
-              ref={fileRef}
-              type="file"
-              className="hidden"
-              accept=".pdf,.doc,.docx,.xlsx"
-              onChange={(e) => setFileName(e.target.files?.[0]?.name ?? "")}
-            />
-          </div>
+          {/* Scrollable body */}
+          <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+            {/* Drop zone */}
+            <div
+              className="border-2 border-dashed border-slate-200 rounded-xl p-5 text-center cursor-pointer hover:border-blue-400 hover:bg-blue-50/40 transition-colors"
+              onClick={() => fileRef.current?.click()}
+            >
+              <Upload className="w-6 h-6 text-blue-500 mx-auto mb-1.5" />
+              <p className="text-sm font-medium text-slate-700 break-all">
+                {fileName || "Click to upload or drag & drop"}
+              </p>
+              <p className="text-xs text-slate-400 mt-0.5">
+                PDF, DOCS, XLSX supported
+              </p>
+              <input
+                ref={fileRef}
+                type="file"
+                className="hidden"
+                accept=".pdf,.doc,.docx,.xlsx"
+                onChange={(e) => setFileName(e.target.files?.[0]?.name ?? "")}
+              />
+            </div>
 
-          <div className="grid gap-4 py-1">
+            {/* Document name */}
             <div className="space-y-1.5">
               <Label className="text-xs font-medium text-slate-600">
                 Document name
@@ -431,16 +443,17 @@ export default function AdminDocumentsPage() {
                 onChange={(e) => setNewName(e.target.value)}
               />
             </div>
-            <div className="grid grid-cols-2 gap-3">
+
+            {/* Type + Category — stack on mobile */}
+            <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label className="text-xs font-medium text-slate-600">
                   Type
                 </Label>
                 <FilterDropdown
-                  label={newType}
                   options={["PDF", "DOCS", "XLSX"]}
                   value={newType}
-                  onChange={(v) => setNewType(v as any)}
+                  onChange={(v) => setNewType(v as "PDF" | "DOCS" | "XLSX")}
                   className="w-full"
                 />
               </div>
@@ -449,7 +462,6 @@ export default function AdminDocumentsPage() {
                   Category
                 </Label>
                 <FilterDropdown
-                  label={newCat}
                   options={["General", "Finance", "Legal", "Operations", "HR"]}
                   value={newCat}
                   onChange={setNewCat}
@@ -457,32 +469,68 @@ export default function AdminDocumentsPage() {
                 />
               </div>
             </div>
+
+            {/* Segment */}
             <div className="space-y-1.5">
               <Label className="text-xs font-medium text-slate-600">
                 Segment
               </Label>
               <FilterDropdown
-                label={newSeg}
                 options={["cic-feeds", "asia-vet"]}
                 value={newSeg}
                 onChange={setNewSeg}
                 className="w-full"
               />
             </div>
-            <div className="flex items-center justify-between py-2 border-t border-slate-100">
-              <div>
-                <p className="text-sm font-medium">Pin document</p>
-                <p className="text-xs text-slate-400">
-                  Show at the top of the list
-                </p>
+
+            {/* Toggles */}
+            <div className="rounded-lg border border-slate-100 divide-y divide-slate-100">
+              <div className="flex items-center justify-between px-3 py-3">
+                <div>
+                  <p className="text-sm font-medium">Pin document</p>
+                  <p className="text-xs text-slate-400">Show at top of list</p>
+                </div>
+                <Switch checked={newPinned} onCheckedChange={setNewPinned} />
               </div>
-              <Switch checked={newPinned} onCheckedChange={setNewPinned} />
+
+              <div className="flex items-center justify-between px-3 py-3">
+                <div>
+                  <p className="text-sm font-medium">Private document</p>
+                  <p className="text-xs text-slate-400">
+                    Restrict to logged-in users
+                  </p>
+                </div>
+                <Switch
+                  checked={newAccess === "private"}
+                  onCheckedChange={(v) =>
+                    setNewAccess(v ? "private" : "public")
+                  }
+                />
+              </div>
+
+              <div className="flex items-center justify-between px-3 py-3">
+                <p className="text-sm font-medium">Allow download</p>
+                <Switch
+                  checked={newAllowDownload}
+                  onCheckedChange={setNewAllowDownload}
+                />
+              </div>
+
+              <div className="flex items-center justify-between px-3 py-3">
+                <p className="text-sm font-medium">Allow preview</p>
+                <Switch
+                  checked={newAllowView}
+                  onCheckedChange={setNewAllowView}
+                />
+              </div>
             </div>
           </div>
 
-          <DialogFooter>
+          {/* Fixed footer */}
+          <DialogFooter className="px-5 py-4 border-t border-slate-100 shrink-0 flex flex-row justify-end gap-2">
             <Button
               variant="outline"
+              className="flex-1 sm:flex-none"
               onClick={() => {
                 resetUploadForm();
                 setShowUpload(false);
@@ -493,7 +541,7 @@ export default function AdminDocumentsPage() {
             <Button
               onClick={handleUpload}
               disabled={!newName.trim()}
-              className="bg-blue-600 hover:bg-blue-700 text-white"
+              className="flex-1 sm:flex-none bg-blue-600 hover:bg-blue-700 text-white"
             >
               Add document
             </Button>
@@ -536,10 +584,14 @@ export default function AdminDocumentsPage() {
                     Type
                   </Label>
                   <FilterDropdown
-                    label={editDoc.type}
                     options={["PDF", "DOCS", "XLSX"]}
                     value={editDoc.type}
-                    onChange={(v) => setEditDoc({ ...editDoc, type: v as any })}
+                    onChange={(v) =>
+                      setEditDoc({
+                        ...editDoc,
+                        type: v as "PDF" | "DOCS" | "XLSX",
+                      })
+                    }
                     className="w-full"
                   />
                 </div>
@@ -547,9 +599,7 @@ export default function AdminDocumentsPage() {
                   <Label className="text-xs font-medium text-slate-600">
                     Category
                   </Label>
-                  {/* Strip any suffix like " · Updated Today" for clean editing */}
                   <FilterDropdown
-                    label={editDoc.category.split(" · ")[0]}
                     options={[
                       "General",
                       "Finance",
@@ -568,9 +618,8 @@ export default function AdminDocumentsPage() {
                   Segment
                 </Label>
                 <FilterDropdown
-                  label={editDoc.segment}
                   options={["cic-feeds", "asia-vet"]}
-                  value={editDoc.segment} // already normalized — no prefix issues
+                  value={editDoc.segment}
                   onChange={(v) => setEditDoc({ ...editDoc, segment: v })}
                   className="w-full"
                 />
@@ -589,8 +638,41 @@ export default function AdminDocumentsPage() {
                   }
                 />
               </div>
+
+              <div className="flex items-center justify-between py-2 border-t">
+                <div>
+                  <p className="text-sm font-medium">Private</p>
+                </div>
+                <Switch
+                  checked={editDoc.access === "private"}
+                  onCheckedChange={(v) =>
+                    setEditDoc({ ...editDoc, access: v ? "private" : "public" })
+                  }
+                />
+              </div>
+
+              <div className="flex items-center justify-between py-2">
+                <p className="text-sm">Allow Download</p>
+                <Switch
+                  checked={editDoc.allowDownload}
+                  onCheckedChange={(v) =>
+                    setEditDoc({ ...editDoc, allowDownload: v })
+                  }
+                />
+              </div>
+
+              <div className="flex items-center justify-between py-2">
+                <p className="text-sm">Allow Preview</p>
+                <Switch
+                  checked={editDoc.allowView}
+                  onCheckedChange={(v) =>
+                    setEditDoc({ ...editDoc, allowView: v })
+                  }
+                />
+              </div>
             </div>
           )}
+
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditDoc(null)}>
               Cancel
