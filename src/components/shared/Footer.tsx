@@ -22,7 +22,7 @@ export default function Footer() {
               <img
                 src={logo}
                 alt="CIC Livestock Solutions"
-                className="h-14 w-auto object-contain"
+                className="h-2.5 w-auto object-contain"
               />
             </div>
           </div>

@@ -5,6 +5,8 @@ import news3 from "@/assets/Pre School-1.jpg";
 import img1 from "@/assets/cic feeds.jpg";
 import img2 from "@/assets/slide2.png";
 import img3 from "@/assets/slide3.png";
+import img4 from "@/assets/vetcare_image.jpg";
+import img5 from "@/assets/vetcare_image 2.jpg";
 
 interface Document {
   id: number;
@@ -54,13 +56,13 @@ export const images = [
   { key: img1, description: "ABCD" },
   { key: img2, description: "" },
   { key: img3, description: "" },
-  { key: img1, description: "" },
-  { key: img2, description: "" },
-  { key: img1, description: "" },
-  { key: img3, description: "" },
-  { key: img2, description: "" },
+  { key: img4, description: "" },
+  { key: img5, description: "" },
   { key: img1, description: "" },
   { key: img3, description: "" },
+  { key: img2, description: "" },
+  { key: img1, description: "" },
+  { key: img5, description: "" },
 ];
 
 export const announcements = [
@@ -111,9 +113,9 @@ export const documents: Document[] = [
     id: 1,
     title: "Employee Handbook 2026",
     category: "HR · Updated Today",
-    type: "PDF",
+    type: "DOCS",
     isPinned: true,
-    fileUrl: "/documents/employee-handbook-2026.pdf",
+    fileUrl: "/documents/Annexure.docx",
     segment: "our-segments/cic-feeds", // ✅ matches /our-segments/cic-feeds
     access: "public", // 🔐 restricted
     allowDownload: true, // ❌ cannot download
@@ -396,9 +398,9 @@ export const upcoming = [
 export const videos = [
   {
     title:
-      "Eid table with our scrumptious Chicken Cheese Balls – a delicious twist that promises to enchant your taste buds!",
+      "සී අයි සී වෙට්කෙයා හදුන්වාදෙන නවතම සබන් කැටය සහ ශැම්පූ දැන් වෙළදපලේ !",
     description: "",
-    videoLink: "https://web.facebook.com/reel/911559260770038",
+    videoLink: "https://www.youtube.com/watch?v=s1dLIZPUzIY",
   },
   {
     title: "Honey Glazed Chicken With CIC Besto Chicken",
@@ -413,10 +415,9 @@ export const videos = [
     videoLink: "https://web.facebook.com/reel/853507733294017",
   },
   {
-    title:
-      "New Recipe Alert: Sri Lankan Chili Chicken with CIC Besto Pre-Cut Whole Chicken.",
+    title: "NUTHYA DOG FOOD🐶SRI LANKA",
     description: "",
-    videoLink: "https://facebook.com/reel/702338548325656",
+    videoLink: "https://www.youtube.com/watch?v=bB8_IgKU-Ew",
   },
   {
     title: "New Recipe Alert: Creamy Chicken Drumsticks",
@@ -424,13 +425,13 @@ export const videos = [
     videoLink: "https://facebook.com/reel/7305548436180301",
   },
   {
-    title: "New Recipe Alert: Creamy Chicken Drumsticks",
+    title: "NexGard SPECTRA",
     description: "",
-    videoLink: "https://facebook.com/reel/7305548436180301",
+    videoLink: "https://www.youtube.com/watch?v=5lYU2h0B48c",
   },
   {
-    title: "New Recipe Alert: Creamy Chicken Drumsticks",
-    description: "",
-    videoLink: "https://facebook.com/reel/7305548436180301",
+    title: "Spicy Chicken Drumsticks",
+    description: "ස්පයිසි චිකන් ඩ්‍රම්ස්ටික් With CIC Besto Chicken",
+    videoLink: "https://www.youtube.com/watch?v=cnXQpHTjyeg",
   },
 ];
