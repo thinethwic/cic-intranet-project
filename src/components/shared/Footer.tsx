@@ -1,6 +1,7 @@
 import { Separator } from "@/components/ui/separator";
 import logo from "../../assets/Logo.jpg";
-import { X } from "lucide-react";
+import { Link } from "react-router-dom";
+import { FaFacebook, FaLinkedin, FaYoutube } from "react-icons/fa";
 
 const companyLinks: string[] = ["Home", "About Us", "Our Segments"];
 
@@ -19,11 +20,13 @@ export default function Footer() {
           {/* Logo */}
           <div className="flex items-start">
             <div className="bg-white rounded-md p-3">
-              <img
-                src={logo}
-                alt="CIC Livestock Solutions"
-                className="h-2.5 w-auto object-contain"
-              />
+              <Link to="/">
+                <img
+                  src={logo}
+                  alt="CIC Livestock Solutions"
+                  className="h-20 w-auto object-contain"
+                />
+              </Link>
             </div>
           </div>
 
@@ -126,7 +129,7 @@ export default function Footer() {
               aria-label="Facebook"
               className="text-gray-400 hover:text-white transition-colors duration-200"
             >
-              <X className="w-5 h-5" />
+              <FaFacebook className="w-7 h-7" />
             </a>
 
             {/* X / Twitter */}
@@ -135,7 +138,7 @@ export default function Footer() {
               aria-label="X"
               className="text-gray-400 hover:text-white transition-colors duration-200"
             >
-              <X className="w-5 h-5" />
+              <FaYoutube className="w-7 h-7" />
             </a>
 
             {/* Google — lucide doesn't have Google icon, using a simple G SVG */}
@@ -148,7 +151,7 @@ export default function Footer() {
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 24 24"
                 fill="currentColor"
-                className="w-5 h-5"
+                className="w-7 h-7"
               >
                 <path d="M21.805 10.023H12v3.977h5.617C16.973 16.21 14.745 17.5 12 17.5c-3.038 0-5.5-2.462-5.5-5.5s2.462-5.5 5.5-5.5c1.395 0 2.663.522 3.627 1.373l2.828-2.828C16.557 3.49 14.392 2.5 12 2.5 6.753 2.5 2.5 6.753 2.5 12S6.753 21.5 12 21.5c5.523 0 9.5-3.977 9.5-9.5 0-.651-.07-1.286-.195-1.977z" />
               </svg>
@@ -160,7 +163,7 @@ export default function Footer() {
               aria-label="LinkedIn"
               className="text-gray-400 hover:text-white transition-colors duration-200"
             >
-              <X className="w-5 h-5" />
+              <FaLinkedin className="w-7 h-7" />
             </a>
           </div>
         </div>

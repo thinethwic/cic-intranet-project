@@ -2,7 +2,6 @@ import HeroSection from "./components/Hero-section";
 import { CEOMessageCard } from "./components/MessageCard";
 import MembersGrid from "./components/MembersGrid";
 import StatsSection from "./components/StatesSection";
-import BirthdayCard from "./components/BirthdayCard";
 import UpcomingBirthdays from "./components/UpComingBirthDay";
 import { Card } from "@/components/ui/card";
 import { Flame, Newspaper, Calendar } from "lucide-react";
@@ -31,6 +30,7 @@ import OurPeopleCard from "./components/OurPeople";
 
 import NoBirthdayCard from "./components/NoBirthdayCard";
 import { getTodayBirthdays, getUpcomingBirthdays } from "@/utils/birthday";
+import BirthdayCarousel from "./components/BirthdayCarousel";
 
 function HomePage() {
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -201,14 +201,7 @@ function HomePage() {
             {todayBirthdays.length === 0 ? (
               <NoBirthdayCard />
             ) : (
-              todayBirthdays.map((m) => (
-                <BirthdayCard
-                  key={m.name}
-                  name={m.name}
-                  role={m.role}
-                  dob={m.dob}
-                />
-              ))
+              <BirthdayCarousel members={todayBirthdays} />
             )}
           </div>
 
