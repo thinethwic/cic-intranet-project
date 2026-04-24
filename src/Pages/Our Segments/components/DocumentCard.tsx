@@ -3,9 +3,10 @@ interface Props {
   category: string;
   type: "PDF" | "XLSX" | "DOCS";
   fileUrl: string;
-  // FIX 4: added missing access-control props
   allowDownload: boolean;
   allowView: boolean;
+  onView?: () => void; // ✅ real API handler from parent
+  onDownload?: () => void; // ✅ real API handler from parent
 }
 
 export default function DocumentCard({
@@ -15,6 +16,8 @@ export default function DocumentCard({
   fileUrl,
   allowDownload,
   allowView,
+  onView,
+  onDownload,
 }: Props) {
   const colors = {
     PDF: "bg-red-100 text-red-700",
@@ -28,19 +31,26 @@ export default function DocumentCard({
     DOCS: "bg-yellow-50 text-yellow-600",
   };
 
-  // FIX 5: respect allowDownload and allowView flags
+  // ✅ Prefer API handlers when available, fall back to fileUrl for static/legacy use
   const handleClick = () => {
     if (allowDownload) {
-      const link = document.createElement("a");
-      link.href = fileUrl;
-      link.download = title;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      if (onDownload) {
+        onDownload();
+      } else {
+        const link = document.createElement("a");
+        link.href = fileUrl;
+        link.download = title;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
     } else if (allowView) {
-      window.open(fileUrl, "_blank");
+      if (onView) {
+        onView();
+      } else {
+        window.open(fileUrl, "_blank");
+      }
     }
-    // if neither, do nothing — card is effectively locked
   };
 
   const isClickable = allowDownload || allowView;
@@ -78,7 +88,6 @@ export default function DocumentCard({
           {type}
         </span>
 
-        {/* FIX 5: show the right icon based on what action is available */}
         {allowDownload ? (
           <svg
             className="w-4 h-4 text-gray-400 group-hover:text-blue-600 transition"

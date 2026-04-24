@@ -1,20 +1,63 @@
 import { useState } from "react";
 import { X, ArrowLeft, ArrowRight } from "lucide-react";
+import type { Gallery } from "@/types";
+import { useGalleries } from "@/hooks/useGalleries";
 
 interface GalleryImage {
   key: string;
   description: string;
 }
 
-interface GalleryProps {
-  images: GalleryImage[];
-}
+const BASE_IMAGE_URL = "http://localhost:8080";
 
-export default function GallerySection({ images }: GalleryProps) {
+const mapGalleryToImage = (gallery: Gallery): GalleryImage => ({
+  key: `${BASE_IMAGE_URL}${gallery.image}`,
+  description: gallery.description,
+});
+
+export default function GallerySection() {
+  const { galleries, loading, error } = useGalleries();
+
   const [open, setOpen] = useState(false);
   const [current, setCurrent] = useState(0);
 
-  if (!images || images.length === 0) return null;
+  const images: GalleryImage[] = galleries.map(mapGalleryToImage);
+
+  if (loading) {
+    return (
+      <section className="max-w-7xl mx-auto px-6 py-14">
+        <h2 className="text-4xl font-bold text-blue-900 mb-6">Gallery</h2>
+        <p className="text-sm text-gray-400">Loading gallery...</p>
+      </section>
+    );
+  }
+
+  if (error) {
+    return (
+      <section className="max-w-7xl mx-auto px-6 py-14">
+        <h2 className="text-4xl font-bold text-blue-900 mb-6">Gallery</h2>
+        <div className="w-full min-h-55 flex flex-col items-center justify-center gap-3 border border-dashed border-red-200 rounded-2xl bg-red-50">
+          <p className="text-sm font-medium text-red-400">
+            Failed to load gallery. Please try again later.
+          </p>
+        </div>
+      </section>
+    );
+  }
+
+  // ✅ Empty state — matches video section style
+  if (!images || images.length === 0) {
+    return (
+      <section className="max-w-7xl mx-auto px-6 py-14">
+        <h2 className="text-4xl font-bold text-blue-900 mb-6">Gallery</h2>
+        <div className="w-full min-h-55 flex flex-col items-center justify-center gap-3 border border-dashed border-slate-200 rounded-2xl bg-slate-50">
+          <p className="text-sm font-medium text-slate-400">
+            No images available
+          </p>
+        </div>
+      </section>
+    );
+  }
 
   const [main, second, third, ...rest] = images;
 
@@ -117,7 +160,6 @@ export default function GallerySection({ images }: GalleryProps) {
               alt={images[current].description || "Slide"}
               className="max-h-[80vh] max-w-[85%] rounded-xl object-contain"
             />
-            {/* Description shown below image in modal */}
             {images[current].description && (
               <p className="text-white/70 text-sm text-center max-w-lg px-4">
                 {images[current].description}

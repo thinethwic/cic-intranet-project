@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import HotNewsCard from "@/components/HotnewsCrad";
@@ -17,6 +17,8 @@ interface Props {
   visibleCount?: number;
   autoInterval?: number;
 }
+const BASE_IMAGE_URL =
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
 
 export default function NewsSlider({
   items,
@@ -44,19 +46,24 @@ export default function NewsSlider({
   const next = () => setIndex((prev) => (prev >= maxIndex ? 0 : prev + 1));
   const prev = () => setIndex((prev) => (prev <= 0 ? maxIndex : prev - 1));
 
-  const startAutoSlide = () => {
+  const startAutoSlide = useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current);
     timerRef.current = setInterval(() => {
       setIndex((prev) => (prev >= maxIndex ? 0 : prev + 1));
     }, autoInterval);
-  };
+  }, [maxIndex, autoInterval]);
 
   useEffect(() => {
     startAutoSlide();
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [maxIndex]);
+  }, [startAutoSlide]);
+
+  // ✅ Reset index when items change (e.g. switching between hot/standard)
+  useEffect(() => {
+    setIndex(0);
+  }, [items]);
 
   const cardWidthPercent = 100 / visible;
 
@@ -68,16 +75,16 @@ export default function NewsSlider({
       }}
       onMouseLeave={startAutoSlide}
     >
-      {/* Viewport — horizontal padding clears the nav buttons */}
+      {/* Viewport */}
       <div className="overflow-hidden rounded-2xl px-10">
         {/* Track */}
         <div
           className="flex transition-transform duration-500 ease-in-out"
           style={{ transform: `translateX(-${index * cardWidthPercent}%)` }}
         >
-          {items.map((item, i) => (
+          {items.map((item) => (
             <div
-              key={i}
+              key={item.id} // ✅ stable key
               className="flex-shrink-0 px-2"
               style={{ width: `${cardWidthPercent}%` }}
             >
@@ -85,7 +92,7 @@ export default function NewsSlider({
                 id={item.id}
                 title={item.title}
                 description={item.description}
-                image={item.image}
+                image={`${BASE_IMAGE_URL}${item.image}`}
                 date={item.date}
                 category={item.category}
               />
@@ -94,7 +101,7 @@ export default function NewsSlider({
         </div>
       </div>
 
-      {/* Left button — sits inside the px-10 gutter */}
+      {/* Left button */}
       <Button
         size="icon"
         variant="secondary"

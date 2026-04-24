@@ -11,10 +11,12 @@ export default function VideoCard({
   videoLink,
   onClick,
 }: Props) {
+  // ✅ Guard — if no videoLink, render nothing
+  if (!videoLink) return null;
+
   const isYouTube =
     !videoLink.includes("facebook") && !videoLink.includes("fb");
 
-  // Extract YouTube ID
   const getYouTubeId = (url: string) => {
     if (!url.includes("http")) return url;
     const regExp = /(?:youtube\.com\/.*v=|youtu\.be\/)([^&]+)/;
@@ -33,14 +35,14 @@ export default function VideoCard({
       {isYouTube ? (
         <img
           src={`https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`}
+          alt={title} // ✅ add alt
           className="w-full h-full object-cover transition duration-500 group-hover:scale-110"
         />
       ) : (
         <iframe
-          src={`https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(
-            videoLink,
-          )}&show_text=false`}
+          src={`https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(videoLink)}&show_text=false`}
           className="w-full h-full object-cover pointer-events-none"
+          title={title} // ✅ add title
         />
       )}
 
@@ -57,7 +59,7 @@ export default function VideoCard({
       {/* Details */}
       <div className="absolute bottom-0 left-0 right-0 p-4 text-white translate-y-full group-hover:translate-y-0 transition duration-300">
         <h3 className="text-sm font-semibold">{title}</h3>
-        <p className="text-xs text-gray-200 mt-1 line-clamp-2">{description}</p>
+        <p className="text-xs text-gray-200 mt-1 -clamp-2">{description}</p>
       </div>
     </div>
   );

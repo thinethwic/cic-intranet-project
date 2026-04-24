@@ -5,53 +5,62 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-
-export interface Member {
-  name: string;
-  role: string;
-}
-
-interface Props {
-  members: Member[];
-}
+import { useMembers } from "@/hooks/useMembers";
 
 const AUTO_INTERVAL = 3000;
 
-export default function MembersCarousel({ members }: Props) {
+export default function MembersCarousel() {
+  const { members, loading, error } = useMembers();
+
+  // ✅ filter only — no .map(), use Member fields directly
+  const topManagement = members.filter((m) => m.role === "TOP_MANAGEMENT");
+
   const scrollRef = useRef<HTMLDivElement>(null);
   const [index, setIndex] = useState(0);
 
   const scrollToIndex = (i: number) => {
     if (!scrollRef.current) return;
-
-    const cardWidth = 240; // card width + gap
-    scrollRef.current.scrollTo({
-      left: i * cardWidth,
-      behavior: "smooth",
-    });
-
+    const cardWidth = 240;
+    scrollRef.current.scrollTo({ left: i * cardWidth, behavior: "smooth" });
     setIndex(i);
   };
 
-  const next = () => {
-    const newIndex = (index + 1) % members.length;
-    scrollToIndex(newIndex);
-  };
+  const next = () => scrollToIndex((index + 1) % topManagement.length);
+  const prev = () =>
+    scrollToIndex((index - 1 + topManagement.length) % topManagement.length);
 
-  const prev = () => {
-    const newIndex = (index - 1 + members.length) % members.length;
-    scrollToIndex(newIndex);
-  };
-
-  // 🔁 Auto slide
   useEffect(() => {
+    if (topManagement.length === 0) return;
     const timer = setInterval(next, AUTO_INTERVAL);
     return () => clearInterval(timer);
-  }, [index]);
+  }, [index, topManagement.length]);
+
+  if (loading) {
+    return (
+      <div className="flex gap-6 px-10 overflow-hidden">
+        {[...Array(3)].map((_, i) => (
+          <Card key={i} className="min-w-[200px]">
+            <CardContent className="flex flex-col items-center py-8 gap-3">
+              <div className="w-20 h-20 rounded-full bg-gray-200 animate-pulse" />
+              <div className="h-3 w-24 bg-gray-200 rounded animate-pulse" />
+              <div className="h-2 w-16 bg-gray-100 rounded animate-pulse" />
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    );
+  }
+
+  if (error || topManagement.length === 0) {
+    return (
+      <p className="text-center text-sm text-gray-400 py-8">
+        {error ?? "No top management members found."}
+      </p>
+    );
+  }
 
   return (
     <div className="relative">
-      {/* Left Arrow */}
       <Button
         size="icon"
         variant="secondary"
@@ -61,29 +70,32 @@ export default function MembersCarousel({ members }: Props) {
         <ChevronLeft />
       </Button>
 
-      {/* Scroll Container */}
       <div ref={scrollRef} className="flex gap-6 overflow-hidden px-10">
-        {members.map((member, i) => (
+        {topManagement.map((member, i) => (
           <Card
-            key={i}
+            key={member.id} // ✅ real id
             className={`min-w-[200px] transition-all duration-300 ${
               i === index ? "scale-105 shadow-xl" : "opacity-70"
             }`}
           >
             <CardContent className="flex flex-col items-center py-8">
               <Avatar className="w-20 h-20 mb-4">
-                <AvatarFallback>{member.name.substring(0, 2)}</AvatarFallback>
+                <AvatarFallback>
+                  {member.firstName[0]}
+                  {member.lastName[0]} {/* ✅ real initials */}
+                </AvatarFallback>
               </Avatar>
-
-              <h3 className="font-semibold text-sm">{member.name}</h3>
-
+              <p className="text-xs text-gray-400">{member.title}</p>
+              <h3 className="font-semibold text-sm">
+                {member.firstName} {member.lastName} {/* ✅ real name fields */}
+              </h3>
               <p className="text-xs text-gray-500 mt-1">{member.role}</p>
+              <p className="text-xs text-gray-400 mt-1">{member.email}</p>
             </CardContent>
           </Card>
         ))}
       </div>
 
-      {/* Right Arrow */}
       <Button
         size="icon"
         variant="secondary"
@@ -93,11 +105,10 @@ export default function MembersCarousel({ members }: Props) {
         <ChevronRight />
       </Button>
 
-      {/* Pagination Dots */}
       <div className="flex justify-center mt-6 gap-2">
-        {members.map((_, i) => (
+        {topManagement.map((member, i) => (
           <button
-            key={i}
+            key={member.id} // ✅ real id
             onClick={() => scrollToIndex(i)}
             className={`transition-all rounded-full ${
               i === index

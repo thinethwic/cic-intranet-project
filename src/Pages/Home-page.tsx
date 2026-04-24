@@ -16,28 +16,29 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import FaqCalendarSection from "@/components/shared/FaqCalendarSection";
 import NewsSlider from "./components/NewsSlider";
 import WelcomeCarousel from "./components/WelcomeMembers";
-import {
-  newsList,
-  members,
-  people,
-  ceoMessage,
-  events,
-  videos,
-  images,
-} from "@/Mock-data";
+import { members, people, ceoMessage } from "@/Mock-data";
 import EventsSlider from "./components/EventsSlider";
 import OurPeopleCard from "./components/OurPeople";
 
 import NoBirthdayCard from "./components/NoBirthdayCard";
 import { getTodayBirthdays, getUpcomingBirthdays } from "@/utils/birthday";
 import BirthdayCarousel from "./components/BirthdayCarousel";
+import { useVideos } from "@/hooks/useVideos";
+import { useNews } from "@/hooks/useNews";
+import { useEvents } from "@/hooks/useEvents";
 
 function HomePage() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [activeVideo, setActiveVideo] = useState<string | null>(null);
 
-  const hotNews = newsList.filter((n) => n.isHot);
-  const standardNews = newsList.filter((n) => !n.isHot);
+  // ✅ Replace mock data with real API
+  const { videos, loading: videosLoading } = useVideos();
+  const { events, loading } = useEvents();
+
+  const { news, loading: newsLoading, error: newsError } = useNews();
+
+  const hotNews = news.filter((n) => n.isHot);
+  const standardNews = news.filter((n) => !n.isHot);
 
   const todayBirthdays = useMemo(() => getTodayBirthdays(members), []);
   const upcomingList = useMemo(() => getUpcomingBirthdays(members, 5), []);
@@ -70,6 +71,15 @@ function HomePage() {
     });
   };
 
+  const mapNewsItems = (list: typeof news) =>
+    list.map((n) => ({
+      id: n.id,
+      title: n.title,
+      description: n.description,
+      image: n.image,
+      category: n.category,
+    }));
+
   return (
     <div>
       <HeroSection />
@@ -85,9 +95,21 @@ function HomePage() {
         <div className="flex flex-col md:grid md:grid-cols-4 gap-6">
           {/* News Slider */}
           <div className="w-full md:col-span-3">
-            {hotNews.length > 0 ? (
+            {newsLoading ? (
+              <div className="w-full min-h-55 flex flex-col items-center justify-center gap-3 border border-dashed border-slate-200 rounded-2xl bg-slate-50">
+                <p className="text-sm font-medium text-slate-400">
+                  Loading hot news...
+                </p>
+              </div>
+            ) : newsError ? (
+              <div className="w-full min-h-55 flex flex-col items-center justify-center gap-3 border border-dashed border-red-200 rounded-2xl bg-red-50">
+                <p className="text-sm font-medium text-red-400">
+                  Failed to load hot news. Please try again later.
+                </p>
+              </div>
+            ) : hotNews.length > 0 ? (
               <NewsSlider
-                items={hotNews}
+                items={mapNewsItems(hotNews)}
                 visibleCount={3}
                 autoInterval={4000}
               />
@@ -123,10 +145,22 @@ function HomePage() {
           <h2 className="text-4xl font-bold text-blue-900">News Events</h2>
         </div>
 
-        {standardNews.length > 0 ? (
+        {newsLoading ? (
+          <div className="w-full min-h-55 flex flex-col items-center justify-center gap-3 border border-dashed border-slate-200 rounded-2xl bg-slate-50">
+            <p className="text-sm font-medium text-slate-400">
+              Loading news...
+            </p>
+          </div>
+        ) : newsError ? (
+          <div className="w-full min-h-55 flex flex-col items-center justify-center gap-3 border border-dashed border-red-200 rounded-2xl bg-red-50">
+            <p className="text-sm font-medium text-red-400">
+              Failed to load news. Please try again later.
+            </p>
+          </div>
+        ) : standardNews.length > 0 ? (
           <div className="md:col-span-3">
             <NewsSlider
-              items={standardNews}
+              items={mapNewsItems(standardNews)}
               visibleCount={3}
               autoInterval={4000}
             />
@@ -154,21 +188,34 @@ function HomePage() {
         {/* ✅ FIX: On mobile, stack vertically. OurPeopleCard goes below and is centered. */}
         <div className="flex flex-col md:grid md:grid-cols-4 gap-6">
           <div className="md:col-span-3 order-1">
-            {events.length > 0 ? (
-              <EventsSlider />
-            ) : (
-              <div className="w-full min-h-55 flex flex-col items-center justify-center gap-3 border border-dashed border-slate-200 rounded-2xl bg-slate-50">
-                <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center">
-                  <Calendar className="w-5 h-5 text-slate-300" />
+            <div className="md:col-span-3 order-1">
+              {loading ? (
+                // ✅ skeleton while fetching
+                <div className="flex gap-4 px-10">
+                  {[...Array(3)].map((_, i) => (
+                    <div
+                      key={i}
+                      className="flex-1 h-64 rounded-xl bg-gray-200 animate-pulse"
+                    />
+                  ))}
                 </div>
-                <p className="text-sm font-medium text-slate-400">
-                  No upcoming events
-                </p>
-                <p className="text-xs text-slate-300">
-                  Scheduled events will appear here
-                </p>
-              </div>
-            )}
+              ) : events.length > 0 ? (
+                <EventsSlider events={events} /> // ✅ pass events as prop
+              ) : (
+                // ✅ your existing empty state
+                <div className="w-full min-h-55 flex flex-col items-center justify-center gap-3 border border-dashed border-slate-200 rounded-2xl bg-slate-50">
+                  <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center">
+                    <Calendar className="w-5 h-5 text-slate-300" />
+                  </div>
+                  <p className="text-sm font-medium text-slate-400">
+                    No upcoming events
+                  </p>
+                  <p className="text-xs text-slate-300">
+                    Scheduled events will appear here
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* ✅ order-2 keeps it below the slider on mobile */}
@@ -182,7 +229,7 @@ function HomePage() {
         <h2 className="text-4xl font-bold text-blue-900 mb-6">Top Manegment</h2>
 
         {/* 👇 Reusable Grid */}
-        <MembersGrid members={members} />
+        <MembersGrid />
       </section>
 
       <StatsSection />
@@ -260,47 +307,60 @@ function HomePage() {
           </div>
         </div>
       </section>
-      <GallerySection images={images} />
+      <GallerySection />
 
+      {/* ✅ Video Section */}
       <section className="max-w-7xl mx-auto px-2 py-4">
-        {/* Header */}
         <h2 className="text-4xl font-bold text-blue-900 mb-6">Video</h2>
 
-        <div className="relative">
-          {/* Left Button */}
-          <Button
-            size="icon"
-            variant="secondary"
-            onClick={() => scroll("left")}
-            className="absolute left-0 top-1/2 -translate-y-1/2 z-10"
-          >
-            <ChevronLeft />
-          </Button>
-
-          {/* Slider */}
-          <div
-            ref={scrollRef}
-            className="flex gap-6 overflow-x-auto no-scrollbar px-10"
-          >
-            {videos.map((video, i) => (
-              <VideoCard
-                key={i}
-                {...video}
-                onClick={() => setActiveVideo(`${video.videoLink}`)}
-              />
-            ))}
+        {videosLoading ? (
+          <p className="text-sm text-gray-400 py-6 text-center">
+            Loading videos...
+          </p>
+        ) : videos.length === 0 ? (
+          <div className="w-full min-h-55 flex flex-col items-center justify-center gap-3 border border-dashed border-slate-200 rounded-2xl bg-slate-50">
+            <p className="text-sm font-medium text-slate-400">
+              No videos available
+            </p>
           </div>
+        ) : (
+          <div className="relative">
+            <Button
+              size="icon"
+              variant="secondary"
+              onClick={() => scroll("left")}
+              className="absolute left-0 top-1/2 -translate-y-1/2 z-10"
+            >
+              <ChevronLeft />
+            </Button>
 
-          {/* Right Button */}
-          <Button
-            size="icon"
-            variant="secondary"
-            onClick={() => scroll("right")}
-            className="absolute right-0 top-1/2 -translate-y-1/2 z-10"
-          >
-            <ChevronRight />
-          </Button>
-        </div>
+            <div
+              ref={scrollRef}
+              className="flex gap-6 overflow-x-auto no-scrollbar px-10"
+            >
+              {videos
+                .filter((v) => v.videoLink) // ✅ skip videos with no link
+                .map((video) => (
+                  <VideoCard
+                    key={video.id}
+                    title={video.title}
+                    description={video.description}
+                    videoLink={video.videoLink}
+                    onClick={() => setActiveVideo(video.videoLink)}
+                  />
+                ))}
+            </div>
+
+            <Button
+              size="icon"
+              variant="secondary"
+              onClick={() => scroll("right")}
+              className="absolute right-0 top-1/2 -translate-y-1/2 z-10"
+            >
+              <ChevronRight />
+            </Button>
+          </div>
+        )}
 
         {/* 🎬 Modal */}
         {activeVideo && (
@@ -311,7 +371,6 @@ function HomePage() {
             >
               ✕
             </button>
-
             <iframe
               src={getEmbedUrl(activeVideo)}
               className="w-[90%] md:w-200 h-75 md:h-112.5 rounded-lg"

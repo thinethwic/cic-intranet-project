@@ -5,11 +5,11 @@ import { FaFacebook, FaLinkedin, FaYoutube } from "react-icons/fa";
 
 const companyLinks: string[] = ["Home", "About Us", "Our Segments"];
 
-const segmentLinks: string[] = [
-  "CIC Feeds",
-  "CIC Vet care",
-  "CIC Poultry",
-  "Asia Vet",
+const segments = [
+  { SegKey: "CIC Feeds", Link: "/our-segments/cic-feeds" },
+  { SegKey: "CIC Vetcare", Link: "/our-segments/cic-vetcare" },
+  { SegKey: "CIC Poultry", Link: "/our-segments/cic-poulry" },
+  { SegKey: "Asia Vet", Link: "/our-segments/asia-vet" },
 ];
 
 export default function Footer() {
@@ -98,13 +98,13 @@ export default function Footer() {
               Our Segments
             </h3>
             <ul className="space-y-2">
-              {segmentLinks.map((seg) => (
-                <li key={seg}>
+              {segments.map(({ SegKey: label, Link: path }) => (
+                <li key={label}>
                   <a
-                    href="#"
+                    href={path}
                     className="text-sm text-gray-300 hover:text-white transition-colors duration-200"
                   >
-                    {seg}
+                    {label}
                   </a>
                 </li>
               ))}
@@ -125,41 +125,25 @@ export default function Footer() {
           <div className="flex items-center gap-4">
             {/* Facebook */}
             <a
-              href="#"
+              href="https://web.facebook.com/cicfeedsgrp"
               aria-label="Facebook"
               className="text-gray-400 hover:text-white transition-colors duration-200"
             >
               <FaFacebook className="w-7 h-7" />
             </a>
 
-            {/* X / Twitter */}
+            {/* X / YouTube */}
             <a
-              href="#"
+              href="https://youtube.com/@cicfeedsgroup"
               aria-label="X"
               className="text-gray-400 hover:text-white transition-colors duration-200"
             >
               <FaYoutube className="w-7 h-7" />
             </a>
 
-            {/* Google — lucide doesn't have Google icon, using a simple G SVG */}
-            <a
-              href="#"
-              aria-label="Google"
-              className="text-gray-400 hover:text-white transition-colors duration-200"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="currentColor"
-                className="w-7 h-7"
-              >
-                <path d="M21.805 10.023H12v3.977h5.617C16.973 16.21 14.745 17.5 12 17.5c-3.038 0-5.5-2.462-5.5-5.5s2.462-5.5 5.5-5.5c1.395 0 2.663.522 3.627 1.373l2.828-2.828C16.557 3.49 14.392 2.5 12 2.5 6.753 2.5 2.5 6.753 2.5 12S6.753 21.5 12 21.5c5.523 0 9.5-3.977 9.5-9.5 0-.651-.07-1.286-.195-1.977z" />
-              </svg>
-            </a>
-
             {/* LinkedIn */}
             <a
-              href="#"
+              href="https://www.linkedin.com/company/cic-feeds-group"
               aria-label="LinkedIn"
               className="text-gray-400 hover:text-white transition-colors duration-200"
             >

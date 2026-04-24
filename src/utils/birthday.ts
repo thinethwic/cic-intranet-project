@@ -1,7 +1,7 @@
-export interface Member {
+interface Member {
     name: string;
     role: string;
-    dob: string; // "YYYY-MM-DD"
+    dob: string;
 }
 
 export function isTodayBirthday(dob: string): boolean {

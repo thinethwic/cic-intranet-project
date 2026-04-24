@@ -5,14 +5,13 @@ import { Eye } from "lucide-react";
 interface Props {
   id: number;
   title: string;
-  date: string;
   category: string;
+  segment: string;
   isRead: boolean;
 }
 
 export default function AnnouncementItem({
   title,
-  date,
   category,
   isRead: initialRead,
 }: Props) {
@@ -32,7 +31,7 @@ export default function AnnouncementItem({
           {title}
         </p>
         <p className="text-xs text-gray-400 mt-1">
-          {date} ·{" "}
+          {} ·{" "}
           <span className="bg-blue-50 text-blue-800 text-xs px-2 py-0.5 rounded">
             {category}
           </span>

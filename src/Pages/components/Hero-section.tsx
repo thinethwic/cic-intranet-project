@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Wheat, Pill, Bird, Syringe } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -54,7 +53,7 @@ export default function HeroSection() {
 
   return (
     <section className="relative w-full min-h-[480px] md:min-h-[600px] overflow-hidden flex flex-col">
-      {/* Background slides */}
+      {/* Background slides — no overlays */}
       {slides.map((slide, i) => (
         <div
           key={i}
@@ -66,74 +65,63 @@ export default function HeroSection() {
             alt={slide.title}
             className="w-full h-full object-cover"
           />
-          <div className="absolute inset-0 bg-black/40" />
         </div>
       ))}
 
-      {/* Left gradient overlay — desktop only */}
-      <div className="absolute inset-0 hidden md:block bg-gradient-to-r from-black/70 via-black/30 to-transparent z-10" />
+      {/* Subtle gradient only behind text */}
+      <div className="absolute inset-0 z-10 bg-gradient-to-b from-black/30 via-black/20 to-transparent" />
 
-      {/* Content — padded to clear the nav buttons */}
-      <div className="relative z-20 flex flex-col items-center justify-between h-full min-h-[480px] md:min-h-[600px] px-14 md:px-16 pt-10 pb-10 md:pt-0 md:pb-0 md:justify-center text-center gap-6">
-        {/* Text block */}
-        <div className="flex flex-col items-center gap-2 mt-auto md:mt-0">
-          <h1
-            key={currentSlide}
-            className="text-2xl sm:text-3xl md:text-5xl font-semibold text-white animate-fade-in leading-tight px-2"
-          >
-            {slides[currentSlide].title}
-          </h1>
-          <p
-            key={`sub-${currentSlide}`}
-            className="text-gray-300 text-sm sm:text-base md:text-lg animate-fade-in px-4"
-          >
-            {slides[currentSlide].subtitle}
-          </p>
-        </div>
+      {/* Slide text — centered */}
+      <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 px-14 md:px-16">
+        <h1
+          key={currentSlide}
+          className="text-2xl sm:text-3xl md:text-5xl font-bold text-white text-center animate-fade-in leading-tight drop-shadow-xl"
+        >
+          {slides[currentSlide].title}
+        </h1>
+        <p
+          key={`sub-${currentSlide}`}
+          className="text-white text-sm sm:text-base md:text-lg text-center animate-fade-in drop-shadow-lg font-medium"
+        >
+          {slides[currentSlide].subtitle}
+        </p>
+      </div>
 
-        {/* Category cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 w-full max-w-xs sm:max-w-none sm:max-w-2xl mb-auto md:mb-0">
-          {categories.map(({ label, icon: Icon, Link: link }, i) => (
-            <Card
-              key={i}
-              className="bg-white/10 backdrop-blur-md border-white/20 text-white hover:bg-white/20 transition-all cursor-pointer group"
-            >
-              <Link to={link}>
-                <CardContent className="flex flex-col items-center justify-center py-4 md:py-6 px-2">
-                  <div className="mb-2 p-2 rounded-xl bg-white/10 group-hover:bg-white/20 transition-all group-hover:scale-110">
-                    <Icon className="w-5 h-5 md:w-6 md:h-6 stroke-[1.5] text-white" />
-                  </div>
-                  <p className="text-xs sm:text-sm font-medium tracking-wide text-center leading-tight">
-                    {label}
-                  </p>
-                </CardContent>
-              </Link>
+      {/* Category cards — bottom center */}
+      <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-20 grid grid-cols-2 sm:grid-cols-4 gap-4 w-max px-4">
+        {categories.map(({ label, icon: Icon, Link: link }, i) => (
+          <Link to={link} key={i}>
+            <Card className="bg-white/80 backdrop-blur-sm border border-white/60 hover:bg-white transition-all cursor-pointer group shadow-md w-36 sm:w-44">
+              <CardContent className="flex flex-col items-center justify-center py-6 px-3">
+                <div className="mb-3 p-3 rounded-2xl bg-blue-50 group-hover:bg-blue-100 transition-all group-hover:scale-110">
+                  <Icon className="w-7 h-7 md:w-8 md:h-8 stroke-[1.5] text-[oklch(37.9%_0.146_265.522)]" />
+                </div>
+                <p className="text-sm sm:text-base font-semibold tracking-wide text-center leading-tight text-gray-700">
+                  {label}
+                </p>
+              </CardContent>
             </Card>
-          ))}
-        </div>
+          </Link>
+        ))}
       </div>
 
       {/* Prev button */}
-      <Button
-        size="icon"
-        variant="secondary"
+      <button
         onClick={() =>
           setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length)
         }
-        className="absolute left-2 md:left-3 top-1/2 -translate-y-1/2 z-30 bg-white/20 backdrop-blur hover:bg-white/40 w-8 h-8 md:w-10 md:h-10"
+        className="absolute left-3 top-1/2 -translate-y-1/2 z-30 w-12 h-12 md:w-14 md:h-14 rounded-full bg-white/70 hover:bg-white border border-white/50 shadow-md backdrop-blur-sm flex items-center justify-center transition-all hover:scale-105"
       >
-        <ChevronLeft className="w-4 h-4 md:w-5 md:h-5" />
-      </Button>
+        <ChevronLeft className="w-6 h-6 md:w-7 md:h-7 text-gray-700" />
+      </button>
 
       {/* Next button */}
-      <Button
-        size="icon"
-        variant="secondary"
+      <button
         onClick={() => setCurrentSlide((prev) => (prev + 1) % slides.length)}
-        className="absolute right-2 md:right-3 top-1/2 -translate-y-1/2 z-30 bg-white/20 backdrop-blur hover:bg-white/40 w-8 h-8 md:w-10 md:h-10"
+        className="absolute right-3 top-1/2 -translate-y-1/2 z-30 w-12 h-12 md:w-14 md:h-14 rounded-full bg-white/70 hover:bg-white border border-white/50 shadow-md backdrop-blur-sm flex items-center justify-center transition-all hover:scale-105"
       >
-        <ChevronRight className="w-4 h-4 md:w-5 md:h-5" />
-      </Button>
+        <ChevronRight className="w-6 h-6 md:w-7 md:h-7 text-gray-700" />
+      </button>
 
       {/* Dots */}
       <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-20">
@@ -142,7 +130,9 @@ export default function HeroSection() {
             key={i}
             onClick={() => setCurrentSlide(i)}
             className={`transition-all rounded-full ${
-              i === currentSlide ? "w-5 h-2 bg-white" : "w-2 h-2 bg-white/40"
+              i === currentSlide
+                ? "w-5 h-2 bg-white shadow-sm"
+                : "w-2 h-2 bg-white/50"
             }`}
           />
         ))}

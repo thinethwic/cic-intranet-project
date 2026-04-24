@@ -4,13 +4,17 @@ import { useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import EventCard from "@/components/EventCard";
-import { events } from "@/Mock-data";
+import type { Event } from "@/types"; // ✅ import your type
 
 const VISIBLE_COUNT = 3;
 const INTERVAL = 3500;
-const GAP_PX = 16; // matches gap-4
+const GAP_PX = 16;
 
-export default function EventsSlider() {
+interface Props {
+  events: Event[]; // ✅ was "event", fixed to "events"
+}
+
+export default function EventsSlider({ events }: Props) {
   const [current, setCurrent] = useState(0);
   const [visible, setVisible] = useState(VISIBLE_COUNT);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -28,11 +32,6 @@ export default function EventsSlider() {
 
   const maxIndex = Math.max(0, events.length - visible);
 
-  // ✅ FIX: Reset current when visible count changes (e.g. resize past maxIndex)
-  useEffect(() => {
-    setCurrent((p) => Math.min(p, maxIndex));
-  }, [maxIndex]);
-
   const next = () => setCurrent((p) => (p >= maxIndex ? 0 : p + 1));
   const prev = () => setCurrent((p) => (p <= 0 ? maxIndex : p - 1));
 
@@ -44,11 +43,12 @@ export default function EventsSlider() {
   };
 
   useEffect(() => {
+    if (events.length === 0) return;
     startAutoSlide();
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [maxIndex]);
+  }, [maxIndex, events.length]);
 
   return (
     <div
@@ -58,7 +58,6 @@ export default function EventsSlider() {
       }}
       onMouseLeave={startAutoSlide}
     >
-      {/* Left Button */}
       <Button
         size="icon"
         variant="secondary"
@@ -69,43 +68,34 @@ export default function EventsSlider() {
         <ChevronLeft />
       </Button>
 
-      {/* Viewport — px-10 reserves space for the nav buttons */}
       <div className="overflow-hidden px-10">
-        {/*
-          ✅ FIX: Use a CSS custom property for the gap so the translation
-          accounts for the actual rendered gap, not just a percentage guess.
-          Each card slot = (100% - gap * (visible-1)) / visible
-          We translate by (cardSlotWidth + gap) * current
-        */}
         <div
           className="flex transition-transform duration-500 ease-in-out"
           style={{
             gap: `${GAP_PX}px`,
-            // Translate exactly one card-slot + one gap per step
-            transform: `translateX(calc(-${current} * (${100 / visible}% + ${
-              GAP_PX - GAP_PX / visible // distributes gap correctly
-            }px)))`,
+            transform: `translateX(calc(-${current} * (${100 / visible}% + ${GAP_PX - GAP_PX / visible}px)))`,
           }}
         >
-          {events.map((event, i) => (
+          {events.map((event) => (
             <div
-              key={i}
-              // ✅ FIX: No extra px padding — gap handles spacing
+              key={event.id}
               className="shrink-0"
               style={{
-                // Subtract the total gap distributed among visible cards
-                width: `calc(${100 / visible}% - ${
-                  (GAP_PX * (visible - 1)) / visible
-                }px)`,
+                width: `calc(${100 / visible}% - ${(GAP_PX * (visible - 1)) / visible}px)`,
               }}
             >
-              <EventCard {...event} />
+              <EventCard
+                image={event.image}
+                title={event.title}
+                date={event.date}
+                time={event.time}
+                location={event.location}
+              />
             </div>
           ))}
         </div>
       </div>
 
-      {/* Right Button */}
       <Button
         size="icon"
         variant="secondary"
@@ -116,7 +106,6 @@ export default function EventsSlider() {
         <ChevronRight />
       </Button>
 
-      {/* Dots */}
       <div className="flex justify-center mt-6 gap-2">
         {Array.from({ length: maxIndex + 1 }).map((_, i) => (
           <button

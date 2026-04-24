@@ -9,14 +9,81 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { newsList } from "@/Mock-data"; // ✅ single import
+import { useNewsById, useNews } from "@/hooks/useNews";
 
+const BASE_IMAGE_URL =
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+
+// ── Helpers ───────────────────────────────────────────
+const fmtDate = (d: string) => {
+  try {
+    return new Date(d).toLocaleDateString("en-GB", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+  } catch {
+    return d;
+  }
+};
+
+const getReadTime = (createdAt: string): string => {
+  const created = new Date(createdAt);
+  const now = new Date();
+  const diffMs = now.getTime() - created.getTime();
+
+  const mins = Math.floor(diffMs / 60000);
+  const hours = Math.floor(mins / 60);
+  const days = Math.floor(hours / 24);
+  const weeks = Math.floor(days / 7);
+  const months = Math.floor(days / 30);
+  const years = Math.floor(days / 365);
+
+  if (mins < 1) return "Just now";
+  if (mins < 60) return `${mins} minute${mins !== 1 ? "s" : ""} ago`;
+  if (hours < 24) return `${hours} hour${hours !== 1 ? "s" : ""} ago`;
+  if (days < 7) return `${days} day${days !== 1 ? "s" : ""} ago`;
+  if (weeks < 5) return `${weeks} week${weeks !== 1 ? "s" : ""} ago`;
+  if (months < 12) return `${months} month${months !== 1 ? "s" : ""} ago`;
+  return `${years} year${years !== 1 ? "s" : ""} ago`;
+};
+
+// ─────────────────────────────────────────────────────
 export default function NewsDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  // ✅ Search in single list — no merging needed
-  const news = newsList.find((n) => n.id === Number(id));
+  const { news, loading, error } = useNewsById(Number(id));
+  const { news: allNews } = useNews();
+
+  const related = news
+    ? allNews
+        .filter((n) => n.id !== news.id && n.category === news.category)
+        .slice(0, 3)
+    : [];
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 text-slate-500">
+        <p className="text-sm font-medium text-slate-400">Loading article...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 text-slate-500">
+        <div className="w-full max-w-sm min-h-40 flex flex-col items-center justify-center gap-3 border border-dashed border-red-200 rounded-2xl bg-red-50">
+          <p className="text-sm font-medium text-red-400">
+            Failed to load article. Please try again later.
+          </p>
+          <Button variant="outline" onClick={() => navigate(-1)}>
+            <ArrowLeft className="w-4 h-4 mr-2" /> Go back
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   if (!news) {
     return (
@@ -31,23 +98,6 @@ export default function NewsDetailPage() {
       </div>
     );
   }
-
-  // Related articles — same category, exclude current
-  const related = newsList
-    .filter((n) => n.id !== news.id && n.category === news.category)
-    .slice(0, 3);
-
-  const fmtDate = (d: string) => {
-    try {
-      return new Date(d).toLocaleDateString("en-GB", {
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-      });
-    } catch {
-      return d;
-    }
-  };
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -101,35 +151,25 @@ export default function NewsDetailPage() {
           {news.title}
         </h1>
 
-        {/* Meta row */}
-        <div className="flex flex-wrap items-center gap-5 text-sm text-slate-400 mb-8 pb-8 border-b border-slate-200">
-          {news.author && (
-            <span className="flex items-center gap-1.5">
-              <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 text-[10px] font-semibold">
-                {news.author.charAt(0)}
-              </div>
-              {news.author}
-            </span>
-          )}
-          {news.date && (
+        {/* Meta row — date + time ago both derived from createdAt */}
+        {news.createdAt && (
+          <div className="flex flex-wrap items-center gap-5 text-sm text-slate-400 mb-8 pb-8 border-b border-slate-200">
             <span className="flex items-center gap-1.5">
               <Calendar className="w-3.5 h-3.5" />
-              {fmtDate(news.date)}
+              {fmtDate(news.createdAt)}
             </span>
-          )}
-          {news.readTime && (
             <span className="flex items-center gap-1.5">
               <Clock className="w-3.5 h-3.5" />
-              {news.readTime}
+              {getReadTime(news.createdAt)}
             </span>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Hero image */}
         {news.image && (
           <div className="rounded-2xl overflow-hidden mb-8">
             <img
-              src={news.image}
+              src={`${BASE_IMAGE_URL}${news.image}`}
               alt={news.title}
               className="w-full object-cover max-h-[460px]"
             />
@@ -176,7 +216,7 @@ export default function NewsDetailPage() {
                 >
                   {item.image && (
                     <img
-                      src={item.image}
+                      src={`${BASE_IMAGE_URL}${item.image}`}
                       alt={item.title}
                       className="h-36 w-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
@@ -190,9 +230,10 @@ export default function NewsDetailPage() {
                     <p className="text-sm font-medium text-slate-800 line-clamp-2 leading-snug">
                       {item.title}
                     </p>
-                    {item.date && (
+                    {/* ✅ time ago on related cards */}
+                    {item.createdAt && (
                       <p className="text-xs text-slate-400 mt-1.5">
-                        {fmtDate(item.date)}
+                        {getReadTime(item.createdAt)}
                       </p>
                     )}
                   </div>
