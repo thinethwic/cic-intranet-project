@@ -10,10 +10,7 @@ import {
   Video,
 } from "lucide-react";
 import { Link } from "react-router-dom";
-
 import { CardContent } from "@/components/ui/card";
-import { newsList, members, events, videos, documents } from "@/Mock-data";
-
 import {
   AdminCard,
   AdminCardTitle,
@@ -21,6 +18,12 @@ import {
   StatCard,
   StatusBadge,
 } from "./admin-components";
+
+import { useNews } from "@/hooks/useNews";
+import { useVideos } from "@/hooks/useVideos";
+import { useEvents } from "@/hooks/useEvents";
+import { useDocuments } from "@/hooks/useDocuments";
+import { useMembers } from "@/hooks/useMembers";
 
 const quickLinks = [
   {
@@ -67,6 +70,8 @@ const quickLinks = [
   },
 ];
 
+const BASE_IMAGE_URL = "http://localhost:8080";
+
 export default function AdminDashboard() {
   const now = new Date();
   const greeting =
@@ -75,7 +80,24 @@ export default function AdminDashboard() {
       : now.getHours() < 17
         ? "Good afternoon"
         : "Good evening";
+
+  // ✅ Real API data
+  const { news: newsList = [], loading: newsLoading } = useNews();
+  const { videos = [], loading: videosLoading } = useVideos();
+  const { events = [], loading: eventsLoading } = useEvents();
+  const { documents = [], loading: documentsLoading } = useDocuments();
+  const { members = [], loading: membersLoading } = useMembers();
+
   const hotCount = newsList.filter((item) => item.isHot).length;
+
+  /*
+  const isLoading =
+  newsLoading ||
+  videosLoading ||
+  eventsLoading ||
+  documentsLoading ||
+  membersLoading;
+  */
 
   return (
     <div className="space-y-6 p-6">
@@ -94,37 +116,39 @@ export default function AdminDashboard() {
         }
       />
 
+      {/* ── Stat Cards ── */}
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="News"
-          value={newsList.length}
+          value={newsLoading ? "..." : newsList.length}
           description={`${hotCount} hot updates`}
           icon={Megaphone}
           tone="amber"
         />
         <StatCard
           title="Videos"
-          value={videos.length}
+          value={videosLoading ? "..." : videos.length}
           description="Published media items"
           icon={Video}
           tone="violet"
         />
         <StatCard
           title="Events"
-          value={events.length}
+          value={eventsLoading ? "..." : events.length}
           description="Scheduled activities"
           icon={Calendar}
           tone="blue"
         />
         <StatCard
           title="Documents"
-          value={documents.length}
-          description={`${members.length} management profiles`}
+          value={documentsLoading ? "..." : documents.length}
+          description={`${membersLoading ? "..." : members.length} management profiles`}
           icon={FileText}
           tone="emerald"
         />
       </div>
 
+      {/* ── Quick Actions ── */}
       <AdminCard>
         <AdminCardTitle title="Quick Actions" meta="Admin shortcuts" />
         <CardContent className="grid grid-cols-1 gap-4 px-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -149,88 +173,131 @@ export default function AdminDashboard() {
         </CardContent>
       </AdminCard>
 
+      {/* ── Bottom Cards ── */}
       <div className="grid gap-6 lg:grid-cols-3">
+        {/* Upcoming Events */}
         <AdminCard>
-          <AdminCardTitle title="Upcoming Events" meta={`${events.length} items`} />
+          <AdminCardTitle
+            title="Upcoming Events"
+            meta={eventsLoading ? "Loading..." : `${events.length} items`}
+          />
           <CardContent className="max-h-[320px] space-y-0 overflow-y-auto px-6">
-            {events.map((event, index) => {
-              const date = new Date(event.date);
-              return (
+            {eventsLoading ? (
+              <p className="py-4 text-sm text-muted-foreground">Loading...</p>
+            ) : events.length === 0 ? (
+              <p className="py-4 text-sm text-muted-foreground">
+                No events found
+              </p>
+            ) : (
+              events.map((event, index) => {
+                const date = new Date(event.date);
+                return (
+                  <div
+                    key={`${event.title}-${index}`}
+                    className="flex gap-4 border-b py-4 last:border-b-0"
+                  >
+                    <div className="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-2xl bg-blue-50 text-blue-700">
+                      <span className="text-xs font-medium uppercase">
+                        {date.toLocaleString("default", { month: "short" })}
+                      </span>
+                      <span className="text-lg font-semibold">
+                        {date.getDate()}
+                      </span>
+                    </div>
+                    <div className="min-w-0">
+                      <p className="line-clamp-1 text-sm font-medium">
+                        {event.title}
+                      </p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {event.time} / {event.location}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </CardContent>
+        </AdminCard>
+
+        {/* Latest News */}
+        <AdminCard>
+          <AdminCardTitle
+            title="Latest News"
+            meta={newsLoading ? "Loading..." : `${newsList.length} items`}
+          />
+          <CardContent className="max-h-[320px] space-y-0 overflow-y-auto px-6">
+            {newsLoading ? (
+              <p className="py-4 text-sm text-muted-foreground">Loading...</p>
+            ) : newsList.length === 0 ? (
+              <p className="py-4 text-sm text-muted-foreground">
+                No news found
+              </p>
+            ) : (
+              newsList.slice(0, 8).map((news) => (
                 <div
-                  key={`${event.title}-${index}`}
+                  key={news.id}
                   className="flex gap-4 border-b py-4 last:border-b-0"
                 >
-                  <div className="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-2xl bg-blue-50 text-blue-700">
-                    <span className="text-xs font-medium uppercase">
-                      {date.toLocaleString("default", { month: "short" })}
-                    </span>
-                    <span className="text-lg font-semibold">
-                      {date.getDate()}
-                    </span>
+                  {news.image ? (
+                    <img
+                      src={`${BASE_IMAGE_URL}${news.image}`} // ✅ full URL
+                      alt=""
+                      className="h-12 w-12 shrink-0 rounded-2xl object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
+                      <Newspaper className="h-5 w-5" />
+                    </div>
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <p className="line-clamp-2 text-sm font-medium leading-snug">
+                      {news.title}
+                    </p>
+                    <div className="mt-2 flex items-center gap-2">
+                      <StatusBadge tone={news.isHot ? "rose" : "slate"}>
+                        {news.isHot ? "Hot" : news.category}
+                      </StatusBadge>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </CardContent>
+        </AdminCard>
+
+        {/* Recent Videos */}
+        <AdminCard>
+          <AdminCardTitle
+            title="Recent Videos"
+            meta={videosLoading ? "Loading..." : `${videos.length} videos`}
+          />
+          <CardContent className="max-h-[320px] space-y-0 overflow-y-auto px-6">
+            {videosLoading ? (
+              <p className="py-4 text-sm text-muted-foreground">Loading...</p>
+            ) : videos.length === 0 ? (
+              <p className="py-4 text-sm text-muted-foreground">
+                No videos found
+              </p>
+            ) : (
+              videos.slice(0, 8).map((video) => (
+                <div
+                  key={video.id}
+                  className="flex gap-4 border-b py-4 last:border-b-0"
+                >
+                  <div className="flex h-12 w-16 shrink-0 items-center justify-center rounded-2xl bg-violet-50 text-violet-600">
+                    <Video className="h-5 w-5" />
                   </div>
                   <div className="min-w-0">
-                    <p className="line-clamp-1 text-sm font-medium">
-                      {event.title}
+                    <p className="line-clamp-2 text-sm font-medium leading-snug">
+                      {video.title}
                     </p>
                     <p className="mt-1 text-xs text-muted-foreground">
-                      {event.time} / {event.location}
+                      {video.description}
                     </p>
                   </div>
                 </div>
-              );
-            })}
-          </CardContent>
-        </AdminCard>
-
-        <AdminCard>
-          <AdminCardTitle title="Latest News" meta={`${newsList.length} items`} />
-          <CardContent className="max-h-[320px] space-y-0 overflow-y-auto px-6">
-            {newsList.slice(0, 8).map((news) => (
-              <div
-                key={news.id}
-                className="flex gap-4 border-b py-4 last:border-b-0"
-              >
-                <img
-                  src={news.image}
-                  alt=""
-                  className="h-12 w-12 shrink-0 rounded-2xl object-cover"
-                />
-                <div className="min-w-0 flex-1">
-                  <p className="line-clamp-2 text-sm font-medium leading-snug">
-                    {news.title}
-                  </p>
-                  <div className="mt-2 flex items-center gap-2">
-                    <StatusBadge tone={news.isHot ? "rose" : "slate"}>
-                      {news.isHot ? "Hot" : news.category}
-                    </StatusBadge>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </CardContent>
-        </AdminCard>
-
-        <AdminCard>
-          <AdminCardTitle title="Recent Videos" meta={`${videos.length} videos`} />
-          <CardContent className="max-h-[320px] space-y-0 overflow-y-auto px-6">
-            {videos.slice(0, 8).map((video, index) => (
-              <div
-                key={`${video.title}-${index}`}
-                className="flex gap-4 border-b py-4 last:border-b-0"
-              >
-                <div className="flex h-12 w-16 shrink-0 items-center justify-center rounded-2xl bg-violet-50 text-violet-600">
-                  <Video className="h-5 w-5" />
-                </div>
-                <div className="min-w-0">
-                  <p className="line-clamp-2 text-sm font-medium leading-snug">
-                    {video.title}
-                  </p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    Social media video
-                  </p>
-                </div>
-              </div>
-            ))}
+              ))
+            )}
           </CardContent>
         </AdminCard>
       </div>

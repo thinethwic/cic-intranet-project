@@ -1,5 +1,6 @@
 import HeroSectionSegments from "../components/HeroSection";
-import { useState, useMemo } from "react";
+import { useMemo, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Calendar } from "@/components/ui/calendar";
 
@@ -7,11 +8,15 @@ import DocumentCard from "../components/DocumentCard";
 import EventItem from "../components/EventItem";
 import PinnedCard from "../components/PinnedCard";
 
-import slide1 from "../../../assets/slide1.png";
+import slide1 from "../../../assets/feeds_slide.png";
 
-import { events, documents, announcements } from "@/Mock-data";
+import { mapPathToSegment } from "@/utils/segmentMapper";
+import { useDocuments } from "@/hooks/useDocuments";
+import { useEvents } from "@/hooks/useEvents";
+import { useAnnouncements } from "@/hooks/useAnnouncements";
+import { viewDocument, downloadDocument } from "@/lib/api/documentApi";
+
 import AnnouncementItem from "../components/AnnouncementItem";
-import { useLocation } from "react-router-dom";
 import { LockIcon } from "lucide-react";
 
 interface Slide {
@@ -22,7 +27,8 @@ interface Slide {
 
 export default function HomePageFeeds() {
   const { pathname } = useLocation();
-  const currentSegment = pathname.slice(1);
+  const currentPath = pathname.slice(1);
+  const currentSegment = mapPathToSegment(currentPath);
 
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [activeTab, setActiveTab] = useState("All");
@@ -34,18 +40,23 @@ export default function HomePageFeeds() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
 
+  // ✅ Real API data filtered by segment
+  const { documents, loading: docsLoading } = useDocuments(currentSegment);
+  const { events, loading: eventsLoading } = useEvents(currentSegment);
+  // ✅ Always default to empty array
+  const { announcements = [], loading: announcementsLoading } =
+    useAnnouncements(currentSegment);
+
+  const visibleAnnouncements = showAllAnnouncements
+    ? announcements
+    : announcements.slice(0, 3); // ✅ safe now
+
   const tabs = ["All", "HR & Policies", "Finance", "Operations"];
 
-  const pinnedDocs = documents.filter(
-    (doc) => doc.isPinned && doc.segment === currentSegment,
-  );
+  const pinnedDocs = documents.filter((doc) => doc.isPinned);
 
-  // FIX 1: removed the first (duplicate) filteredDocuments declaration
-  // FIX 3: use split(" · ")[0] for reliable category matching
   const filteredDocuments = useMemo(() => {
     return documents.filter((doc) => {
-      const matchesSegment = doc.segment === currentSegment;
-
       const baseCategory = doc.category.split(" · ")[0];
       const matchesTab =
         activeTab === "All" ||
@@ -58,12 +69,49 @@ export default function HomePageFeeds() {
         doc.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         doc.category.toLowerCase().includes(searchQuery.toLowerCase());
 
-      const isPrivate = doc.access === "private";
+      const isPrivate = doc.access === "PRIVATE";
       const matchesAccess = !isPrivate || (showPrivate && isAuthorized);
 
-      return matchesSegment && matchesTab && matchesSearch && matchesAccess;
+      return matchesTab && matchesSearch && matchesAccess;
     });
-  }, [activeTab, searchQuery, currentSegment, showPrivate, isAuthorized]);
+  }, [documents, activeTab, searchQuery, showPrivate, isAuthorized]);
+
+  // ✅ View handler
+  const handleView = async (id: number) => {
+    try {
+      const blob = await viewDocument(id);
+      const url = URL.createObjectURL(blob);
+      window.open(url, "_blank");
+    } catch {
+      alert("Failed to view document");
+    }
+  };
+
+  // ✅ Download handler
+  const handleDownload = async (id: number, title: string) => {
+    try {
+      const blob = await downloadDocument(id);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = title;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      alert("Failed to download document");
+    }
+  };
+
+  function formatDate(date: Date | undefined) {
+    if (!date) return "";
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  }
+
+  const selectedDateStr = formatDate(date);
+  const filteredEvents = events.filter((e) => e.date === selectedDateStr);
 
   const slides: Slide[] = [
     {
@@ -78,29 +126,6 @@ export default function HomePageFeeds() {
     },
   ];
 
-  function formatDate(date: Date | undefined) {
-    if (!date) return "";
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const day = String(date.getDate()).padStart(2, "0");
-    return `${year}-${month}-${day}`;
-  }
-
-  const selectedDateStr = formatDate(date);
-
-  const filteredEvents = events.filter(
-    (event) =>
-      event.date === selectedDateStr && event.segment === currentSegment,
-  );
-
-  const segmentAnnouncements = announcements.filter(
-    (a) => a.segment === currentSegment,
-  );
-
-  const visibleAnnouncements = showAllAnnouncements
-    ? segmentAnnouncements
-    : segmentAnnouncements.slice(0, 3);
-
   return (
     <div>
       <HeroSectionSegments slides={slides} />
@@ -113,9 +138,7 @@ export default function HomePageFeeds() {
 
               <button
                 onClick={() => setShowPrivate(false)}
-                className={`text-xs px-2 py-1 rounded-full border ${
-                  !showPrivate ? "bg-blue-900 text-white" : "text-gray-500"
-                }`}
+                className={`text-xs px-2 py-1 rounded-full border ${!showPrivate ? "bg-blue-900 text-white" : "text-gray-500"}`}
               >
                 👁 Public
               </button>
@@ -128,9 +151,7 @@ export default function HomePageFeeds() {
                     setShowPrivate(true);
                   }
                 }}
-                className={`text-xs px-2 py-1 rounded-full border ${
-                  showPrivate ? "bg-red-600 text-white" : "text-gray-500"
-                }`}
+                className={`text-xs px-2 py-1 rounded-full border ${showPrivate ? "bg-red-600 text-white" : "text-gray-500"}`}
               >
                 🔒 Private
               </button>
@@ -159,25 +180,32 @@ export default function HomePageFeeds() {
               ))}
             </div>
 
-            <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-              {/* FIX 4 & 5: pass allowDownload and allowView to DocumentCard */}
-              {filteredDocuments.map((doc, i) => (
-                <DocumentCard
-                  key={i}
-                  title={doc.title}
-                  category={doc.category}
-                  type={doc.type}
-                  fileUrl={doc.fileUrl}
-                  allowDownload={doc.allowDownload}
-                  allowView={doc.allowView}
-                />
-              ))}
-              {filteredDocuments.length === 0 && (
-                <p className="text-sm text-gray-400 col-span-full py-6 text-center">
-                  No documents found
-                </p>
-              )}
-            </div>
+            {docsLoading ? (
+              <p className="text-sm text-gray-400 py-6 text-center">
+                Loading documents...
+              </p>
+            ) : (
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+                {filteredDocuments.map((doc) => (
+                  <DocumentCard
+                    key={doc.id}
+                    title={doc.title}
+                    category={doc.category}
+                    type={doc.type}
+                    fileUrl={doc.fileUrl}
+                    allowDownload={doc.allowDownload}
+                    allowView={doc.allowView}
+                    onView={() => handleView(doc.id)}
+                    onDownload={() => handleDownload(doc.id, doc.title)}
+                  />
+                ))}
+                {filteredDocuments.length === 0 && (
+                  <p className="text-sm text-gray-400 col-span-full py-6 text-center">
+                    No documents found
+                  </p>
+                )}
+              </div>
+            )}
 
             {pinnedDocs.length > 0 && (
               <>
@@ -222,13 +250,15 @@ export default function HomePageFeeds() {
             </h3>
 
             <div className="w-full space-y-4">
-              {filteredEvents.length > 0 ? (
-                filteredEvents.map((event, i) => {
+              {eventsLoading ? (
+                <p className="text-sm text-gray-400">Loading events...</p>
+              ) : filteredEvents.length > 0 ? (
+                filteredEvents.map((event) => {
                   const [year, month, day] = event.date.split("-").map(Number);
                   const eventDate = new Date(year, month - 1, day);
                   return (
                     <EventItem
-                      key={i}
+                      key={event.id}
                       day={eventDate.getDate().toString()}
                       month={eventDate.toLocaleString("default", {
                         month: "short",
@@ -254,7 +284,7 @@ export default function HomePageFeeds() {
           <h2 className="text-3xl font-bold text-blue-900 mb-6">
             Announcements
           </h2>
-          {segmentAnnouncements.length > 3 && (
+          {announcements.length > 3 && (
             <button
               onClick={() => setShowAllAnnouncements((prev) => !prev)}
               className="text-sm text-blue-600 hover:underline"
@@ -263,21 +293,26 @@ export default function HomePageFeeds() {
             </button>
           )}
         </div>
-
         <div className="space-y-3">
-          {visibleAnnouncements.map((a) => (
-            <AnnouncementItem key={a.id} {...a} />
-          ))}
-          {segmentAnnouncements.length === 0 && (
-            <p className="text-sm text-gray-400">No announcements</p>
+          {announcementsLoading ? (
+            <p className="text-sm text-gray-400">Loading announcements...</p>
+          ) : (
+            <>
+              {visibleAnnouncements.map((a) => (
+                <AnnouncementItem key={a.id} {...a} />
+              ))}
+              {announcements.length === 0 && (
+                <p className="text-sm text-gray-400">No announcements</p>
+              )}
+            </>
           )}
         </div>
       </section>
 
+      {/* Auth Modal — unchanged */}
       {showAuthModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white dark:bg-zinc-900 p-7 rounded-2xl w-80 shadow-sm border border-zinc-100 dark:border-zinc-800">
-            {/* Header */}
             <div className="flex items-center gap-3 mb-6">
               <div className="w-9 h-9 rounded-full bg-blue-50 dark:bg-blue-950 flex items-center justify-center">
                 <LockIcon className="w-4 h-4 text-blue-500" />
@@ -291,8 +326,6 @@ export default function HomePageFeeds() {
                 </p>
               </div>
             </div>
-
-            {/* Fields */}
             <div className="flex flex-col gap-3 mb-5">
               <div>
                 <label className="text-xs text-zinc-400 mb-1 block">
@@ -318,8 +351,6 @@ export default function HomePageFeeds() {
                 />
               </div>
             </div>
-
-            {/* Actions */}
             <div className="flex justify-end items-center gap-2">
               <button
                 onClick={() => setShowAuthModal(false)}
