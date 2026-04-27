@@ -37,8 +37,6 @@ import {
   deleteVideo,
 } from "@/lib/api/videoApi";
 
-import { getAdminUser } from "@/lib/api/authHeaders";
-
 import type { video } from "@/types";
 
 const sourceOptions = ["All", "Facebook", "YouTube", "Other"];

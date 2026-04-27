@@ -63,6 +63,7 @@ export interface Member {
     email: string;
     phoneNo: string;
     joinedDate: string;
+    userId?: number;
 }
 
 export interface User {

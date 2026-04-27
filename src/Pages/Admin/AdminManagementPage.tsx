@@ -161,10 +161,10 @@ export default function AdminManagementPage() {
         lastName: form.lastName.trim(),
         role: form.role,
         email: form.email.trim(),
-        phoneNo: form.phoneNo || null,
-        dob: form.dob || null,
-        joinedDate: form.joinedDate || null,
-        userId: loggedUserId, // ← this stays exactly as-is
+        phoneNo: form.phoneNo || undefined, // ← null → undefined
+        dob: form.dob || undefined, // ← null → undefined
+        joinedDate: form.joinedDate || undefined, // ← null → undefined
+        userId: loggedUserId ?? undefined, // ← null → undefined
       }; // ← always use the logged-in user's ID
 
       if (editing) {
