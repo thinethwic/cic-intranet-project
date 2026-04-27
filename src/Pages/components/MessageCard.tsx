@@ -58,10 +58,10 @@ export function CEOMessageCard({ name, messages, image }: CEOMessageProps) {
   }, [fallback]);
 
   return (
-    <Card className="w-full p-6 md:p-8 bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-shadow">
+    <Card className="w-full p-6 md:p-10 bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-shadow">
       {/* Header */}
-      <div className="flex items-center gap-3 mb-5">
-        <Avatar className="w-12 h-12 md:w-16 md:h-16 flex-shrink-0">
+      <div className="flex items-center gap-2 mb-5">
+        <Avatar className="w-24 h-24 md:w-28 md:h-28 flex-shrink-0">
           <AvatarImage src={content.image} alt={content.name} />
           <AvatarFallback className="bg-gray-200 text-gray-700 font-semibold">
             {content.name ? content.name.charAt(0) : "C"}

@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   Plus,
   Search,
@@ -6,7 +6,6 @@ import {
   Trash2,
   Flame,
   Calendar,
-  Clock,
   ImagePlus,
   ChevronDown,
   Check,
@@ -32,29 +31,19 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { newsList as initialNews } from "@/Mock-data";
+import type { News } from "@/types";
+import {
+  getAllNews,
+  createNews,
+  updateNews,
+  deleteNews,
+  updateNewsImage,
+} from "@/lib/api/newsApi";
+import { getAdminUser } from "@/lib/api/authHeaders";
 
-// ── Types ────────────────────────────────────────────────────
-interface NewsItem {
-  id: number;
-  title: string;
-  description: string;
-  content: string;
-  image: string;
-  category: string;
-  author: string;
-  date: string;
-  readTime: string;
-  isHot: boolean;
-}
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
 
-const CATEGORIES = [
-  "Agriculture",
-  "Education",
-  "Corporate",
-  "Health",
-  "Technology",
-];
+const CATEGORIES = ["CIC_FEEDS", "CIC_VET_CARE", "CIC_POULTRY", "AISA_VET"];
 const CAT_FILTER = ["All", ...CATEGORIES];
 const HOT_FILTER = ["All news", "Hot only", "Standard only"];
 
@@ -62,22 +51,18 @@ const EMPTY_FORM = {
   title: "",
   description: "",
   content: "",
-  image: "",
-  category: "Agriculture",
-  author: "",
-  date: "",
-  readTime: "",
+  category: "CIC_FEEDS",
   isHot: false,
 };
 
-// ── Reusable dropdown ────────────────────────────────────────
+// ── FilterDropdown ───────────────────────────────────────────
 function FilterDropdown({
   options,
   value,
   onChange,
   className,
 }: {
-  label: string;
+  label?: string;
   options: string[];
   value: string;
   onChange: (v: string) => void;
@@ -88,9 +73,7 @@ function FilterDropdown({
       <DropdownMenuTrigger>
         <Button
           variant="outline"
-          className={`h-9 gap-2 text-sm font-normal justify-between ${
-            value !== options[0] ? "border-blue-500 text-blue-600" : ""
-          } ${className ?? ""}`}
+          className={`h-9 gap-2 text-sm font-normal justify-between ${value !== options[0] ? "border-blue-500 text-blue-600" : ""} ${className ?? ""}`}
         >
           <span>{value}</span>
           <ChevronDown className="w-3.5 h-3.5 opacity-50" />
@@ -112,33 +95,24 @@ function FilterDropdown({
   );
 }
 
-// ── Image upload zone ────────────────────────────────────────
+// ── ImageUploadZone ──────────────────────────────────────────
 function ImageUploadZone({
-  value,
-  onChange,
+  preview,
+  onFileChange,
 }: {
-  value: string;
-  onChange: (src: string) => void;
+  preview: string | null;
+  onFileChange: (file: File) => void;
 }) {
   const ref = useRef<HTMLInputElement>(null);
-
-  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => onChange(ev.target?.result as string);
-    reader.readAsDataURL(file);
-  };
-
   return (
     <div
       onClick={() => ref.current?.click()}
       className="relative border-2 border-dashed border-slate-200 rounded-xl overflow-hidden cursor-pointer hover:border-blue-400 hover:bg-blue-50/30 transition-colors mb-5"
     >
-      {value ? (
+      {preview ? (
         <div className="relative">
           <img
-            src={value}
+            src={preview}
             alt="Preview"
             className="w-full h-48 object-cover block"
           />
@@ -162,25 +136,31 @@ function ImageUploadZone({
         type="file"
         className="hidden"
         accept="image/*"
-        onChange={handleFile}
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) onFileChange(f);
+        }}
       />
     </div>
   );
 }
 
-// ── News form (shared by create + edit) ──────────────────────
+// ── NewsForm ─────────────────────────────────────────────────
 function NewsForm({
   form,
   setForm,
+  imagePreview,
+  onImageChange,
 }: {
   form: typeof EMPTY_FORM;
   setForm: React.Dispatch<React.SetStateAction<typeof EMPTY_FORM>>;
+  imagePreview: string | null;
+  onImageChange: (file: File) => void;
 }) {
   const set = (k: string, v: any) => setForm((p) => ({ ...p, [k]: v }));
-
   return (
     <div className="space-y-4">
-      <ImageUploadZone value={form.image} onChange={(v) => set("image", v)} />
+      <ImageUploadZone preview={imagePreview} onFileChange={onImageChange} />
 
       <div className="space-y-1.5">
         <Label className="text-xs font-medium text-slate-600">Title</Label>
@@ -196,7 +176,7 @@ function NewsForm({
           Description
         </Label>
         <Textarea
-          placeholder="Short summary shown on the card..."
+          placeholder="Short summary..."
           value={form.description}
           onChange={(e) => set("description", e.target.value)}
           className="resize-none h-20"
@@ -208,53 +188,21 @@ function NewsForm({
           Full content
         </Label>
         <Textarea
-          placeholder="Write the full article body here. Use double line breaks for paragraphs."
+          placeholder="Write the full article body here..."
           value={form.content}
           onChange={(e) => set("content", e.target.value)}
           className="resize-none h-32"
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-1.5">
-          <Label className="text-xs font-medium text-slate-600">Category</Label>
-          <FilterDropdown
-            label={form.category}
-            options={CATEGORIES}
-            value={form.category}
-            onChange={(v) => set("category", v)}
-            className="w-full"
-          />
-        </div>
-        <div className="space-y-1.5">
-          <Label className="text-xs font-medium text-slate-600">Author</Label>
-          <Input
-            placeholder="e.g. CIC Editorial"
-            value={form.author}
-            onChange={(e) => set("author", e.target.value)}
-          />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-1.5">
-          <Label className="text-xs font-medium text-slate-600">Date</Label>
-          <Input
-            type="date"
-            value={form.date}
-            onChange={(e) => set("date", e.target.value)}
-          />
-        </div>
-        <div className="space-y-1.5">
-          <Label className="text-xs font-medium text-slate-600">
-            Read time
-          </Label>
-          <Input
-            placeholder="e.g. 3 min read"
-            value={form.readTime}
-            onChange={(e) => set("readTime", e.target.value)}
-          />
-        </div>
+      <div className="space-y-1.5">
+        <Label className="text-xs font-medium text-slate-600">Category</Label>
+        <FilterDropdown
+          options={CATEGORIES}
+          value={form.category}
+          onChange={(v) => set("category", v)}
+          className="w-full"
+        />
       </div>
 
       <div className="flex items-center justify-between py-3 border-t border-slate-100">
@@ -270,23 +218,44 @@ function NewsForm({
   );
 }
 
-// ── Main page ────────────────────────────────────────────────
+// ── Main Page ────────────────────────────────────────────────
 export default function AdminNewsPage() {
-  // Merge both lists, normalize so all items have required fields
-  const [news, setNews] = useState<NewsItem[]>(() =>
-    initialNews.map((n) => ({ ...n, content: n.content ?? "" })),
-  );
-
+  const [news, setNews] = useState<News[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState("");
   const [catFilter, setCatFilter] = useState("All");
   const [hotFilter, setHotFilter] = useState("All news");
   const [showCreate, setShowCreate] = useState(false);
-  const [editItem, setEditItem] = useState<NewsItem | null>(null);
+  const [editItem, setEditItem] = useState<News | null>(null);
   const [deleteId, setDeleteId] = useState<number | null>(null);
+
   const [createForm, setCreateForm] = useState({ ...EMPTY_FORM });
   const [editForm, setEditForm] = useState({ ...EMPTY_FORM });
 
-  // ── Derived data ──────────────────────────────────────────
+  const [createImageFile, setCreateImageFile] = useState<File | null>(null);
+  const [createImagePreview, setCreateImagePreview] = useState<string | null>(
+    null,
+  );
+  const [editImageFile, setEditImageFile] = useState<File | null>(null);
+  const [editImagePreview, setEditImagePreview] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchNews();
+  }, []);
+
+  const fetchNews = async () => {
+    try {
+      setLoading(true);
+      const data = await getAllNews();
+      setNews(data);
+    } catch (err) {
+      console.error("Failed to fetch news", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const filtered = news.filter((n) => {
     const q = search.toLowerCase();
     return (
@@ -314,46 +283,103 @@ export default function AdminNewsPage() {
     }
   };
 
-  // ── CRUD handlers ─────────────────────────────────────────
-  const handleCreate = () => {
+  // ── Create ───────────────────────────────────────────────
+  const handleCreate = async () => {
     if (!createForm.title.trim()) return;
-    setNews((prev) => [
-      {
-        id: Date.now(),
-        ...createForm,
-      },
-      ...prev,
-    ]);
-    setCreateForm({ ...EMPTY_FORM });
-    setShowCreate(false);
+    try {
+      setSaving(true);
+      const adminUser = getAdminUser();
+      const formData = new FormData();
+      formData.append(
+        "data",
+        new Blob(
+          [
+            JSON.stringify({
+              title: createForm.title,
+              description: createForm.description,
+              content: createForm.content,
+              category: createForm.category,
+              isHot: createForm.isHot,
+              authorId: adminUser?.userId ?? null,
+            }),
+          ],
+          { type: "application/json" },
+        ),
+      );
+      if (createImageFile) {
+        formData.append("image", createImageFile);
+      }
+      await createNews(formData);
+      await fetchNews();
+      setCreateForm({ ...EMPTY_FORM });
+      setCreateImageFile(null);
+      setCreateImagePreview(null);
+      setShowCreate(false);
+    } catch (err) {
+      console.error("Failed to create news", err);
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const openEdit = (item: NewsItem) => {
+  // ── Open Edit ────────────────────────────────────────────
+  const openEdit = (item: News) => {
     setEditItem(item);
     setEditForm({
       title: item.title,
       description: item.description,
       content: item.content,
-      image: item.image,
       category: item.category,
-      author: item.author,
-      date: item.date,
-      readTime: item.readTime,
       isHot: item.isHot,
     });
+    setEditImageFile(null);
+    setEditImagePreview(item.image ? `${BASE_URL}${item.image}` : null);
   };
 
-  const handleSaveEdit = () => {
+  // ── Save Edit ────────────────────────────────────────────const handleSaveEdit = async () => {
+  const handleSaveEdit = async () => {
+    console.log("editImageFile:", editImageFile);
     if (!editItem) return;
-    setNews((prev) =>
-      prev.map((n) => (n.id === editItem.id ? { ...n, ...editForm } : n)),
-    );
-    setEditItem(null);
+    try {
+      setSaving(true);
+      const adminUser = getAdminUser();
+
+      // ✅ Always update metadata
+      await updateNews(editItem.id, {
+        title: editForm.title,
+        description: editForm.description,
+        content: editForm.content,
+        category: editForm.category,
+        isHot: editForm.isHot,
+        authorId: adminUser?.userId ?? null,
+      });
+
+      // ✅ Only update image if a new one was selected
+      if (editImageFile) {
+        await updateNewsImage(editItem.id, editImageFile);
+      }
+
+      await fetchNews();
+      setEditItem(null);
+      setEditImageFile(null);
+      setEditImagePreview(null);
+    } catch (err) {
+      console.error("Failed to update news", err);
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleDelete = () => {
-    setNews((prev) => prev.filter((n) => n.id !== deleteId));
-    setDeleteId(null);
+  // ── Delete ───────────────────────────────────────────────
+  const handleDelete = async () => {
+    if (!deleteId) return;
+    try {
+      await deleteNews(deleteId);
+      await fetchNews();
+      setDeleteId(null);
+    } catch (err) {
+      console.error("Failed to delete news", err);
+    }
   };
 
   return (
@@ -380,9 +406,9 @@ export default function AdminNewsPage() {
       {/* Stats */}
       <div className="grid grid-cols-3 gap-3">
         {[
-          { label: "Total articles", value: news.length },
-          { label: "Hot news", value: hotCount },
-          { label: "Categories", value: catCount },
+          { label: "Total articles", value: loading ? "..." : news.length },
+          { label: "Hot news", value: loading ? "..." : hotCount },
+          { label: "Categories", value: loading ? "..." : catCount },
         ].map((s) => (
           <div key={s.label} className="bg-slate-50 rounded-lg p-4">
             <p className="text-xs text-slate-500 mb-1">{s.label}</p>
@@ -403,14 +429,12 @@ export default function AdminNewsPage() {
           />
         </div>
         <FilterDropdown
-          label="All categories"
           options={CAT_FILTER}
           value={catFilter}
           onChange={setCatFilter}
           className="min-w-[150px]"
         />
         <FilterDropdown
-          label="All news"
           options={HOT_FILTER}
           value={hotFilter}
           onChange={setHotFilter}
@@ -419,7 +443,11 @@ export default function AdminNewsPage() {
       </div>
 
       {/* Grid */}
-      {filtered.length === 0 ? (
+      {loading ? (
+        <div className="text-center py-20 text-slate-400">
+          <p className="text-sm">Loading news...</p>
+        </div>
+      ) : filtered.length === 0 ? (
         <div className="text-center py-20 text-slate-400">
           <Search className="w-10 h-10 mx-auto mb-3 opacity-20" />
           <p className="text-sm">No articles found</p>
@@ -433,7 +461,7 @@ export default function AdminNewsPage() {
             >
               {item.image ? (
                 <img
-                  src={item.image}
+                  src={`${BASE_URL}${item.image}`}
                   alt={item.title}
                   className="w-full h-44 object-cover block"
                 />
@@ -442,7 +470,6 @@ export default function AdminNewsPage() {
                   <ImagePlus className="w-8 h-8 text-slate-300" />
                 </div>
               )}
-
               <CardContent className="p-4">
                 <div className="flex gap-2 mb-2 flex-wrap">
                   <Badge className="text-[10px] bg-blue-50 text-blue-800 border border-blue-200 hover:bg-blue-50">
@@ -454,27 +481,18 @@ export default function AdminNewsPage() {
                     </Badge>
                   )}
                 </div>
-
                 <p className="text-sm font-medium text-slate-800 line-clamp-2 leading-snug mb-1.5">
                   {item.title}
                 </p>
                 <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed mb-3">
                   {item.description}
                 </p>
-
                 <div className="flex items-center gap-3 text-[11px] text-slate-400 mb-3">
-                  {item.readTime && (
-                    <span className="flex items-center gap-1">
-                      <Clock className="w-3 h-3" /> {item.readTime}
-                    </span>
-                  )}
-                  {item.date && (
-                    <span className="flex items-center gap-1">
-                      <Calendar className="w-3 h-3" /> {fmtDate(item.date)}
-                    </span>
-                  )}
+                  <span className="flex items-center gap-1">
+                    <Calendar className="w-3 h-3" />
+                    {item.createdAt ? fmtDate(item.createdAt) : ""}
+                  </span>
                 </div>
-
                 <div className="flex gap-2 pt-3 border-t border-slate-100">
                   <Button
                     variant="ghost"
@@ -505,16 +523,19 @@ export default function AdminNewsPage() {
         </p>
       )}
 
-      {/* ── Create Dialog ───────────────────────────────────── */}
+      {/* ── Create Dialog ── */}
       <Dialog
         open={showCreate}
         onOpenChange={(o) => {
-          if (!o) setCreateForm({ ...EMPTY_FORM });
+          if (!o) {
+            setCreateForm({ ...EMPTY_FORM });
+            setCreateImageFile(null);
+            setCreateImagePreview(null);
+          }
           setShowCreate(o);
         }}
       >
         <DialogContent className="sm:max-w-lg p-0 gap-0 overflow-hidden max-h-[90vh] flex flex-col">
-          {/* Sticky header */}
           <DialogHeader className="px-6 py-4 border-b border-slate-100 shrink-0">
             <DialogTitle className="flex items-center gap-2">
               <Plus className="w-4 h-4 text-blue-600" /> Create news article
@@ -523,43 +544,52 @@ export default function AdminNewsPage() {
               Fill in the details to publish a new article.
             </DialogDescription>
           </DialogHeader>
-
-          {/* Scrollable body only */}
           <div className="overflow-y-auto flex-1 px-6 py-5">
-            <NewsForm form={createForm} setForm={setCreateForm} />
+            <NewsForm
+              form={createForm}
+              setForm={setCreateForm}
+              imagePreview={createImagePreview}
+              onImageChange={(file) => {
+                setCreateImageFile(file);
+                setCreateImagePreview(URL.createObjectURL(file));
+              }}
+            />
           </div>
-
-          {/* Sticky footer */}
           <DialogFooter className="px-6 py-4 border-t border-slate-100 shrink-0">
             <Button
               variant="outline"
               onClick={() => {
                 setCreateForm({ ...EMPTY_FORM });
+                setCreateImageFile(null);
+                setCreateImagePreview(null);
                 setShowCreate(false);
               }}
             >
               Cancel
             </Button>
             <Button
-              disabled={!createForm.title.trim()}
+              disabled={!createForm.title.trim() || saving}
               onClick={handleCreate}
               className="bg-blue-600 hover:bg-blue-700 text-white"
             >
-              Publish article
+              {saving ? "Publishing..." : "Publish article"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* ── Edit Dialog ─────────────────────────────────────── */}
+      {/* ── Edit Dialog ── */}
       <Dialog
         open={!!editItem}
         onOpenChange={(o) => {
-          if (!o) setEditItem(null);
+          if (!o) {
+            setEditItem(null);
+            setEditImageFile(null);
+            setEditImagePreview(null);
+          }
         }}
       >
         <DialogContent className="sm:max-w-lg p-0 gap-0 overflow-hidden max-h-[90vh] flex flex-col">
-          {/* Sticky header */}
           <DialogHeader className="px-6 py-4 border-b border-slate-100 shrink-0">
             <DialogTitle className="flex items-center gap-2">
               <Pencil className="w-4 h-4 text-blue-600" /> Edit article
@@ -568,29 +598,40 @@ export default function AdminNewsPage() {
               Update the details for this article.
             </DialogDescription>
           </DialogHeader>
-
-          {/* Scrollable body only */}
           <div className="overflow-y-auto flex-1 px-6 py-5">
-            <NewsForm form={editForm} setForm={setEditForm} />
+            <NewsForm
+              form={editForm}
+              setForm={setEditForm}
+              imagePreview={editImagePreview}
+              onImageChange={(file) => {
+                setEditImageFile(file);
+                setEditImagePreview(URL.createObjectURL(file));
+              }}
+            />
           </div>
-
-          {/* Sticky footer */}
           <DialogFooter className="px-6 py-4 border-t border-slate-100 shrink-0">
-            <Button variant="outline" onClick={() => setEditItem(null)}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setEditItem(null);
+                setEditImageFile(null);
+                setEditImagePreview(null);
+              }}
+            >
               Cancel
             </Button>
             <Button
-              disabled={!editForm.title.trim()}
+              disabled={!editForm.title.trim() || saving}
               onClick={handleSaveEdit}
               className="bg-blue-600 hover:bg-blue-700 text-white"
             >
-              Save changes
+              {saving ? "Saving..." : "Save changes"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* ── Delete Dialog ───────────────────────────────────── */}
+      {/* ── Delete Dialog ── */}
       <Dialog open={deleteId !== null} onOpenChange={() => setDeleteId(null)}>
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>

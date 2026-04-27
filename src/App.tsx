@@ -1,5 +1,3 @@
-// src/App.tsx
-
 import { Route, Routes } from "react-router-dom";
 import Layout from "./components/Layout";
 import HomePage from "./Pages/Home-page";
@@ -17,6 +15,7 @@ import AdminEventsPage from "./Pages/Admin/AdminEventsPage";
 import AdminGalleryPage from "./Pages/Admin/AdminGalleryPage";
 import AdminManagementPage from "./Pages/Admin/AdminManagementPage";
 import AdminLogin from "./Pages/Admin/AdminLogin";
+import ProtectedRoute from "@/ProtectedRoute"; // ✅
 
 function App() {
   return (
@@ -30,16 +29,20 @@ function App() {
         <Route path="/news/:id" element={<NewsDetailPage />} />
       </Route>
 
+      {/* ✅ Redirect to /admin if already logged in */}
       <Route path="/admin/login" element={<AdminLogin />} />
 
-      <Route path="/admin" element={<AdminLayout />}>
-        <Route index element={<AdminDashboard />} />
-        <Route path="/admin/videos" element={<AdminVideosPage />} />
-        <Route path="/admin/documents" element={<AdminDocumentsPage />} />
-        <Route path="/admin/news" element={<AdminNewsPage />} />
-        <Route path="/admin/events" element={<AdminEventsPage />} />
-        <Route path="/admin/gallery" element={<AdminGalleryPage />} />
-        <Route path="/admin/management" element={<AdminManagementPage />} />
+      {/* ✅ All admin routes protected */}
+      <Route element={<ProtectedRoute />}>
+        <Route path="/admin" element={<AdminLayout />}>
+          <Route index element={<AdminDashboard />} />
+          <Route path="/admin/videos" element={<AdminVideosPage />} />
+          <Route path="/admin/documents" element={<AdminDocumentsPage />} />
+          <Route path="/admin/news" element={<AdminNewsPage />} />
+          <Route path="/admin/events" element={<AdminEventsPage />} />
+          <Route path="/admin/gallery" element={<AdminGalleryPage />} />
+          <Route path="/admin/management" element={<AdminManagementPage />} />
+        </Route>
       </Route>
     </Routes>
   );

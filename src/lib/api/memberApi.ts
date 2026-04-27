@@ -1,6 +1,11 @@
 import type { Member } from "@/types";
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8081";
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+
+const getAuthHeader = () => ({
+    Authorization: `Bearer ${localStorage.getItem("admin_token") ?? ""}`,
+    "Content-Type": "application/json",
+});
 
 export const getAllMembers = async (page = 0, size = 100): Promise<Member[]> => {
     const response = await fetch(`${BASE_URL}/api/v1/members?page=${page}&size=${size}`);
@@ -18,7 +23,7 @@ export const getMemberById = async (id: number): Promise<Member> => {
 export const createMember = async (memberDTO: Partial<Member>): Promise<Member> => {
     const response = await fetch(`${BASE_URL}/api/v1/members`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { ...getAuthHeader() },
         body: JSON.stringify(memberDTO),
     });
     if (!response.ok) throw new Error("Failed to create member");
@@ -28,7 +33,7 @@ export const createMember = async (memberDTO: Partial<Member>): Promise<Member> 
 export const updateMember = async (id: number, memberDTO: Partial<Member>): Promise<Member> => {
     const response = await fetch(`${BASE_URL}/api/v1/members/${id}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: { ...getAuthHeader() },
         body: JSON.stringify(memberDTO),
     });
     if (!response.ok) throw new Error("Failed to update member");
@@ -38,6 +43,7 @@ export const updateMember = async (id: number, memberDTO: Partial<Member>): Prom
 export const deleteMember = async (id: number): Promise<void> => {
     const response = await fetch(`${BASE_URL}/api/v1/members/${id}`, {
         method: "DELETE",
+        headers: { Authorization: `Bearer ${localStorage.getItem("admin_token") ?? ""}` },
     });
     if (!response.ok) throw new Error("Failed to delete member");
 };

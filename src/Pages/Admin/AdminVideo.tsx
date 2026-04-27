@@ -1,6 +1,13 @@
-import { useState } from "react";
-import { Eye, Link as LinkIcon, Pencil, Play, Trash2, Upload, Video } from "lucide-react";
-
+import { useState, useEffect } from "react";
+import {
+  Eye,
+  Link as LinkIcon,
+  Pencil,
+  Play,
+  Trash2,
+  Upload,
+  Video,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CardContent } from "@/components/ui/card";
 import {
@@ -14,8 +21,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { videos as mockVideos } from "@/Mock-data";
-
 import {
   ActionDropdown,
   AdminCard,
@@ -25,24 +30,23 @@ import {
   StatCard,
   StatusBadge,
 } from "./admin-components";
+import {
+  getAllVideos,
+  createVideo,
+  updateVideo,
+  deleteVideo,
+} from "@/lib/api/videoApi";
 
-interface VideoItem {
-  id: number;
-  title: string;
-  description: string;
-  videoLink: string;
-}
+import { getAdminUser } from "@/lib/api/authHeaders";
+
+import type { video } from "@/types";
 
 const sourceOptions = ["All", "Facebook", "YouTube", "Other"];
 
 const getSource = (url: string) => {
-  const normalized = url.toLowerCase();
-  if (normalized.includes("facebook") || normalized.includes("fb.")) {
-    return "Facebook";
-  }
-  if (normalized.includes("youtube") || normalized.includes("youtu.be")) {
-    return "YouTube";
-  }
+  const n = url.toLowerCase();
+  if (n.includes("facebook") || n.includes("fb.")) return "Facebook";
+  if (n.includes("youtube") || n.includes("youtu.be")) return "YouTube";
   return "Other";
 };
 
@@ -54,137 +58,146 @@ const getYouTubeId = (url: string) => {
 
 const getEmbedUrl = (url: string) => {
   const source = getSource(url);
-
-  if (source === "Facebook") {
-    return `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(
-      url,
-    )}&show_text=false`;
-  }
-
+  if (source === "Facebook")
+    return `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(url)}&show_text=false`;
   if (source === "YouTube") {
-    const youtubeId = getYouTubeId(url);
-    return youtubeId ? `https://www.youtube.com/embed/${youtubeId}` : url;
+    const id = getYouTubeId(url);
+    return id ? `https://www.youtube.com/embed/${id}` : url;
   }
-
   return url;
 };
 
 const getYouTubeThumb = (url: string) => {
-  const youtubeId = getYouTubeId(url);
-  return youtubeId ? `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg` : "";
+  const id = getYouTubeId(url);
+  return id ? `https://img.youtube.com/vi/${id}/hqdefault.jpg` : "";
 };
 
+const EMPTY_FORM = { title: "", description: "", videoLink: "" };
+
 export default function AdminVideosPage() {
-  const [videos, setVideos] = useState<VideoItem[]>(() =>
-    mockVideos.map((video, index) => ({
-      id: index + 1,
-      title: video.title,
-      description: video.description,
-      videoLink: video.videoLink,
-    })),
-  );
+  const [videos, setVideos] = useState<video[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState("");
   const [sourceFilter, setSourceFilter] = useState("All");
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingItem, setEditingItem] = useState<VideoItem | null>(null);
-  const [previewItem, setPreviewItem] = useState<VideoItem | null>(null);
-  const [deleteItem, setDeleteItem] = useState<VideoItem | null>(null);
-  const [form, setForm] = useState({
-    title: "",
-    description: "",
-    videoLink: "",
+  const [editingItem, setEditingItem] = useState<video | null>(null);
+  const [previewItem, setPreviewItem] = useState<video | null>(null);
+  const [deleteItem, setDeleteItem] = useState<video | null>(null);
+  const [form, setForm] = useState(EMPTY_FORM);
+
+  useEffect(() => {
+    fetchVideos();
+  }, []);
+
+  const fetchVideos = async () => {
+    try {
+      setLoading(true);
+      const data = await getAllVideos();
+      setVideos(data);
+    } catch (err) {
+      console.error("Failed to fetch videos", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filtered = videos.filter((v) => {
+    const q = search.toLowerCase();
+    return (
+      (v.title.toLowerCase().includes(q) ||
+        v.description?.toLowerCase().includes(q) ||
+        v.videoLink.toLowerCase().includes(q)) &&
+      (sourceFilter === "All" || getSource(v.videoLink) === sourceFilter)
+    );
   });
-
-  const filtered = videos.filter((video) => {
-    const query = search.toLowerCase();
-    const matchesSearch =
-      video.title.toLowerCase().includes(query) ||
-      video.description.toLowerCase().includes(query) ||
-      video.videoLink.toLowerCase().includes(query);
-    const matchesSource =
-      sourceFilter === "All" || getSource(video.videoLink) === sourceFilter;
-
-    return matchesSearch && matchesSource;
-  });
-
-  const resetForm = () =>
-    setForm({
-      title: "",
-      description: "",
-      videoLink: "",
-    });
 
   const openCreate = () => {
-    resetForm();
+    setForm(EMPTY_FORM);
     setEditingItem(null);
     setDialogOpen(true);
   };
 
-  const openEdit = (video: VideoItem) => {
+  const openEdit = (video: video) => {
     setForm({
       title: video.title,
-      description: video.description,
+      description: video.description ?? "",
       videoLink: video.videoLink,
     });
     setEditingItem(video);
     setDialogOpen(true);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.title.trim() || !form.videoLink.trim()) return;
-
-    if (editingItem) {
-      setVideos((prev) =>
-        prev.map((video) =>
-          video.id === editingItem.id ? { ...video, ...form } : video,
-        ),
-      );
-    } else {
-      setVideos((prev) => [
-        {
-          id: Date.now(),
-          ...form,
-        },
-        ...prev,
-      ]);
+    try {
+      setSaving(true);
+      if (editingItem) {
+        await updateVideo(editingItem.id, form);
+      } else {
+        await createVideo(form);
+      }
+      await fetchVideos();
+      setDialogOpen(false);
+      setForm(EMPTY_FORM);
+      setEditingItem(null);
+    } catch (err) {
+      console.error("Failed to save video", err);
+    } finally {
+      setSaving(false);
     }
-
-    resetForm();
-    setEditingItem(null);
-    setDialogOpen(false);
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!deleteItem) return;
-    setVideos((prev) => prev.filter((video) => video.id !== deleteItem.id));
-    setDeleteItem(null);
+    try {
+      await deleteVideo(deleteItem.id);
+      await fetchVideos();
+      setDeleteItem(null);
+    } catch (err) {
+      console.error("Failed to delete video", err);
+    }
   };
 
   return (
     <div className="space-y-6 p-6">
       <AdminSectionHeader
         title="Videos"
-        description={`${videos.length} videos from the existing intranet mock data.`}
+        description={`${videos.length} videos`}
         action={
           <Button onClick={openCreate} className="gap-2 rounded-2xl">
-            <Upload className="h-4 w-4" />
-            Add Video
+            <Upload className="h-4 w-4" /> Add Video
           </Button>
         }
       />
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-        <StatCard title="Total Videos" value={videos.length} icon={Video} tone="violet" />
         <StatCard
-          title="Facebook Links"
-          value={videos.filter((video) => getSource(video.videoLink) === "Facebook").length}
+          title="Total Videos"
+          value={loading ? "..." : videos.length}
+          icon={Video}
+          tone="violet"
+        />
+        <StatCard
+          title="Facebook"
+          value={
+            loading
+              ? "..."
+              : videos.filter((v) => getSource(v.videoLink) === "Facebook")
+                  .length
+          }
           icon={Play}
           tone="blue"
         />
         <StatCard
-          title="With Description"
-          value={videos.filter((video) => video.description.trim()).length}
-          icon={LinkIcon}
+          title="YouTube"
+          value={
+            loading
+              ? "..."
+              : videos.filter((v) => getSource(v.videoLink) === "YouTube")
+                  .length
+          }
+          icon={Play}
           tone="emerald"
         />
       </div>
@@ -193,7 +206,7 @@ export default function AdminVideosPage() {
         <AdminSearchInput
           value={search}
           onChange={setSearch}
-          placeholder="Search videos by title, description, or URL..."
+          placeholder="Search videos..."
         />
         <FilterPillGroup
           options={sourceOptions}
@@ -202,7 +215,13 @@ export default function AdminVideosPage() {
         />
       </div>
 
-      {filtered.length === 0 ? (
+      {loading ? (
+        <AdminCard>
+          <CardContent className="flex h-48 items-center justify-center text-sm text-muted-foreground">
+            Loading videos...
+          </CardContent>
+        </AdminCard>
+      ) : filtered.length === 0 ? (
         <AdminCard>
           <CardContent className="flex h-48 items-center justify-center text-sm text-muted-foreground">
             No videos found.
@@ -212,8 +231,7 @@ export default function AdminVideosPage() {
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
           {filtered.map((video) => {
             const source = getSource(video.videoLink);
-            const youtubeThumb = getYouTubeThumb(video.videoLink);
-
+            const thumb = getYouTubeThumb(video.videoLink);
             return (
               <AdminCard key={video.id} className="overflow-hidden">
                 <button
@@ -221,9 +239,9 @@ export default function AdminVideosPage() {
                   onClick={() => setPreviewItem(video)}
                   className="group relative block aspect-video w-full overflow-hidden bg-muted text-left"
                 >
-                  {source === "YouTube" && youtubeThumb ? (
+                  {source === "YouTube" && thumb ? (
                     <img
-                      src={youtubeThumb}
+                      src={thumb}
                       alt=""
                       className="h-full w-full object-cover transition-transform group-hover:scale-105"
                     />
@@ -244,7 +262,6 @@ export default function AdminVideosPage() {
                     </span>
                   </div>
                 </button>
-
                 <CardContent className="space-y-4 p-4">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0 space-y-2">
@@ -252,10 +269,12 @@ export default function AdminVideosPage() {
                         {video.title}
                       </p>
                       <p className="line-clamp-2 text-xs text-muted-foreground">
-                        {video.description || "No description added"}
+                        {video.description || "No description"}
                       </p>
                       <div className="flex flex-wrap items-center gap-2">
-                        <StatusBadge tone={source === "Facebook" ? "blue" : "violet"}>
+                        <StatusBadge
+                          tone={source === "Facebook" ? "blue" : "violet"}
+                        >
                           {source}
                         </StatusBadge>
                         <a
@@ -297,12 +316,23 @@ export default function AdminVideosPage() {
         </div>
       )}
 
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+      {/* Create / Edit dialog */}
+      <Dialog
+        open={dialogOpen}
+        onOpenChange={(o) => {
+          if (!o) {
+            setDialogOpen(false);
+            setEditingItem(null);
+          }
+        }}
+      >
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>{editingItem ? "Edit video" : "Add video"}</DialogTitle>
+            <DialogTitle>
+              {editingItem ? "Edit video" : "Add video"}
+            </DialogTitle>
             <DialogDescription>
-              This form matches the existing mock data fields: title, description, and video link.
+              Title, description, and video link.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4">
@@ -310,32 +340,31 @@ export default function AdminVideosPage() {
               <Label className="text-sm text-muted-foreground">Title</Label>
               <Input
                 value={form.title}
-                onChange={(event) =>
-                  setForm((prev) => ({ ...prev, title: event.target.value }))
+                onChange={(e) =>
+                  setForm((p) => ({ ...p, title: e.target.value }))
                 }
-                placeholder="e.g. Honey Glazed Chicken With CIC Besto Chicken"
               />
             </div>
             <div className="space-y-2">
-              <Label className="text-sm text-muted-foreground">Description</Label>
+              <Label className="text-sm text-muted-foreground">
+                Description
+              </Label>
               <Textarea
                 value={form.description}
-                onChange={(event) =>
-                  setForm((prev) => ({
-                    ...prev,
-                    description: event.target.value,
-                  }))
+                onChange={(e) =>
+                  setForm((p) => ({ ...p, description: e.target.value }))
                 }
-                placeholder="Optional short description"
                 className="min-h-24 resize-none"
               />
             </div>
             <div className="space-y-2">
-              <Label className="text-sm text-muted-foreground">Video link</Label>
+              <Label className="text-sm text-muted-foreground">
+                Video link
+              </Label>
               <Input
                 value={form.videoLink}
-                onChange={(event) =>
-                  setForm((prev) => ({ ...prev, videoLink: event.target.value }))
+                onChange={(e) =>
+                  setForm((p) => ({ ...p, videoLink: e.target.value }))
                 }
                 placeholder="https://facebook.com/reel/..."
               />
@@ -347,14 +376,19 @@ export default function AdminVideosPage() {
             </Button>
             <Button
               onClick={handleSave}
-              disabled={!form.title.trim() || !form.videoLink.trim()}
+              disabled={!form.title.trim() || !form.videoLink.trim() || saving}
             >
-              {editingItem ? "Save changes" : "Add video"}
+              {saving
+                ? "Saving..."
+                : editingItem
+                  ? "Save changes"
+                  : "Add video"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
+      {/* Preview dialog */}
       <Dialog open={!!previewItem} onOpenChange={() => setPreviewItem(null)}>
         <DialogContent className="sm:max-w-3xl">
           <DialogHeader>
@@ -377,12 +411,13 @@ export default function AdminVideosPage() {
         </DialogContent>
       </Dialog>
 
+      {/* Delete dialog */}
       <Dialog open={!!deleteItem} onOpenChange={() => setDeleteItem(null)}>
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
             <DialogTitle>Delete video?</DialogTitle>
             <DialogDescription>
-              "{deleteItem?.title}" will be removed from the admin list.
+              "{deleteItem?.title}" will be permanently removed.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

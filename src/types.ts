@@ -46,7 +46,7 @@ export interface Gallery {
     description: string;
 }
 
-export interface Video {
+export interface video {
     id: number;
     title: string;
     description: string;
@@ -62,6 +62,7 @@ export interface Member {
     dob: string;
     email: string;
     phoneNo: string;
+    joinedDate: string;
 }
 
 export interface User {

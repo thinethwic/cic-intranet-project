@@ -1,43 +1,42 @@
+import { Card } from "@/components/ui/card";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { CalendarDays } from "lucide-react";
+
 interface Props {
   name: string;
-  description: string;
+  role: string;
+  joinedDate: string;
 }
 
-const colorMap = [
-  { bg: "bg-slate-100", avatar: "bg-slate-500" },
-  { bg: "bg-blue-50", avatar: "bg-blue-400" },
-  { bg: "bg-gray-100", avatar: "bg-gray-400" },
-  { bg: "bg-stone-100", avatar: "bg-stone-400" },
-];
+export default function WelcomeCard({ name, role, joinedDate }: Props) {
+  const initials = name.substring(0, 2).toUpperCase();
 
-let colorIndex = 0;
-
-export default function WelcomeCard({ name, description }: Props) {
-  const color = colorMap[colorIndex++ % colorMap.length];
+  const formattedDate = new Date(joinedDate).toLocaleDateString("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-md transition-shadow duration-200">
-      {/* Colored Header */}
-      <div
-        className={`${color.bg} flex flex-col items-center gap-3 pt-7 pb-5 px-4`}
-      >
-        <div
-          className={`w-16 h-16 rounded-full ${color.avatar} flex items-center justify-center text-white text-lg font-medium tracking-wide`}
-        >
-          {name.substring(0, 2).toUpperCase()}
-        </div>
-        <div className="text-center">
-          <p className="text-sm font-medium text-gray-800">{name}</p>
-          <p className="text-xs mt-0.5 text-gray-500">{description}</p>
-        </div>
+    <Card className="rounded-2xl bg-white border shadow-sm p-5 flex flex-col items-center gap-3 text-center">
+      <Avatar className="w-16 h-16 border-2 border-blue-100">
+        <AvatarFallback className="bg-blue-50 text-blue-600 font-bold text-lg">
+          {initials}
+        </AvatarFallback>
+      </Avatar>
+
+      <div>
+        <p className="text-[10px] font-extrabold tracking-widest text-blue-600 uppercase mb-1">
+          Welcome
+        </p>
+        <h3 className="text-sm font-bold text-gray-900">{name}</h3>
+        <p className="text-xs text-gray-400 mt-0.5">{role}</p>
       </div>
 
-      {/* Body */}
-      <div className="p-4">
-        <p className="text-xs text-gray-500 text-center leading-relaxed">
-          {description}
-        </p>
+      <div className="flex items-center gap-1.5 text-xs text-gray-400 border border-gray-100 rounded-full px-3 py-1">
+        <CalendarDays className="w-3 h-3" />
+        <span>Joined {formattedDate}</span>
       </div>
-    </div>
+    </Card>
   );
 }

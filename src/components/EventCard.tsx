@@ -16,6 +16,8 @@ function formatDate(dateStr: string) {
   return { day, month };
 }
 
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+
 export default function EventCard({
   image,
   title,
@@ -24,13 +26,14 @@ export default function EventCard({
   location,
 }: Props) {
   const { day, month } = formatDate(date);
+  const imageSrc = image?.startsWith("http") ? image : `${BASE_URL}${image}`;
 
   return (
     <Card className="group overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer">
       {/* Image Section */}
       <div className="relative">
         <img
-          src={image}
+          src={imageSrc}
           alt={title}
           className="h-48 w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
         />

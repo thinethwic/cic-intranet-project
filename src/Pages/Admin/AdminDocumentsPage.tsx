@@ -40,21 +40,16 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { documents as initialDocs } from "@/Mock-data";
-
-// FIX 1: proper types instead of literal value types
-interface Document {
-  id: number;
-  title: string;
-  category: string;
-  type: "PDF" | "DOCS" | "XLSX";
-  isPinned: boolean;
-  fileUrl: string;
-  segment: string;
-  access: "public" | "private";
-  allowDownload: boolean;
-  allowView: boolean;
-}
+import type { Document } from "@/types";
+import {
+  getAllDocuments,
+  createDocument,
+  updateDocument,
+  deleteDocument,
+  viewDocument,
+  downloadDocument,
+} from "@/lib/api/documentApi";
+import { getAdminUser } from "@/lib/api/authHeaders";
 
 const TYPE_STYLES: Record<string, string> = {
   PDF: "bg-red-50 text-red-800 border-red-200",
@@ -62,15 +57,25 @@ const TYPE_STYLES: Record<string, string> = {
   XLSX: "bg-emerald-50 text-emerald-800 border-emerald-200",
 };
 
-const SEGMENTS = ["All", "cic-feeds", "asia-vet"];
+const SEGMENTS = [
+  "All",
+  "CIC_FEEDS",
+  "CIC_VET_CARE",
+  "CIC_POULTRY",
+  "AISA_VET",
+];
 const TYPES = ["All", "PDF", "DOCS", "XLSX"] as const;
-const CATEGORIES = ["All", "General", "Finance", "Legal", "Operations", "HR"];
+const CATEGORIES = [
+  "All",
+  "HR",
+  "FINANCE",
+  "IT",
+  "OPERATIONS",
+  "LEGAL",
+  "GENERAL",
+];
+const ACCESS_OPTIONS = ["PUBLIC", "PRIVATE", "RESTRICTED"];
 
-function normalizeSegment(seg: string) {
-  return seg.replace("our-segments/", "");
-}
-
-// FIX 2: removed unused `label` prop from the interface
 function FilterDropdown({
   options,
   value,
@@ -114,14 +119,8 @@ function FilterDropdown({
 }
 
 export default function AdminDocumentsPage() {
-  const [docs, setDocs] = useState<Document[]>(() =>
-    initialDocs.map((d) => ({ ...d, segment: normalizeSegment(d.segment) })),
-  );
-
-  useEffect(() => {
-    localStorage.setItem("admin-docs", JSON.stringify(docs));
-  }, [docs]);
-
+  const [docs, setDocs] = useState<Document[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [segFilter, setSegFilter] = useState("All");
   const [typeFilter, setTypeFilter] = useState("All");
@@ -129,80 +128,173 @@ export default function AdminDocumentsPage() {
   const [showUpload, setShowUpload] = useState(false);
   const [editDoc, setEditDoc] = useState<Document | null>(null);
   const [deleteId, setDeleteId] = useState<number | null>(null);
+  const [saving, setSaving] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
-  const [newName, setNewName] = useState("");
+  // Upload form state
+  const [newTitle, setNewTitle] = useState("");
   const [newType, setNewType] = useState<"PDF" | "DOCS" | "XLSX">("PDF");
-  const [newCat, setNewCat] = useState("General");
-  const [newSeg, setNewSeg] = useState("cic-feeds");
-  const [newPinned, setNewPinned] = useState(false);
-  const [fileName, setFileName] = useState("");
-  const [newAccess, setNewAccess] = useState<"public" | "private">("public");
-  const [newAllowDownload, setNewAllowDownload] = useState(true);
+  const [newCategory, setNewCategory] = useState("GENERAL");
+  const [newSegment, setNewSegment] = useState("CIC_FEEDS");
+  const [newAccess, setNewAccess] = useState("PUBLIC");
+  const [newIsPinned, setNewIsPinned] = useState(false);
+  const [newAllowDownload, setNewAllowDownload] = useState(false);
   const [newAllowView, setNewAllowView] = useState(true);
 
-  // FIX 4: use split(" · ")[0] for reliable category matching
+  const adminUser = getAdminUser();
+
+  // ✅ Fetch from API on mount
+  useEffect(() => {
+    fetchDocs();
+  }, []);
+
+  const fetchDocs = async () => {
+    try {
+      setLoading(true);
+      const data = await getAllDocuments();
+      setDocs(data);
+    } catch (err) {
+      console.error("Failed to fetch documents", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const resetUploadForm = () => {
+    setNewTitle("");
+    setNewType("PDF");
+    setNewCategory("GENERAL");
+    setNewSegment("CIC_FEEDS");
+    setNewAccess("PUBLIC");
+    setNewIsPinned(false);
+    setNewAllowDownload(false);
+    setNewAllowView(true);
+    setSelectedFile(null);
+  };
+
+  // ✅ Create — multipart
+  const handleUpload = async () => {
+    if (!newTitle.trim() || !selectedFile) return;
+    try {
+      setSaving(true);
+      const formData = new FormData();
+      formData.append("file", selectedFile);
+      formData.append(
+        "data",
+        new Blob(
+          [
+            JSON.stringify({
+              title: newTitle,
+              type: newType,
+              category: newCategory,
+              segment: newSegment,
+              access: newAccess,
+              isPinned: newIsPinned,
+              allowDownload: newAllowDownload,
+              allowView: newAllowView,
+              createdById: adminUser?.userId ?? null, // ✅ real user id
+            }),
+          ],
+          { type: "application/json" },
+        ),
+      );
+
+      await createDocument(formData);
+      await fetchDocs(); // ✅ refresh list
+      resetUploadForm();
+      setShowUpload(false);
+    } catch (err) {
+      console.error("Failed to create document", err);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // ✅ Update — JSON only (no file change)
+  const handleSaveEdit = async () => {
+    if (!editDoc) return;
+    try {
+      setSaving(true);
+      await updateDocument(editDoc.id, {
+        title: editDoc.title,
+        type: editDoc.type,
+        category: editDoc.category,
+        segment: editDoc.segment,
+        access: editDoc.access,
+        isPinned: editDoc.isPinned,
+        allowDownload: editDoc.allowDownload,
+        allowView: editDoc.allowView,
+      });
+      await fetchDocs();
+      setEditDoc(null);
+    } catch (err) {
+      console.error("Failed to update document", err);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // ✅ Delete
+  const handleDelete = async () => {
+    if (!deleteId) return;
+    try {
+      await deleteDocument(deleteId);
+      await fetchDocs();
+      setDeleteId(null);
+    } catch (err) {
+      console.error("Failed to delete document", err);
+    }
+  };
+
+  // ✅ Toggle pin
+  const togglePin = async (doc: Document) => {
+    try {
+      await updateDocument(doc.id, { isPinned: !doc.isPinned });
+      await fetchDocs();
+    } catch (err) {
+      console.error("Failed to toggle pin", err);
+    }
+  };
+
+  // ✅ View
+  const handleView = async (id: number) => {
+    try {
+      const blob = await viewDocument(id);
+      const url = URL.createObjectURL(blob);
+      window.open(url, "_blank");
+    } catch {
+      alert("Failed to view document");
+    }
+  };
+
+  // ✅ Download
+  const handleDownload = async (id: number, title: string) => {
+    try {
+      const blob = await downloadDocument(id);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = title;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      alert("Failed to download document");
+    }
+  };
+
+  // ✅ Filter
   const filtered = docs.filter((d) => {
     const q = search.toLowerCase();
     return (
       d.title.toLowerCase().includes(q) &&
       (segFilter === "All" || d.segment === segFilter) &&
       (typeFilter === "All" || d.type === typeFilter) &&
-      (catFilter === "All" || d.category.split(" · ")[0] === catFilter)
+      (catFilter === "All" || d.category === catFilter)
     );
   });
 
   const pinnedCount = docs.filter((d) => d.isPinned).length;
-
-  // FIX 3: reset access/download/view state too
-  const resetUploadForm = () => {
-    setNewName("");
-    setNewType("PDF");
-    setNewCat("General");
-    setNewSeg("cic-feeds");
-    setNewPinned(false);
-    setFileName("");
-    setNewAccess("public");
-    setNewAllowDownload(true);
-    setNewAllowView(true);
-  };
-
-  const handleUpload = () => {
-    if (!newName.trim()) return;
-    setDocs((prev) => [
-      {
-        id: Date.now(),
-        title: newName,
-        category: `${newCat} · Uploaded`,
-        type: newType,
-        isPinned: newPinned,
-        fileUrl: "#",
-        segment: newSeg,
-        access: newAccess,
-        allowDownload: newAllowDownload,
-        allowView: newAllowView,
-      },
-      ...prev,
-    ]);
-    resetUploadForm();
-    setShowUpload(false);
-  };
-
-  const handleSaveEdit = () => {
-    if (!editDoc) return;
-    setDocs((prev) => prev.map((d) => (d.id === editDoc.id ? editDoc : d)));
-    setEditDoc(null);
-  };
-
-  const handleDelete = () => {
-    setDocs((prev) => prev.filter((d) => d.id !== deleteId));
-    setDeleteId(null);
-  };
-
-  const togglePin = (id: number) =>
-    setDocs((prev) =>
-      prev.map((d) => (d.id === id ? { ...d, isPinned: !d.isPinned } : d)),
-    );
 
   return (
     <div className="space-y-6 p-6">
@@ -280,7 +372,16 @@ export default function AdminDocumentsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.length === 0 && (
+              {loading ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={5}
+                    className="text-center py-14 text-slate-400 text-sm"
+                  >
+                    Loading documents...
+                  </TableCell>
+                </TableRow>
+              ) : filtered.length === 0 ? (
                 <TableRow>
                   <TableCell
                     colSpan={5}
@@ -290,94 +391,99 @@ export default function AdminDocumentsPage() {
                     No documents found
                   </TableCell>
                 </TableRow>
-              )}
-              {filtered.map((doc) => (
-                <TableRow
-                  key={doc.id}
-                  className="group border-b border-slate-100 hover:bg-slate-50/70"
-                >
-                  <TableCell className="pl-5 py-3.5">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-7 h-7 rounded-md bg-slate-100 flex items-center justify-center shrink-0">
-                        <FileText className="w-3.5 h-3.5 text-slate-500" />
+              ) : (
+                filtered.map((doc) => (
+                  <TableRow
+                    key={doc.id}
+                    className="group border-b border-slate-100 hover:bg-slate-50/70"
+                  >
+                    <TableCell className="pl-5 py-3.5">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-7 h-7 rounded-md bg-slate-100 flex items-center justify-center shrink-0">
+                          <FileText className="w-3.5 h-3.5 text-slate-500" />
+                        </div>
+                        <span className="text-sm font-medium truncate">
+                          {doc.title}
+                        </span>
+                        {doc.isPinned && (
+                          <Badge className="text-[10px] bg-amber-50 text-amber-700 border border-amber-200 gap-1 px-1.5 shrink-0">
+                            <Pin className="w-2.5 h-2.5" /> Pinned
+                          </Badge>
+                        )}
                       </div>
-                      <span className="text-sm font-medium truncate">
-                        {doc.title}
+                    </TableCell>
+                    <TableCell className="py-3.5">
+                      <Badge
+                        variant="outline"
+                        className={`text-[10px] font-medium px-2 ${TYPE_STYLES[doc.type]}`}
+                      >
+                        {doc.type}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="py-3.5 text-xs text-slate-500">
+                      {doc.category}
+                    </TableCell>
+                    <TableCell className="py-3.5">
+                      <span className="text-[11px] bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full">
+                        {doc.segment}
                       </span>
-                      {doc.isPinned && (
-                        <Badge className="text-[10px] bg-amber-50 text-amber-700 border border-amber-200 gap-1 px-1.5 shrink-0">
-                          <Pin className="w-2.5 h-2.5" /> Pinned
-                        </Badge>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell className="py-3.5">
-                    <Badge
-                      variant="outline"
-                      className={`text-[10px] font-medium px-2 ${TYPE_STYLES[doc.type]}`}
-                    >
-                      {doc.type}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="py-3.5 text-xs text-slate-500">
-                    {doc.category}
-                  </TableCell>
-                  <TableCell className="py-3.5">
-                    <span className="text-[11px] bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full">
-                      {doc.segment}
-                    </span>
-                  </TableCell>
-                  <TableCell className="py-3.5 pr-5 text-right">
-                    <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7 hover:bg-amber-50 hover:text-amber-600"
-                        onClick={() => togglePin(doc.id)}
-                        title={doc.isPinned ? "Unpin" : "Pin"}
-                      >
-                        <Pin className="w-3.5 h-3.5" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7 hover:bg-blue-50 hover:text-blue-600"
-                        onClick={() => window.open(doc.fileUrl, "_blank")}
-                        title="Preview"
-                      >
-                        <Eye className="w-3.5 h-3.5" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7 hover:bg-emerald-50 hover:text-emerald-600"
-                        onClick={() => window.open(doc.fileUrl)}
-                        title="Download"
-                      >
-                        <Download className="w-3.5 h-3.5" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7 hover:bg-slate-100"
-                        onClick={() => setEditDoc({ ...doc })}
-                        title="Edit"
-                      >
-                        <Pencil className="w-3.5 h-3.5" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7 hover:bg-red-50 hover:text-red-600"
-                        onClick={() => setDeleteId(doc.id)}
-                        title="Delete"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
+                    </TableCell>
+                    <TableCell className="py-3.5 pr-5 text-right">
+                      <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 hover:bg-amber-50 hover:text-amber-600"
+                          onClick={() => togglePin(doc)}
+                          title={doc.isPinned ? "Unpin" : "Pin"}
+                        >
+                          <Pin className="w-3.5 h-3.5" />
+                        </Button>
+                        {doc.allowView && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 hover:bg-blue-50 hover:text-blue-600"
+                            onClick={() => handleView(doc.id)}
+                            title="Preview"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                          </Button>
+                        )}
+                        {doc.allowDownload && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 hover:bg-emerald-50 hover:text-emerald-600"
+                            onClick={() => handleDownload(doc.id, doc.title)}
+                            title="Download"
+                          >
+                            <Download className="w-3.5 h-3.5" />
+                          </Button>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 hover:bg-slate-100"
+                          onClick={() => setEditDoc({ ...doc })}
+                          title="Edit"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 hover:bg-red-50 hover:text-red-600"
+                          onClick={() => setDeleteId(doc.id)}
+                          title="Delete"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </CardContent>
@@ -389,8 +495,7 @@ export default function AdminDocumentsPage() {
         </p>
       )}
 
-      {/* ── Upload Dialog ─────────────────────────────────── */}
-      {/* ── Upload Dialog ─────────────────────────────────── */}
+      {/* ── Upload Dialog ── */}
       <Dialog
         open={showUpload}
         onOpenChange={(open) => {
@@ -399,7 +504,6 @@ export default function AdminDocumentsPage() {
         }}
       >
         <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-lg max-h-[90dvh] flex flex-col p-0 gap-0 rounded-xl">
-          {/* Fixed header */}
           <DialogHeader className="px-5 pt-5 pb-3 border-b border-slate-100 shrink-0">
             <DialogTitle className="flex items-center gap-2 text-base">
               <Upload className="w-4 h-4 text-blue-600" /> Upload document
@@ -409,7 +513,6 @@ export default function AdminDocumentsPage() {
             </DialogDescription>
           </DialogHeader>
 
-          {/* Scrollable body */}
           <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
             {/* Drop zone */}
             <div
@@ -418,7 +521,7 @@ export default function AdminDocumentsPage() {
             >
               <Upload className="w-6 h-6 text-blue-500 mx-auto mb-1.5" />
               <p className="text-sm font-medium text-slate-700 break-all">
-                {fileName || "Click to upload or drag & drop"}
+                {selectedFile?.name || "Click to upload or drag & drop"}
               </p>
               <p className="text-xs text-slate-400 mt-0.5">
                 PDF, DOCS, XLSX supported
@@ -428,24 +531,22 @@ export default function AdminDocumentsPage() {
                 type="file"
                 className="hidden"
                 accept=".pdf,.doc,.docx,.xlsx"
-                onChange={(e) => setFileName(e.target.files?.[0]?.name ?? "")}
+                onChange={(e) => setSelectedFile(e.target.files?.[0] ?? null)}
               />
             </div>
 
-            {/* Document name */}
             <div className="space-y-1.5">
               <Label className="text-xs font-medium text-slate-600">
                 Document name
               </Label>
               <Input
                 placeholder="e.g. Q2 Financial Report"
-                value={newName}
-                onChange={(e) => setNewName(e.target.value)}
+                value={newTitle}
+                onChange={(e) => setNewTitle(e.target.value)}
               />
             </div>
 
-            {/* Type + Category — stack on mobile */}
-            <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label className="text-xs font-medium text-slate-600">
                   Type
@@ -462,52 +563,61 @@ export default function AdminDocumentsPage() {
                   Category
                 </Label>
                 <FilterDropdown
-                  options={["General", "Finance", "Legal", "Operations", "HR"]}
-                  value={newCat}
-                  onChange={setNewCat}
+                  options={[
+                    "HR",
+                    "FINANCE",
+                    "IT",
+                    "OPERATIONS",
+                    "LEGAL",
+                    "GENERAL",
+                  ]}
+                  value={newCategory}
+                  onChange={setNewCategory}
                   className="w-full"
                 />
               </div>
             </div>
 
-            {/* Segment */}
             <div className="space-y-1.5">
               <Label className="text-xs font-medium text-slate-600">
                 Segment
               </Label>
               <FilterDropdown
-                options={["cic-feeds", "asia-vet"]}
-                value={newSeg}
-                onChange={setNewSeg}
+                options={[
+                  "CIC_FEEDS",
+                  "CIC_VET_CARE",
+                  "CIC_POULTRY",
+                  "AISA_VET",
+                ]}
+                value={newSegment}
+                onChange={setNewSegment}
                 className="w-full"
               />
             </div>
 
-            {/* Toggles */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-slate-600">
+                Access
+              </Label>
+              <FilterDropdown
+                options={ACCESS_OPTIONS}
+                value={newAccess}
+                onChange={setNewAccess}
+                className="w-full"
+              />
+            </div>
+
             <div className="rounded-lg border border-slate-100 divide-y divide-slate-100">
               <div className="flex items-center justify-between px-3 py-3">
                 <div>
                   <p className="text-sm font-medium">Pin document</p>
                   <p className="text-xs text-slate-400">Show at top of list</p>
                 </div>
-                <Switch checked={newPinned} onCheckedChange={setNewPinned} />
-              </div>
-
-              <div className="flex items-center justify-between px-3 py-3">
-                <div>
-                  <p className="text-sm font-medium">Private document</p>
-                  <p className="text-xs text-slate-400">
-                    Restrict to logged-in users
-                  </p>
-                </div>
                 <Switch
-                  checked={newAccess === "private"}
-                  onCheckedChange={(v) =>
-                    setNewAccess(v ? "private" : "public")
-                  }
+                  checked={newIsPinned}
+                  onCheckedChange={setNewIsPinned}
                 />
               </div>
-
               <div className="flex items-center justify-between px-3 py-3">
                 <p className="text-sm font-medium">Allow download</p>
                 <Switch
@@ -515,7 +625,6 @@ export default function AdminDocumentsPage() {
                   onCheckedChange={setNewAllowDownload}
                 />
               </div>
-
               <div className="flex items-center justify-between px-3 py-3">
                 <p className="text-sm font-medium">Allow preview</p>
                 <Switch
@@ -526,7 +635,6 @@ export default function AdminDocumentsPage() {
             </div>
           </div>
 
-          {/* Fixed footer */}
           <DialogFooter className="px-5 py-4 border-t border-slate-100 shrink-0 flex flex-row justify-end gap-2">
             <Button
               variant="outline"
@@ -540,16 +648,16 @@ export default function AdminDocumentsPage() {
             </Button>
             <Button
               onClick={handleUpload}
-              disabled={!newName.trim()}
+              disabled={!newTitle.trim() || !selectedFile || saving}
               className="flex-1 sm:flex-none bg-blue-600 hover:bg-blue-700 text-white"
             >
-              Add document
+              {saving ? "Uploading..." : "Add document"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* ── Edit Dialog ───────────────────────────────────── */}
+      {/* ── Edit Dialog ── */}
       <Dialog
         open={!!editDoc}
         onOpenChange={(open) => {
@@ -601,13 +709,14 @@ export default function AdminDocumentsPage() {
                   </Label>
                   <FilterDropdown
                     options={[
-                      "General",
-                      "Finance",
-                      "Legal",
-                      "Operations",
                       "HR",
+                      "FINANCE",
+                      "IT",
+                      "OPERATIONS",
+                      "LEGAL",
+                      "GENERAL",
                     ]}
-                    value={editDoc.category.split(" · ")[0]}
+                    value={editDoc.category}
                     onChange={(v) => setEditDoc({ ...editDoc, category: v })}
                     className="w-full"
                   />
@@ -618,76 +727,85 @@ export default function AdminDocumentsPage() {
                   Segment
                 </Label>
                 <FilterDropdown
-                  options={["cic-feeds", "asia-vet"]}
+                  options={[
+                    "CIC_FEEDS",
+                    "CIC_VET_CARE",
+                    "CIC_POULTRY",
+                    "AISA_VET",
+                  ]}
                   value={editDoc.segment}
                   onChange={(v) => setEditDoc({ ...editDoc, segment: v })}
                   className="w-full"
                 />
               </div>
-              <div className="flex items-center justify-between py-2 border-t border-slate-100">
-                <div>
-                  <p className="text-sm font-medium">Pinned</p>
-                  <p className="text-xs text-slate-400">
-                    Show at the top of the list
-                  </p>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium text-slate-600">
+                  Access
+                </Label>
+                <FilterDropdown
+                  options={ACCESS_OPTIONS}
+                  value={editDoc.access}
+                  onChange={(v) =>
+                    setEditDoc({
+                      ...editDoc,
+                      access: v as "PUBLIC" | "PRIVATE",
+                    })
+                  }
+                  className="w-full"
+                />
+              </div>
+              <div className="rounded-lg border border-slate-100 divide-y divide-slate-100">
+                <div className="flex items-center justify-between px-3 py-3">
+                  <div>
+                    <p className="text-sm font-medium">Pinned</p>
+                    <p className="text-xs text-slate-400">
+                      Show at the top of the list
+                    </p>
+                  </div>
+                  <Switch
+                    checked={editDoc.isPinned}
+                    onCheckedChange={(v) =>
+                      setEditDoc({ ...editDoc, isPinned: v })
+                    }
+                  />
                 </div>
-                <Switch
-                  checked={editDoc.isPinned}
-                  onCheckedChange={(v) =>
-                    setEditDoc({ ...editDoc, isPinned: v })
-                  }
-                />
-              </div>
-
-              <div className="flex items-center justify-between py-2 border-t">
-                <div>
-                  <p className="text-sm font-medium">Private</p>
+                <div className="flex items-center justify-between px-3 py-3">
+                  <p className="text-sm font-medium">Allow Download</p>
+                  <Switch
+                    checked={editDoc.allowDownload}
+                    onCheckedChange={(v) =>
+                      setEditDoc({ ...editDoc, allowDownload: v })
+                    }
+                  />
                 </div>
-                <Switch
-                  checked={editDoc.access === "private"}
-                  onCheckedChange={(v) =>
-                    setEditDoc({ ...editDoc, access: v ? "private" : "public" })
-                  }
-                />
-              </div>
-
-              <div className="flex items-center justify-between py-2">
-                <p className="text-sm">Allow Download</p>
-                <Switch
-                  checked={editDoc.allowDownload}
-                  onCheckedChange={(v) =>
-                    setEditDoc({ ...editDoc, allowDownload: v })
-                  }
-                />
-              </div>
-
-              <div className="flex items-center justify-between py-2">
-                <p className="text-sm">Allow Preview</p>
-                <Switch
-                  checked={editDoc.allowView}
-                  onCheckedChange={(v) =>
-                    setEditDoc({ ...editDoc, allowView: v })
-                  }
-                />
+                <div className="flex items-center justify-between px-3 py-3">
+                  <p className="text-sm font-medium">Allow Preview</p>
+                  <Switch
+                    checked={editDoc.allowView}
+                    onCheckedChange={(v) =>
+                      setEditDoc({ ...editDoc, allowView: v })
+                    }
+                  />
+                </div>
               </div>
             </div>
           )}
-
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditDoc(null)}>
               Cancel
             </Button>
             <Button
               onClick={handleSaveEdit}
+              disabled={saving}
               className="bg-blue-600 hover:bg-blue-700 text-white"
             >
-              Save changes
+              {saving ? "Saving..." : "Save changes"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* ── Delete Confirm Dialog ─────────────────────────── */}
+      {/* ── Delete Dialog ── */}
       <Dialog open={deleteId !== null} onOpenChange={() => setDeleteId(null)}>
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
@@ -697,7 +815,7 @@ export default function AdminDocumentsPage() {
             <DialogTitle>Delete document?</DialogTitle>
             <DialogDescription>
               "{docs.find((d) => d.id === deleteId)?.title}" will be permanently
-              removed. This cannot be undone.
+              removed.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

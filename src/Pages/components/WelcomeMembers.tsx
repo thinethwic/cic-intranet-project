@@ -1,12 +1,16 @@
-// components/home/WelcomeCarousel.tsx
-
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import WelcomeCard from "@/components/WelcomeCard";
 
+interface Person {
+  name: string;
+  role: string;
+  joinedDate: string;
+}
+
 interface Props {
-  people: string[];
+  people: Person[]; // ✅ object array not string array
 }
 
 const AUTO_INTERVAL = 3000;
@@ -30,9 +34,10 @@ export default function WelcomeCarousel({ people }: Props) {
     return () => clearInterval(timer);
   }, [index]);
 
+  if (!people.length) return null;
+
   return (
     <div className="relative">
-      {/* Left Arrow */}
       <Button
         size="icon"
         variant="secondary"
@@ -42,9 +47,8 @@ export default function WelcomeCarousel({ people }: Props) {
         <ChevronLeft />
       </Button>
 
-      {/* Scroll Container */}
       <div ref={scrollRef} className="flex gap-6 overflow-hidden px-5">
-        {people.map((name, i) => (
+        {people.map((person, i) => (
           <div
             key={i}
             className={`min-w-65 transition-all duration-300 ${
@@ -52,14 +56,14 @@ export default function WelcomeCarousel({ people }: Props) {
             }`}
           >
             <WelcomeCard
-              name={name}
-              description="Lorem Ipsum Lorem Ipsum Lorem Ipsum"
+              name={person.name}
+              role={person.role}
+              joinedDate={person.joinedDate}
             />
           </div>
         ))}
       </div>
 
-      {/* Right Arrow */}
       <Button
         size="icon"
         variant="secondary"
@@ -69,7 +73,6 @@ export default function WelcomeCarousel({ people }: Props) {
         <ChevronRight />
       </Button>
 
-      {/* Pagination Dots */}
       <div className="flex justify-center mt-6 gap-2">
         {people.map((_, i) => (
           <button

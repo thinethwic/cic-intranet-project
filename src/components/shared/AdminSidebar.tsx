@@ -1,6 +1,4 @@
-// components/admin/AdminSidebar.tsx
-
-import { Link, NavLink, useLocation } from "react-router-dom";
+import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   FileText,
@@ -25,7 +23,7 @@ import {
   SidebarFooter,
 } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-
+import { getAdminUser } from "@/lib/api/authHeaders"; // ← real user
 import logo from "../../assets/Logo.jpg";
 
 const navItems = [
@@ -40,17 +38,34 @@ const navItems = [
 
 export default function AdminSidebar() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const adminUser = getAdminUser(); // { userId, name, email, username }
+
+  // Initials from name e.g. "John Doe" → "JD"
+  const initials = adminUser?.name
+    ? adminUser.name
+        .split(" ")
+        .map((n: string) => n[0])
+        .join("")
+        .toUpperCase()
+        .slice(0, 2)
+    : "AD";
 
   const isActive = (path: string) =>
     path === "/admin"
       ? location.pathname === "/admin"
       : location.pathname.startsWith(path);
 
+  const handleLogout = () => {
+    localStorage.removeItem("admin_token");
+    localStorage.removeItem("admin_user");
+    navigate("/admin/login", { replace: true });
+  };
+
   return (
     <Sidebar className="border-r-0 bg-slate-900 text-slate-100">
       <SidebarHeader className="px-5 py-5 border-b border-slate-700/60">
         <div className="flex items-center gap-3">
-          {/* ── Logo image ── */}
           <Link to="/">
             <img
               src={logo}
@@ -58,7 +73,6 @@ export default function AdminSidebar() {
               className="w-8 h-8 object-contain"
             />
           </Link>
-
           <div>
             <p className="text-sm font-semibold text-black leading-none">
               CIC Intranet
@@ -70,7 +84,6 @@ export default function AdminSidebar() {
         </div>
       </SidebarHeader>
 
-      {/* ── Main Nav ── */}
       <SidebarContent className="px-3 py-4">
         <SidebarGroup>
           <SidebarGroupLabel className="text-[10px] font-semibold tracking-widest text-slate-500 uppercase px-2 mb-1">
@@ -88,7 +101,7 @@ export default function AdminSidebar() {
                       ${
                         isActive(item.path)
                           ? "bg-blue-600 text-white shadow-md shadow-blue-600/20"
-                          : "text-slate-400 hover:bg-slate-400 hover:text-slate-100"
+                          : "text-slate-400 hover:bg-slate-800 hover:text-slate-100"
                       }
                     `}
                   >
@@ -99,8 +112,8 @@ export default function AdminSidebar() {
                       <item.icon
                         className={`w-4 h-4 shrink-0 ${
                           isActive(item.path)
-                            ? "text-black"
-                            : "text-slate-500 group-hover:text-slate-500"
+                            ? "text-white"
+                            : "text-slate-500 group-hover:text-slate-300"
                         }`}
                       />
                       <span className="font-medium">{item.name}</span>
@@ -121,16 +134,22 @@ export default function AdminSidebar() {
         <div className="flex items-center gap-3">
           <Avatar className="w-8 h-8 shrink-0">
             <AvatarFallback className="bg-blue-500/30 text-blue-400 text-xs font-semibold">
-              AD
+              {initials}
             </AvatarFallback>
           </Avatar>
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-medium text-slate-500 truncate">
-              Admin User
+            <p className="text-xs font-medium text-slate-300 truncate">
+              {adminUser?.name ?? "Admin User"}
             </p>
-            <p className="text-[10px] text-slate-700 truncate">admin@cic.lk</p>
+            <p className="text-[10px] text-slate-500 truncate">
+              {adminUser?.email ?? ""}
+            </p>
           </div>
-          <button className="p-1.5 rounded-md hover:bg-slate-800 text-slate-500 hover:text-slate-300 transition-colors">
+          <button
+            onClick={handleLogout}
+            title="Sign out"
+            className="p-1.5 rounded-md hover:bg-slate-800 text-slate-500 hover:text-red-400 transition-colors"
+          >
             <LogOut className="w-3.5 h-3.5" />
           </button>
         </div>

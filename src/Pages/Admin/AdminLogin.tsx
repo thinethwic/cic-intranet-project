@@ -1,13 +1,58 @@
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Lock, LogIn, ShieldCheck } from "lucide-react";
-
 import { Button } from "@/components/ui/button";
 import { CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-
 import { AdminCard } from "./admin-components";
 
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+
 export default function AdminLogin() {
+  const navigate = useNavigate();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+    try {
+      const res = await fetch(`${BASE_URL}/api/public/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError(data?.message || "Invalid email or password");
+        return;
+      }
+
+      const data = await res.json();
+      localStorage.setItem("admin_token", data.token);
+      localStorage.setItem(
+        "admin_user",
+        JSON.stringify({
+          userId: data.userId,
+          name: data.name,
+          email: data.email,
+          username: data.username,
+        }),
+      );
+
+      navigate("/admin", { replace: true });
+    } catch {
+      setError("Error Fail to Loggin");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted/40 p-6">
       <AdminCard className="w-full max-w-md">
@@ -26,21 +71,43 @@ export default function AdminLogin() {
             </div>
           </div>
 
-          <form className="space-y-4">
+          <form className="space-y-4" onSubmit={handleSubmit}>
             <div className="space-y-2">
               <Label className="text-sm text-muted-foreground">Email</Label>
-              <Input type="email" placeholder="admin@cic.lk" />
+              <Input
+                type="email"
+                placeholder="admin@cic.lk"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
             </div>
             <div className="space-y-2">
               <Label className="text-sm text-muted-foreground">Password</Label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input type="password" className="pl-9" placeholder="Enter password" />
+                <Input
+                  type="password"
+                  className="pl-9"
+                  placeholder="Enter password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
               </div>
             </div>
-            <Button type="submit" className="w-full gap-2 rounded-2xl">
+
+            {error && (
+              <p className="text-sm text-red-500 text-center">{error}</p>
+            )}
+
+            <Button
+              type="submit"
+              disabled={loading}
+              className="w-full gap-2 rounded-2xl"
+            >
               <LogIn className="h-4 w-4" />
-              Sign In
+              {loading ? "Signing in..." : "Sign In"}
             </Button>
           </form>
         </CardContent>

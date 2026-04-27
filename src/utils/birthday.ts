@@ -1,4 +1,4 @@
-interface Member {
+export interface Member {
     name: string;
     role: string;
     dob: string;

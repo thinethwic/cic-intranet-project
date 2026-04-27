@@ -16,7 +16,11 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import FaqCalendarSection from "@/components/shared/FaqCalendarSection";
 import NewsSlider from "./components/NewsSlider";
 import WelcomeCarousel from "./components/WelcomeMembers";
-import { members, people, ceoMessage } from "@/Mock-data";
+
+import { ceoMessage } from "@/Mock-data";
+import { useMembers } from "@/hooks/useMembers";
+import type { Member as BirthdayMember } from "@/utils/birthday";
+
 import EventsSlider from "./components/EventsSlider";
 import OurPeopleCard from "./components/OurPeople";
 
@@ -40,8 +44,29 @@ function HomePage() {
   const hotNews = news.filter((n) => n.isHot);
   const standardNews = news.filter((n) => !n.isHot);
 
-  const todayBirthdays = useMemo(() => getTodayBirthdays(members), []);
-  const upcomingList = useMemo(() => getUpcomingBirthdays(members, 5), []);
+  const { members = [], loading: membersLoading } = useMembers();
+
+  // ✅ Memoize the mapping first
+  const birthdayMembers: BirthdayMember[] = useMemo(
+    () =>
+      members.map((m) => ({
+        name: `${m.firstName} ${m.lastName}`,
+        role: m.role,
+        dob: m.dob,
+      })),
+    [members],
+  );
+
+  // ✅ Then depend on birthdayMembers — not members
+  const todayBirthdays = useMemo(
+    () => getTodayBirthdays(birthdayMembers),
+    [birthdayMembers],
+  );
+
+  const upcomingList = useMemo(
+    () => getUpcomingBirthdays(birthdayMembers, 5),
+    [birthdayMembers],
+  );
 
   const isYouTube =
     activeVideo &&
@@ -71,6 +96,24 @@ function HomePage() {
     });
   };
 
+  const recentMembers = useMemo(() => {
+    return [...members]
+      .filter((m) => m.joinedDate) // ✅ only members with joinedDate
+      .sort(
+        (a, b) =>
+          new Date(b.joinedDate).getTime() - new Date(a.joinedDate).getTime(), // ✅ newest first
+      )
+      .slice(0, 10); // ✅ limit to 10
+  }, [members]);
+
+  // ✅ Map to WelcomeCarousel shape
+  const welcomePeople = recentMembers.map((m) => ({
+    name: `${m.firstName} ${m.lastName}`,
+    role: m.role,
+    joinedDate: m.joinedDate,
+    image: null, // no image on member
+  }));
+
   const mapNewsItems = (list: typeof news) =>
     list.map((n) => ({
       id: n.id,
@@ -92,9 +135,9 @@ function HomePage() {
           </h2>
         </div>
 
-        <div className="flex flex-col md:grid md:grid-cols-4 gap-6">
+        <div className="flex flex-col md:grid md:grid-cols-3 gap-6">
           {/* News Slider */}
-          <div className="w-full md:col-span-3">
+          <div className="w-full md:col-span-2">
             {newsLoading ? (
               <div className="w-full min-h-55 flex flex-col items-center justify-center gap-3 border border-dashed border-slate-200 rounded-2xl bg-slate-50">
                 <p className="text-sm font-medium text-slate-400">
@@ -110,7 +153,7 @@ function HomePage() {
             ) : hotNews.length > 0 ? (
               <NewsSlider
                 items={mapNewsItems(hotNews)}
-                visibleCount={3}
+                visibleCount={2}
                 autoInterval={4000}
               />
             ) : (
@@ -238,22 +281,33 @@ function HomePage() {
         <h2 className="text-4xl font-bold text-blue-900 mb-6">
           Welcome to CIC Feeds Group
         </h2>
-        <WelcomeCarousel people={people} />
+        {membersLoading ? (
+          <p className="text-sm text-gray-400 py-6 text-center">Loading...</p>
+        ) : recentMembers.length === 0 ? (
+          <p className="text-sm text-gray-400 py-6 text-center">
+            No new members
+          </p>
+        ) : (
+          <WelcomeCarousel people={welcomePeople} />
+        )}
       </section>
       <section className="max-w-7xl mx-auto px-2 py-4">
         <h2 className="text-4xl font-bold text-blue-900 mb-6">Birthdays</h2>
 
-        <div className="grid md:grid-cols-3 gap-6">
-          <div className="md:col-span-2 flex flex-col gap-4">
-            {todayBirthdays.length === 0 ? (
-              <NoBirthdayCard />
-            ) : (
-              <BirthdayCarousel members={todayBirthdays} />
-            )}
+        {membersLoading ? (
+          <p className="text-sm text-gray-400 py-6 text-center">Loading...</p>
+        ) : (
+          <div className="grid md:grid-cols-3 gap-6">
+            <div className="md:col-span-2 flex flex-col gap-4">
+              {todayBirthdays.length === 0 ? (
+                <NoBirthdayCard />
+              ) : (
+                <BirthdayCarousel members={todayBirthdays} />
+              )}
+            </div>
+            <UpcomingBirthdays list={upcomingList} />
           </div>
-
-          <UpcomingBirthdays list={upcomingList} />
-        </div>
+        )}
       </section>
 
       <section className="max-w-7xl mx-auto px-2 py-4 space-y-20">

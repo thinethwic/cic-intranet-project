@@ -24,8 +24,10 @@ interface Slide {
 
 export default function HomePageAsiavet() {
   const { pathname } = useLocation();
-  const currentPath = pathname.slice(1); // "our-segments/aisa-vet"
-  const currentSegment = mapPathToSegment(currentPath); // could be undefined
+
+  // ✅ slice(1) removes leading "/" → "our-segments/aisa-vet"
+  const currentPath = pathname.slice(1);
+  const currentSegment = mapPathToSegment(currentPath);
 
   // ✅ Guard — if segment not found, show nothing or fallback
 
@@ -56,12 +58,12 @@ export default function HomePageAsiavet() {
 
   const filteredDocuments = useMemo(() => {
     return documents.filter((doc) => {
-      const baseCategory = doc.category.split(" · ")[0];
+      // ✅ match backend enum category directly
       const matchesTab =
         activeTab === "All" ||
-        (activeTab === "HR & Policies" && baseCategory === "HR") ||
-        (activeTab === "Finance" && baseCategory === "Finance") ||
-        (activeTab === "Operations" && baseCategory === "Operations");
+        (activeTab === "HR & Policies" && doc.category === "HR") ||
+        (activeTab === "Finance" && doc.category === "FINANCE") ||
+        (activeTab === "Operations" && doc.category === "OPERATIONS");
 
       const matchesSearch =
         searchQuery === "" ||
