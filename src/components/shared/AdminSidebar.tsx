@@ -23,7 +23,7 @@ import {
   SidebarFooter,
 } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { getAdminUser } from "@/lib/api/authHeaders"; // ← real user
+import { getAdminUser, logout } from "@/lib/api/authHeaders"; // ← real user
 import logo from "../../assets/Logo.jpg";
 
 const navItems = [
@@ -56,10 +56,9 @@ export default function AdminSidebar() {
       ? location.pathname === "/admin"
       : location.pathname.startsWith(path);
 
+  // Replace handleLogout:
   const handleLogout = () => {
-    localStorage.removeItem("admin_token");
-    localStorage.removeItem("admin_user");
-    navigate("/admin/login", { replace: true });
+    logout(); // ✅ same logic, one source of truth
   };
 
   return (
@@ -111,9 +110,7 @@ export default function AdminSidebar() {
                     >
                       <item.icon
                         className={`w-4 h-4 shrink-0 ${
-                          isActive(item.path)
-                            ? "text-white"
-                            : "text-slate-500 group-hover:text-slate-300"
+                          isActive(item.path) ? "text-white" : "text-slate-500 "
                         }`}
                       />
                       <span className="font-medium">{item.name}</span>
