@@ -164,7 +164,7 @@ export default function AdminManagementPage() {
         phoneNo: form.phoneNo || undefined, // ← null → undefined
         dob: form.dob || undefined, // ← null → undefined
         joinedDate: form.joinedDate || undefined, // ← null → undefined
-        userId: loggedUserId ?? undefined, // ← null → undefined
+        user: loggedUserId ?? undefined, // ← null → undefined
       }; // ← always use the logged-in user's ID
 
       if (editing) {

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { X, ArrowLeft, ArrowRight } from "lucide-react";
 import type { Gallery } from "@/types";
 import { useGalleries } from "@/hooks/useGalleries";
@@ -23,6 +23,24 @@ export default function GallerySection() {
 
   const images: GalleryImage[] = galleries.map(mapGalleryToImage);
 
+  const next = () => setCurrent((prev) => (prev + 1) % images.length);
+  const prev = () =>
+    setCurrent((prev) => (prev - 1 + images.length) % images.length);
+
+  // ✅ Keyboard support: Escape to close, ArrowLeft/Right to navigate
+  useEffect(() => {
+    if (!open) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+      if (e.key === "ArrowRight") next();
+      if (e.key === "ArrowLeft") prev();
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [open, current]);
+
   if (loading) {
     return (
       <section className="max-w-7xl mx-auto px-6 py-14">
@@ -45,7 +63,6 @@ export default function GallerySection() {
     );
   }
 
-  // ✅ Empty state — matches video section style
   if (!images || images.length === 0) {
     return (
       <section className="max-w-7xl mx-auto px-6 py-14">
@@ -65,10 +82,6 @@ export default function GallerySection() {
     setCurrent(index);
     setOpen(true);
   };
-
-  const next = () => setCurrent((prev) => (prev + 1) % images.length);
-  const prev = () =>
-    setCurrent((prev) => (prev - 1 + images.length) % images.length);
 
   const visibleRest = rest.slice(0, 3);
   const hiddenCount = rest.length - visibleRest.length;

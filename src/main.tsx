@@ -7,10 +7,12 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import App from "./App";
 import "./index.css";
 import { ScrollToTop } from "./components/ScrollToTop";
+import ScrollToTopButton from "./components/shared/ScrollToTopButton";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <BrowserRouter>
+      <ScrollToTopButton />
       <ScrollToTop />
       <TooltipProvider>
         <App />
