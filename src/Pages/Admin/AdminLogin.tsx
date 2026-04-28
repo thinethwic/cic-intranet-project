@@ -42,6 +42,7 @@ export default function AdminLogin() {
           name: data.name,
           email: data.email,
           username: data.username,
+          role: data.role, // ✅ save role
         }),
       );
 

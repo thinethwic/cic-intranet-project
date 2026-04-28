@@ -51,6 +51,9 @@ import {
 } from "@/lib/api/documentApi";
 import { getAdminUser } from "@/lib/api/authHeaders";
 
+import { History } from "lucide-react";
+import { getDocumentLogs, type DocumentAccessLog } from "@/lib/api/documentApi";
+
 const TYPE_STYLES: Record<string, string> = {
   PDF: "bg-red-50 text-red-800 border-red-200",
   DOCS: "bg-blue-50 text-blue-800 border-blue-200",
@@ -141,6 +144,11 @@ export default function AdminDocumentsPage() {
   const [newIsPinned, setNewIsPinned] = useState(false);
   const [newAllowDownload, setNewAllowDownload] = useState(false);
   const [newAllowView, setNewAllowView] = useState(true);
+
+  // Add these state variables alongside existing ones
+  const [logsDoc, setLogsDoc] = useState<Document | null>(null);
+  const [logs, setLogs] = useState<DocumentAccessLog[]>([]);
+  const [logsLoading, setLogsLoading] = useState(false);
 
   const adminUser = getAdminUser();
 
@@ -294,6 +302,35 @@ export default function AdminDocumentsPage() {
     );
   });
 
+  // Add this handler
+  const handleViewLogs = async (doc: Document) => {
+    setLogsDoc(doc);
+    setLogsLoading(true);
+    try {
+      const data = await getDocumentLogs(doc.id);
+      setLogs(data.content);
+    } catch (err) {
+      console.error("Failed to fetch logs", err);
+      setLogs([]);
+    } finally {
+      setLogsLoading(false);
+    }
+  };
+
+  const fmtDateTime = (d: string) => {
+    try {
+      return new Date(d).toLocaleString("en-GB", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    } catch {
+      return d;
+    }
+  };
+
   const pinnedCount = docs.filter((d) => d.isPinned).length;
 
   return (
@@ -363,6 +400,9 @@ export default function AdminDocumentsPage() {
                 <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide w-[18%]">
                   Category
                 </TableHead>
+                <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide w-[18%]">
+                  Visibility
+                </TableHead>
                 <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide w-[16%]">
                   Segment
                 </TableHead>
@@ -423,6 +463,9 @@ export default function AdminDocumentsPage() {
                     <TableCell className="py-3.5 text-xs text-slate-500">
                       {doc.category}
                     </TableCell>
+                    <TableCell className="py-3.5 text-xs text-slate-500">
+                      {doc.access}
+                    </TableCell>
                     <TableCell className="py-3.5">
                       <span className="text-[11px] bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full">
                         {doc.segment}
@@ -478,6 +521,15 @@ export default function AdminDocumentsPage() {
                           title="Delete"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 hover:bg-purple-50 hover:text-purple-600"
+                          onClick={() => handleViewLogs(doc)}
+                          title="View access logs"
+                        >
+                          <History className="w-3.5 h-3.5" />
                         </Button>
                       </div>
                     </TableCell>
@@ -826,6 +878,113 @@ export default function AdminDocumentsPage() {
               Delete
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Logs Dialog ── */}
+      <Dialog
+        open={!!logsDoc}
+        onOpenChange={(o) => {
+          if (!o) {
+            setLogsDoc(null);
+            setLogs([]);
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-2xl max-h-[80vh] flex flex-col p-0 gap-0">
+          <DialogHeader className="px-5 pt-5 pb-3 border-b border-slate-100 shrink-0">
+            <DialogTitle className="flex items-center gap-2">
+              <History className="w-4 h-4 text-purple-600" />
+              Access logs — {logsDoc?.title}
+            </DialogTitle>
+            <DialogDescription>
+              View and download activity for this document.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex-1 overflow-y-auto">
+            {logsLoading ? (
+              <div className="py-16 text-center text-sm text-slate-400">
+                Loading logs...
+              </div>
+            ) : logs.length === 0 ? (
+              <div className="py-16 text-center text-sm text-slate-400">
+                No access logs yet
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-slate-50 hover:bg-slate-50">
+                    <TableHead className="text-xs font-semibold text-slate-500 uppercase pl-5">
+                      User
+                    </TableHead>
+                    <TableHead className="text-xs font-semibold text-slate-500 uppercase">
+                      Action
+                    </TableHead>
+                    <TableHead className="text-xs font-semibold text-slate-500 uppercase">
+                      IP Address
+                    </TableHead>
+                    <TableHead className="text-xs font-semibold text-slate-500 uppercase pr-5">
+                      Time
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {logs.map((log) => (
+                    <TableRow
+                      key={log.id}
+                      className="border-b border-slate-100"
+                    >
+                      <TableCell className="pl-5 py-3">
+                        <p className="text-sm font-medium">{log.user.name}</p>
+                        <p className="text-xs text-slate-400">
+                          {log.user.email}
+                        </p>
+                      </TableCell>
+                      <TableCell className="py-3">
+                        <Badge
+                          className={`text-[10px] ${
+                            log.action === "DOWNLOAD"
+                              ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+                              : "bg-blue-50 text-blue-800 border-blue-200"
+                          } border`}
+                        >
+                          {log.action === "DOWNLOAD" ? (
+                            <>
+                              <Download className="w-2.5 h-2.5 mr-1" /> Download
+                            </>
+                          ) : (
+                            <>
+                              <Eye className="w-2.5 h-2.5 mr-1" /> View
+                            </>
+                          )}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="py-3 text-xs text-slate-500">
+                        {log.ipAddress || "—"}
+                      </TableCell>
+                      <TableCell className="py-3 pr-5 text-xs text-slate-500">
+                        {fmtDateTime(log.accessedAt)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </div>
+
+          <div className="px-5 py-3 border-t border-slate-100 shrink-0 flex justify-between items-center">
+            <p className="text-xs text-slate-400">{logs.length} log entries</p>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setLogsDoc(null);
+                setLogs([]);
+              }}
+            >
+              Close
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

@@ -16,6 +16,8 @@ import { useEvents } from "@/hooks/useEvents";
 import { useAnnouncements } from "@/hooks/useAnnouncements";
 import { viewDocument, downloadDocument } from "@/lib/api/documentApi";
 
+import { loginAuthorized } from "@/lib/api/authApi";
+
 interface Slide {
   title: string;
   subtitle: string;
@@ -40,6 +42,9 @@ export default function HomePageAsiavet() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [authLoading, setAuthLoading] = useState(false);
 
   // ✅ Real API data filtered by segment
   const { documents, loading: docsLoading } = useDocuments(currentSegment);
@@ -100,6 +105,36 @@ export default function HomePageAsiavet() {
       URL.revokeObjectURL(url);
     } catch {
       alert("Failed to download document");
+    }
+  };
+
+  // Replace the hardcoded check in the Sign in button onClick:
+  const handleAuthorizedLogin = async () => {
+    if (!username || !password) return;
+    setAuthError(null);
+    setAuthLoading(true);
+    try {
+      const data = await loginAuthorized(username, password);
+
+      // ✅ Only AUTHORIZED or ADMIN role can access private docs
+      if (data.role !== "AUTHORIZED" && data.role !== "ADMIN") {
+        setAuthError("You are not authorized to access private documents");
+        return;
+      }
+
+      // ✅ Store separately from admin token
+      localStorage.setItem("authorized_token", data.token);
+      localStorage.setItem("authorized_user", JSON.stringify(data));
+
+      setIsAuthorized(true);
+      setShowPrivate(true);
+      setShowAuthModal(false);
+      setUsername("");
+      setPassword("");
+    } catch (err: any) {
+      setAuthError(err.message || "Invalid credentials");
+    } finally {
+      setAuthLoading(false);
     }
   };
 
@@ -302,7 +337,6 @@ export default function HomePageAsiavet() {
         </div>
       </section>
 
-      {/* Auth Modal — unchanged */}
       {showAuthModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white dark:bg-zinc-900 p-7 rounded-2xl w-80 shadow-sm border border-zinc-100 dark:border-zinc-800">
@@ -319,13 +353,14 @@ export default function HomePageAsiavet() {
                 </p>
               </div>
             </div>
+
             <div className="flex flex-col gap-3 mb-5">
               <div>
                 <label className="text-xs text-zinc-400 mb-1 block">
-                  Username
+                  Email
                 </label>
                 <input
-                  placeholder="your username"
+                  placeholder="your@email.com"
                   className="w-full border border-zinc-200 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm bg-transparent focus:outline-none focus:ring-1 focus:ring-zinc-300"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
@@ -343,27 +378,31 @@ export default function HomePageAsiavet() {
                   onChange={(e) => setPassword(e.target.value)}
                 />
               </div>
+
+              {/* ✅ Show error */}
+              {authError && (
+                <p className="text-xs text-red-500 text-center">{authError}</p>
+              )}
             </div>
+
             <div className="flex justify-end items-center gap-2">
               <button
-                onClick={() => setShowAuthModal(false)}
+                onClick={() => {
+                  setShowAuthModal(false);
+                  setAuthError(null);
+                  setUsername("");
+                  setPassword("");
+                }}
                 className="text-sm text-zinc-400 hover:text-zinc-600 px-3 py-1.5"
               >
                 Cancel
               </button>
               <button
-                onClick={() => {
-                  if (username === "admin" && password === "1234") {
-                    setIsAuthorized(true);
-                    setShowPrivate(true);
-                    setShowAuthModal(false);
-                  } else {
-                    alert("Invalid credentials");
-                  }
-                }}
-                className="bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-sm font-medium px-4 py-1.5 rounded-lg hover:opacity-90 transition-opacity"
+                onClick={handleAuthorizedLogin}
+                disabled={authLoading}
+                className="bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-sm font-medium px-4 py-1.5 rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50"
               >
-                Sign in
+                {authLoading ? "Signing in..." : "Sign in"}
               </button>
             </div>
           </div>

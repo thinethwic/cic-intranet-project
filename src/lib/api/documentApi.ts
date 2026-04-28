@@ -2,9 +2,42 @@
 
 import type { Document } from "@/types";
 import { apiFetch } from "./apiFetch";
+import { authHeaders } from "./authHeaders";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
 const API = `${BASE_URL}/api/v1`;
+
+export interface DocumentAccessLog {
+    id: number;
+    action: "VIEW" | "DOWNLOAD";
+    accessedAt: string;
+    ipAddress: string;
+    user: {
+        id: number;
+        name: string;
+        username: string;
+        email: string;
+    };
+    document: {
+        id: number;
+        title: string;
+    };
+}
+
+export const getDocumentLogs = async (
+    documentId: number,
+    page = 0,
+    size = 50
+): Promise<{ content: DocumentAccessLog[]; totalElements: number }> => {
+    const response = await fetch(
+        `${API}/documents/${documentId}/logs?page=${page}&size=${size}`,
+        { headers: authHeaders() }
+    );
+    if (!response.ok) throw new Error("Failed to fetch document logs");
+    return response.json();
+};
+
+
 
 export const getAllDocuments = async (page = 0, size = 100): Promise<Document[]> => {
     const res = await apiFetch(`${API}/documents?page=${page}&size=${size}`);
@@ -45,14 +78,24 @@ export const deleteDocument = async (id: number): Promise<void> => {
     if (!res.ok) throw new Error("Failed to delete document");
 };
 
+// ✅ Use whichever token is available — admin or authorized user
+const getToken = () =>
+    localStorage.getItem("admin_token") ||
+    localStorage.getItem("authorized_token") ||
+    "";
+
 export const viewDocument = async (id: number): Promise<Blob> => {
-    const res = await apiFetch(`${API}/documents/${id}/view`);
-    if (!res.ok) throw new Error("Failed to view document");
-    return res.blob();
+    const response = await fetch(`${API}/documents/${id}/view`, {
+        headers: { Authorization: `Bearer ${getToken()}` },
+    });
+    if (!response.ok) throw new Error("Failed to view document");
+    return response.blob();
 };
 
 export const downloadDocument = async (id: number): Promise<Blob> => {
-    const res = await apiFetch(`${API}/documents/${id}/download`);
-    if (!res.ok) throw new Error("Failed to download document");
-    return res.blob();
+    const response = await fetch(`${API}/documents/${id}/download`, {
+        headers: { Authorization: `Bearer ${getToken()}` },
+    });
+    if (!response.ok) throw new Error("Failed to download document");
+    return response.blob();
 };

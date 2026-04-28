@@ -34,6 +34,7 @@ const navItems = [
   { name: "Events", icon: Calendar, path: "/admin/events" },
   { name: "Gallery", icon: Image, path: "/admin/gallery" },
   { name: "Management", icon: Users, path: "/admin/management" },
+  { name: "Users", icon: Users, path: "/admin/users" },
 ];
 
 export default function AdminSidebar() {

@@ -16,6 +16,7 @@ import AdminGalleryPage from "./Pages/Admin/AdminGalleryPage";
 import AdminManagementPage from "./Pages/Admin/AdminManagementPage";
 import AdminLogin from "./Pages/Admin/AdminLogin";
 import ProtectedRoute from "@/ProtectedRoute"; // ✅
+import AdminUsersPage from "./Pages/Admin/AdminUsersPage";
 
 function App() {
   return (
@@ -42,6 +43,7 @@ function App() {
           <Route path="/admin/events" element={<AdminEventsPage />} />
           <Route path="/admin/gallery" element={<AdminGalleryPage />} />
           <Route path="/admin/management" element={<AdminManagementPage />} />
+          <Route path="/admin/users" element={<AdminUsersPage />} />
         </Route>
       </Route>
     </Routes>

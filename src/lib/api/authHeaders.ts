@@ -6,7 +6,13 @@ export const authHeaders = (): Record<string, string> => {
     return token ? { Authorization: `Bearer ${token}` } : {};
 };
 
-export const getAdminUser = (): { userId: number; name: string; email: string; username: string } | null => {
+export const getAdminUser = (): {
+    userId: number;
+    name: string;
+    email: string;
+    username: string;
+    role: string; // ✅ add role
+} | null => {
     const raw = localStorage.getItem("admin_user");
     if (!raw) return null;
     try {
