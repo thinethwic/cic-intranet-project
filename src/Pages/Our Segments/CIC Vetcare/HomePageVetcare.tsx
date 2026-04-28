@@ -1,13 +1,13 @@
-import HeroSectionSegments from "../components/HeroSection";
 import { useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
+import HeroSectionSegments from "../components/HeroSection";
 import { Input } from "@/components/ui/input";
 import { Calendar } from "@/components/ui/calendar";
-
 import DocumentCard from "../components/DocumentCard";
 import EventItem from "../components/EventItem";
 import PinnedCard from "../components/PinnedCard";
-
+import AnnouncementItem from "../components/AnnouncementItem";
+import { LockIcon } from "lucide-react";
 import slide1 from "../../../assets/cic vetcare slide.jpg";
 
 import { mapPathToSegment } from "@/utils/segmentMapper";
@@ -16,8 +16,7 @@ import { useEvents } from "@/hooks/useEvents";
 import { useAnnouncements } from "@/hooks/useAnnouncements";
 import { viewDocument, downloadDocument } from "@/lib/api/documentApi";
 
-import AnnouncementItem from "../components/AnnouncementItem";
-import { LockIcon } from "lucide-react";
+import { loginAuthorized } from "@/lib/api/authApi";
 
 interface Slide {
   title: string;
@@ -25,10 +24,14 @@ interface Slide {
   image: string;
 }
 
-export default function HomePageFeeds() {
+export default function HomePageAsiavet() {
   const { pathname } = useLocation();
+
+  // ✅ slice(1) removes leading "/" → "our-segments/aisa-vet"
   const currentPath = pathname.slice(1);
   const currentSegment = mapPathToSegment(currentPath);
+
+  // ✅ Guard — if segment not found, show nothing or fallback
 
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [activeTab, setActiveTab] = useState("All");
@@ -39,6 +42,9 @@ export default function HomePageFeeds() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [authLoading, setAuthLoading] = useState(false);
 
   // ✅ Real API data filtered by segment
   const { documents, loading: docsLoading } = useDocuments(currentSegment);
@@ -57,12 +63,12 @@ export default function HomePageFeeds() {
 
   const filteredDocuments = useMemo(() => {
     return documents.filter((doc) => {
-      const baseCategory = doc.category.split(" · ")[0];
+      // ✅ match backend enum category directly
       const matchesTab =
         activeTab === "All" ||
-        (activeTab === "HR & Policies" && baseCategory === "HR") ||
-        (activeTab === "Finance" && baseCategory === "Finance") ||
-        (activeTab === "Operations" && baseCategory === "Operations");
+        (activeTab === "HR & Policies" && doc.category === "HR") ||
+        (activeTab === "Finance" && doc.category === "FINANCE") ||
+        (activeTab === "Operations" && doc.category === "OPERATIONS");
 
       const matchesSearch =
         searchQuery === "" ||
@@ -102,6 +108,36 @@ export default function HomePageFeeds() {
     }
   };
 
+  // Replace the hardcoded check in the Sign in button onClick:
+  const handleAuthorizedLogin = async () => {
+    if (!username || !password) return;
+    setAuthError(null);
+    setAuthLoading(true);
+    try {
+      const data = await loginAuthorized(username, password);
+
+      // ✅ Only AUTHORIZED or ADMIN role can access private docs
+      if (data.role !== "AUTHORIZED" && data.role !== "ADMIN") {
+        setAuthError("You are not authorized to access private documents");
+        return;
+      }
+
+      // ✅ Store separately from admin token
+      localStorage.setItem("authorized_token", data.token);
+      localStorage.setItem("authorized_user", JSON.stringify(data));
+
+      setIsAuthorized(true);
+      setShowPrivate(true);
+      setShowAuthModal(false);
+      setUsername("");
+      setPassword("");
+    } catch (err: any) {
+      setAuthError(err.message || "Invalid credentials");
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
   function formatDate(date: Date | undefined) {
     if (!date) return "";
     const year = date.getFullYear();
@@ -135,14 +171,12 @@ export default function HomePageFeeds() {
           <div>
             <div className="flex items-center gap-3 mb-6">
               <h2 className="text-3xl font-bold text-blue-900">Documents</h2>
-
               <button
                 onClick={() => setShowPrivate(false)}
                 className={`text-xs px-2 py-1 rounded-full border ${!showPrivate ? "bg-blue-900 text-white" : "text-gray-500"}`}
               >
                 👁 Public
               </button>
-
               <button
                 onClick={() => {
                   if (!isAuthorized) {
@@ -169,11 +203,7 @@ export default function HomePageFeeds() {
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
-                  className={`px-4 py-2 rounded-full text-sm border ${
-                    activeTab === tab
-                      ? "bg-blue-900 text-white"
-                      : "text-gray-600 bg-white"
-                  }`}
+                  className={`px-4 py-2 rounded-full text-sm border ${activeTab === tab ? "bg-blue-900 text-white" : "text-gray-600 bg-white"}`}
                 >
                   {tab}
                 </button>
@@ -228,7 +258,6 @@ export default function HomePageFeeds() {
           {/* ================= RIGHT ================= */}
           <div className="w-full flex flex-col">
             <h2 className="text-3xl font-bold text-blue-900 mb-6">Calendar</h2>
-
             <div className="border rounded-xl p-4 shadow-sm w-full mb-8">
               <Calendar
                 mode="single"
@@ -248,7 +277,6 @@ export default function HomePageFeeds() {
             <h3 className="text-xl font-semibold text-blue-900 mb-4">
               Upcoming Events
             </h3>
-
             <div className="w-full space-y-4">
               {eventsLoading ? (
                 <p className="text-sm text-gray-400">Loading events...</p>
@@ -309,7 +337,6 @@ export default function HomePageFeeds() {
         </div>
       </section>
 
-      {/* Auth Modal — unchanged */}
       {showAuthModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white dark:bg-zinc-900 p-7 rounded-2xl w-80 shadow-sm border border-zinc-100 dark:border-zinc-800">
@@ -326,13 +353,14 @@ export default function HomePageFeeds() {
                 </p>
               </div>
             </div>
+
             <div className="flex flex-col gap-3 mb-5">
               <div>
                 <label className="text-xs text-zinc-400 mb-1 block">
-                  Username
+                  Email
                 </label>
                 <input
-                  placeholder="your username"
+                  placeholder="your@email.com"
                   className="w-full border border-zinc-200 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm bg-transparent focus:outline-none focus:ring-1 focus:ring-zinc-300"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
@@ -350,27 +378,31 @@ export default function HomePageFeeds() {
                   onChange={(e) => setPassword(e.target.value)}
                 />
               </div>
+
+              {/* ✅ Show error */}
+              {authError && (
+                <p className="text-xs text-red-500 text-center">{authError}</p>
+              )}
             </div>
+
             <div className="flex justify-end items-center gap-2">
               <button
-                onClick={() => setShowAuthModal(false)}
+                onClick={() => {
+                  setShowAuthModal(false);
+                  setAuthError(null);
+                  setUsername("");
+                  setPassword("");
+                }}
                 className="text-sm text-zinc-400 hover:text-zinc-600 px-3 py-1.5"
               >
                 Cancel
               </button>
               <button
-                onClick={() => {
-                  if (username === "admin" && password === "1234") {
-                    setIsAuthorized(true);
-                    setShowPrivate(true);
-                    setShowAuthModal(false);
-                  } else {
-                    alert("Invalid credentials");
-                  }
-                }}
-                className="bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-sm font-medium px-4 py-1.5 rounded-lg hover:opacity-90 transition-opacity"
+                onClick={handleAuthorizedLogin}
+                disabled={authLoading}
+                className="bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-sm font-medium px-4 py-1.5 rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50"
               >
-                Sign in
+                {authLoading ? "Signing in..." : "Sign in"}
               </button>
             </div>
           </div>

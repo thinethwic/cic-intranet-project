@@ -7,6 +7,7 @@ import {
   Image,
   Newspaper,
   Users,
+  BriefcaseBusiness,
   LogOut,
   ChevronRight,
 } from "lucide-react";
@@ -33,7 +34,7 @@ const navItems = [
   { name: "News", icon: Newspaper, path: "/admin/news" },
   { name: "Events", icon: Calendar, path: "/admin/events" },
   { name: "Gallery", icon: Image, path: "/admin/gallery" },
-  { name: "Management", icon: Users, path: "/admin/management" },
+  { name: "Management", icon: BriefcaseBusiness, path: "/admin/management" },
   { name: "Users", icon: Users, path: "/admin/users" },
 ];
 

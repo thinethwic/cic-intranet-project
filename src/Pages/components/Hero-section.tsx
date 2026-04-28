@@ -26,7 +26,7 @@ const slides: Slide[] = [
     image: slide2,
   },
   {
-    title: "Innovation in Agriculture",
+    title: "Innovation in Industry",
     subtitle: "Empowering farmers with cutting-edge solutions",
     image: slide3,
   },
