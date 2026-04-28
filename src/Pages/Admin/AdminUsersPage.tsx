@@ -39,7 +39,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Card, CardContent } from "@/components/ui/card";
 import { authHeaders } from "@/lib/api/authHeaders";
-import { apiFetch } from "@/lib/api/apiFetch";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
 const API = `${BASE_URL}/api/v1/users`;
@@ -347,7 +346,7 @@ export default function AdminUsersPage() {
 
         {/* Role filter */}
         <DropdownMenu>
-          <DropdownMenuTrigger asChild>
+          <DropdownMenuTrigger>
             <Button
               variant="outline"
               className={`h-9 text-sm ${roleFilter !== "All" ? "border-blue-500 text-blue-600" : ""}`}
@@ -366,7 +365,7 @@ export default function AdminUsersPage() {
 
         {/* Status filter */}
         <DropdownMenu>
-          <DropdownMenuTrigger asChild>
+          <DropdownMenuTrigger>
             <Button
               variant="outline"
               className={`h-9 text-sm ${statusFilter !== "All" ? "border-blue-500 text-blue-600" : ""}`}
@@ -596,7 +595,7 @@ export default function AdminUsersPage() {
             <div className="space-y-1.5">
               <Label className="text-xs font-medium text-slate-600">Role</Label>
               <DropdownMenu>
-                <DropdownMenuTrigger asChild>
+                <DropdownMenuTrigger>
                   <Button
                     variant="outline"
                     className="w-full justify-between text-sm font-normal"
@@ -729,7 +728,7 @@ export default function AdminUsersPage() {
             <div className="space-y-1.5">
               <Label className="text-xs font-medium text-slate-600">Role</Label>
               <DropdownMenu>
-                <DropdownMenuTrigger asChild>
+                <DropdownMenuTrigger>
                   <Button
                     variant="outline"
                     className="w-full justify-between text-sm font-normal"

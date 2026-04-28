@@ -1,4 +1,4 @@
-import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
+import { Link, NavLink, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
   FileText,
@@ -39,7 +39,6 @@ const navItems = [
 
 export default function AdminSidebar() {
   const location = useLocation();
-  const navigate = useNavigate();
   const adminUser = getAdminUser(); // { userId, name, email, username }
 
   // Initials from name e.g. "John Doe" → "JD"
