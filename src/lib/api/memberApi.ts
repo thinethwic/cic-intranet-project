@@ -1,5 +1,3 @@
-// src/lib/api/memberApi.ts
-
 import type { Member } from "@/types";
 import { apiFetch } from "./apiFetch";
 
@@ -10,7 +8,7 @@ export const getAllMembers = async (page = 0, size = 100): Promise<Member[]> => 
     const res = await apiFetch(`${API}/members?page=${page}&size=${size}`);
     if (!res.ok) throw new Error("Failed to fetch members");
     const data = await res.json();
-    return data.content;
+    return data?.content ?? [];
 };
 
 export const getMemberById = async (id: number): Promise<Member> => {
@@ -19,27 +17,41 @@ export const getMemberById = async (id: number): Promise<Member> => {
     return res.json();
 };
 
-export const createMember = async (memberDTO: Partial<Member>): Promise<Member> => {
+export const createMember = async (memberDTO: Partial<Member> & { user?: number | null }): Promise<Member> => {
     const res = await apiFetch(`${API}/members`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(memberDTO),
     });
-    if (!res.ok) throw new Error("Failed to create member");
+    if (!res.ok) {
+        const err = await res.text();
+        console.error("Create member failed:", err);
+        throw new Error("Failed to create member");
+    }
     return res.json();
 };
 
-export const updateMember = async (id: number, memberDTO: Partial<Member>): Promise<Member> => {
+export const updateMember = async (id: number, memberDTO: Partial<Member> & { user?: number | null }): Promise<Member> => {
     const res = await apiFetch(`${API}/members/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(memberDTO),
     });
-    if (!res.ok) throw new Error("Failed to update member");
+    if (!res.ok) {
+        const err = await res.text();
+        console.error("Update member failed:", err);
+        throw new Error("Failed to update member");
+    }
     return res.json();
 };
 
 export const deleteMember = async (id: number): Promise<void> => {
-    const res = await apiFetch(`${API}/members/${id}`, { method: "DELETE" });
-    if (!res.ok) throw new Error("Failed to delete member");
+    const res = await apiFetch(`${API}/members/${id}`, {
+        method: "DELETE",
+    });
+    if (!res.ok) {
+        const err = await res.text();
+        console.error("Delete member failed:", err);
+        throw new Error("Failed to delete member");
+    }
 };

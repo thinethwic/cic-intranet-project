@@ -63,7 +63,7 @@ export interface Member {
     email: string;
     phoneNo: string;
     joinedDate: string;
-    userId?: number;
+    userId?: number | null;     // ✅ from backend response
 }
 
 export interface User {

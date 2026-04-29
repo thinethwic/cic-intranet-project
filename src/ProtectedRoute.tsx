@@ -4,7 +4,7 @@ import { getAdminUser } from "@/lib/api/authHeaders";
 function isTokenExpired(token: string): boolean {
   try {
     const payload = JSON.parse(atob(token.split(".")[1]));
-    return payload.exp * 840000 < Date.now(); // exp is in seconds, Date.now() is ms
+    return payload.exp * 1000 < Date.now(); // exp is in seconds, Date.now() is ms
   } catch {
     return true; // if we can't decode it, treat as expired
   }

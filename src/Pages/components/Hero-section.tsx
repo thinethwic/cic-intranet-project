@@ -6,7 +6,7 @@ import { Link } from "react-router-dom";
 
 import slide1 from "../../assets/slide1.png";
 import slide2 from "../../assets/slide2.png";
-import slide3 from "../../assets/slide3.png";
+import slide3 from "../../assets/feeds_slide.png";
 
 interface Slide {
   title: string;

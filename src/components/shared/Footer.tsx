@@ -3,7 +3,10 @@ import logo from "../../assets/Logo.jpg";
 import { Link } from "react-router-dom";
 import { FaFacebook, FaLinkedin, FaYoutube } from "react-icons/fa";
 
-const companyLinks: string[] = ["Home", "About Us", "Our Segments"];
+const companyLinks = [
+  { key: "Home", Link: "/" },
+  { key: "Our Segments", Link: "/" },
+];
 
 const segments = [
   { SegKey: "CIC Feeds", Link: "/our-segments/cic-feeds" },
@@ -20,7 +23,10 @@ export default function Footer() {
           {/* Logo */}
           <div className="flex items-start">
             <div className="bg-white rounded-md p-3">
-              <Link to="/">
+              <Link
+                to="/"
+                onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+              >
                 <img
                   src={logo}
                   alt="CIC Livestock Solutions"
@@ -36,10 +42,10 @@ export default function Footer() {
               Company
             </h3>
             <ul className="space-y-2">
-              {companyLinks.map((link) => (
+              {companyLinks.map(({ key: link, Link: path }) => (
                 <li key={link}>
                   <a
-                    href="#"
+                    href={path}
                     className="text-sm text-gray-300 hover:text-white transition-colors duration-200"
                   >
                     {link}
@@ -118,7 +124,7 @@ export default function Footer() {
         {/* Bottom Bar */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-sm text-gray-400 text-center sm:text-left">
-            Design by Thineth Wic | Copyright © 2026 CIC Feeds Group
+            Design by CIC Feeds Group IT | Copyright © 2026 CIC Feeds Group
           </p>
 
           {/* Social Icons */}

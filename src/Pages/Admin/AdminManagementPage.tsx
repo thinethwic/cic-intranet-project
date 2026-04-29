@@ -41,14 +41,7 @@ import {
 } from "@/lib/api/memberApi";
 import { getAdminUser } from "@/lib/api/authHeaders"; // ← adjust to your actual auth hook
 
-const ROLE_OPTIONS = [
-  "All",
-  "EXECUTIVE",
-  "ADVISOR",
-  "MANAGER",
-  "DIRECTOR",
-  "STAFF",
-];
+const ROLE_OPTIONS = ["All", "ADMIN", "TOP_MANAGEMENT", "STAFF", "MEMBER"];
 const CEO_MESSAGE_STORAGE_KEY = "admin-ceo-message";
 
 function getStoredCEOMessage() {
@@ -137,7 +130,6 @@ export default function AdminManagementPage() {
   };
 
   const handleSave = async () => {
-    // Client-side guard matching backend @NotBlank constraints
     if (!form.title.trim()) {
       setFormError("Title is required.");
       return;
@@ -161,11 +153,11 @@ export default function AdminManagementPage() {
         lastName: form.lastName.trim(),
         role: form.role,
         email: form.email.trim(),
-        phoneNo: form.phoneNo || undefined, // ← null → undefined
-        dob: form.dob || undefined, // ← null → undefined
-        joinedDate: form.joinedDate || undefined, // ← null → undefined
-        user: loggedUserId ?? undefined, // ← null → undefined
-      }; // ← always use the logged-in user's ID
+        phoneNo: form.phoneNo || undefined,
+        dob: form.dob || undefined,
+        joinedDate: form.joinedDate || undefined,
+        user: loggedUserId ?? undefined, // ✅ "user" not "userId" — matches MemberDTO
+      };
 
       if (editing) {
         await updateMember(editing.id, dto);
@@ -593,12 +585,6 @@ export default function AdminManagementPage() {
                 />
               </div>
             </div>
-
-            {/* userId is now implicit — show a read-only hint instead */}
-            <p className="text-xs text-muted-foreground">
-              This profile will be linked to your account (User ID:{" "}
-              {loggedUserId ?? "unknown"}).
-            </p>
 
             {formError && (
               <p className="text-sm text-destructive">{formError}</p>
