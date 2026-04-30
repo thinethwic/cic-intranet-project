@@ -23,8 +23,10 @@ export default function ProtectedRoute() {
     return <Navigate to="/admin/login" replace />;
   }
 
-  // Token exists but user is not ADMIN
-  if (!user || user.role !== "ADMIN") return <Navigate to="/" replace />;
+  // ✅ Non-admins trying to access /admin → kick to helpdesk
+  if (user?.role !== "ADMIN") {
+    return <Navigate to="/" replace />;
+  }
 
   return <Outlet />;
 }

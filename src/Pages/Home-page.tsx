@@ -318,9 +318,10 @@ function HomePage() {
             <h2 className="text-4xl font-bold text-blue-900 mb-6"> Vision </h2>
 
             <p className="text-gray-600 leading-relaxed">
-              Lorem Ipsum Lorem Ipsum Lorem Ipsum Lorem Ipsum Lorem Ipsum Lorem
-              Ipsum Lorem Ipsum Lorem Ipsum Lorem Ipsum Lorem Ipsum Lorem Ipsum
-              Lorem Ipsum Lorem Ipsum Lorem Ipsum Lorem Ipsum
+              To raise living standards around the country by delivering
+              increased value to producers and consumers while optimizing
+              benefits to our customers, shareholders, employees and other
+              stakeholders.
             </p>
           </div>
 
@@ -354,9 +355,10 @@ function HomePage() {
             <h2 className="text-4xl font-bold text-blue-900 mb-6"> Mission </h2>
 
             <p className="text-gray-600 leading-relaxed">
-              Lorem Ipsum Lorem Ipsum Lorem Ipsum Lorem Ipsum Lorem Ipsum Lorem
-              Ipsum Lorem Ipsum Lorem Ipsum Lorem Ipsum Lorem Ipsum Lorem Ipsum
-              Lorem Ipsum Lorem Ipsum Lorem Ipsum Lorem Ipsum
+              To become the national leader in providing products, services and
+              expertise for the growth and care of livestock by understanding,
+              creating and communicating superior value for our customers while
+              prioritizing food safety technologies.
             </p>
           </div>
         </div>

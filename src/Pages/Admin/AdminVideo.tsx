@@ -24,6 +24,7 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   ActionDropdown,
   AdminCard,
+  AdminPagination,
   AdminSearchInput,
   AdminSectionHeader,
   FilterPillGroup,
@@ -73,6 +74,7 @@ const getYouTubeThumb = (url: string) => {
 const EMPTY_FORM = { title: "", description: "", videoLink: "" };
 
 export default function AdminVideosPage() {
+  const PAGE_SIZE = 6;
   const [videos, setVideos] = useState<video[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -83,6 +85,7 @@ export default function AdminVideosPage() {
   const [previewItem, setPreviewItem] = useState<video | null>(null);
   const [deleteItem, setDeleteItem] = useState<video | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
     fetchVideos();
@@ -109,6 +112,13 @@ export default function AdminVideosPage() {
       (sourceFilter === "All" || getSource(v.videoLink) === sourceFilter)
     );
   });
+
+  useEffect(() => {
+    setPage(1);
+  }, [search, sourceFilter, videos.length]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const openCreate = () => {
     setForm(EMPTY_FORM);
@@ -227,7 +237,7 @@ export default function AdminVideosPage() {
         </AdminCard>
       ) : (
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
-          {filtered.map((video) => {
+          {paginated.map((video) => {
             const source = getSource(video.videoLink);
             const thumb = getYouTubeThumb(video.videoLink);
             return (
@@ -313,6 +323,15 @@ export default function AdminVideosPage() {
           })}
         </div>
       )}
+
+      <AdminPagination
+        page={page}
+        totalPages={totalPages}
+        totalItems={filtered.length}
+        pageSize={PAGE_SIZE}
+        itemLabel="videos"
+        onPageChange={setPage}
+      />
 
       {/* Create / Edit dialog */}
       <Dialog

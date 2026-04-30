@@ -1,9 +1,9 @@
 export const authHeaders = (): Record<string, string> => {
-    const token = localStorage.getItem("admin_token"); // ← verify this key matches login
-    if (!token) {
-        console.warn("No admin token found in localStorage");
-    }
-    return token ? { Authorization: `Bearer ${token}` } : {};
+    const token = localStorage.getItem("admin_token");
+    return {
+        "Content-Type": "application/json",  // ← ADD THIS
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    };
 };
 
 export const getAdminUser = (): {

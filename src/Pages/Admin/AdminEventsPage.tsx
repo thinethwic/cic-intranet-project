@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   ActionDropdown,
+  AdminPagination,
   AdminSearchInput,
   AdminSectionHeader,
   DataTable,
@@ -47,6 +48,7 @@ const EMPTY_FORM = {
 };
 
 export default function AdminEventsPage() {
+  const PAGE_SIZE = 8;
   const [items, setItems] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -58,6 +60,7 @@ export default function AdminEventsPage() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
     fetchEvents();
@@ -82,6 +85,13 @@ export default function AdminEventsPage() {
       (segment === "All" || event.segment === segment)
     );
   });
+
+  useEffect(() => {
+    setPage(1);
+  }, [search, segment, items.length]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const openCreate = () => {
     setEditing(null);
@@ -215,7 +225,7 @@ export default function AdminEventsPage() {
 
       {/* Table */}
       <DataTable
-        data={filtered}
+        data={paginated}
         getRowKey={(event) => event.id}
         emptyLabel={loading ? "Loading events..." : "No events found"}
         columns={[
@@ -284,6 +294,15 @@ export default function AdminEventsPage() {
       />
 
       {/* ── Create / Edit Dialog ── */}
+      <AdminPagination
+        page={page}
+        totalPages={totalPages}
+        totalItems={filtered.length}
+        pageSize={PAGE_SIZE}
+        itemLabel="events"
+        onPageChange={setPage}
+      />
+
       <Dialog
         open={dialogOpen}
         onOpenChange={(open) => {

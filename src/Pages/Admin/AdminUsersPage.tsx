@@ -39,6 +39,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Card, CardContent } from "@/components/ui/card";
 import { authHeaders } from "@/lib/api/authHeaders";
+import { AdminPagination } from "./admin-components";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
 const API = `${BASE_URL}/api/v1/users`;
@@ -102,6 +103,7 @@ function StatCard({
 }
 
 export default function AdminUsersPage() {
+  const PAGE_SIZE = 8;
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -115,6 +117,7 @@ export default function AdminUsersPage() {
 
   const [createForm, setCreateForm] = useState({ ...EMPTY_FORM });
   const [editForm, setEditForm] = useState({ ...EMPTY_EDIT_FORM });
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
     fetchUsers();
@@ -148,6 +151,13 @@ export default function AdminUsersPage() {
         (statusFilter === "Inactive" && !u.active))
     );
   });
+
+  useEffect(() => {
+    setPage(1);
+  }, [search, roleFilter, statusFilter, users.length]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const adminCount = users.filter((u) => u.role === "ADMIN").length;
   const activeCount = users.filter((u) => u.active).length;
@@ -430,7 +440,7 @@ export default function AdminUsersPage() {
                   </TableCell>
                 </TableRow>
               ) : (
-                filtered.map((user) => (
+                paginated.map((user) => (
                   <TableRow
                     key={user.id}
                     className="group border-b border-slate-100 hover:bg-slate-50/70"
@@ -514,11 +524,14 @@ export default function AdminUsersPage() {
         </CardContent>
       </Card>
 
-      {filtered.length > 0 && (
-        <p className="text-xs text-slate-400 text-right">
-          Showing {filtered.length} of {users.length} users
-        </p>
-      )}
+      <AdminPagination
+        page={page}
+        totalPages={totalPages}
+        totalItems={filtered.length}
+        pageSize={PAGE_SIZE}
+        itemLabel="users"
+        onPageChange={setPage}
+      />
 
       {/* ── Create Dialog ── */}
       <Dialog

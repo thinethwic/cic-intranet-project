@@ -17,6 +17,7 @@ import { useAnnouncements } from "@/hooks/useAnnouncements";
 import { viewDocument, downloadDocument } from "@/lib/api/documentApi";
 
 import { loginAuthorized } from "@/lib/api/authApi";
+import ButtonsSection from "../components/ButtonsSection";
 
 interface Slide {
   title: string;
@@ -165,6 +166,7 @@ export default function HomePageAsiavet() {
   return (
     <div>
       <HeroSectionSegments slides={slides} />
+      <ButtonsSection segment={currentSegment ?? undefined} />
       <section className="max-w-7xl mx-auto px-2 py-4">
         <div className="grid md:grid-cols-2 gap-10 items-start">
           {/* ================= LEFT ================= */}

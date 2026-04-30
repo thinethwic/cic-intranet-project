@@ -25,6 +25,7 @@ import { ceoMessage, type CEOMessageConfig } from "@/Mock-data";
 import {
   ActionDropdown,
   AdminCard,
+  AdminPagination,
   AdminSearchInput,
   AdminSectionHeader,
   DataTable,
@@ -65,6 +66,7 @@ const EMPTY_FORM = {
 };
 
 export default function AdminManagementPage() {
+  const PAGE_SIZE = 8;
   const adminUser = getAdminUser();
   const loggedUserId = adminUser?.userId ?? null;
 
@@ -80,6 +82,7 @@ export default function AdminManagementPage() {
   const [ceoForm, setCeoForm] = useState<CEOMessageConfig>(getStoredCEOMessage);
   const [ceoSaved, setCeoSaved] = useState(false);
   const [formError, setFormError] = useState("");
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
     fetchMembers();
@@ -105,6 +108,13 @@ export default function AdminManagementPage() {
       (roleFilter === "All" || m.role === roleFilter)
     );
   });
+
+  useEffect(() => {
+    setPage(1);
+  }, [search, roleFilter, items.length]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const openCreate = () => {
     setEditing(null);
@@ -403,7 +413,7 @@ export default function AdminManagementPage() {
 
       {/* Table — unchanged */}
       <DataTable
-        data={filtered}
+        data={paginated}
         getRowKey={(m) => m.id}
         emptyLabel={
           loading ? "Loading members..." : "No management profiles found"
@@ -463,6 +473,15 @@ export default function AdminManagementPage() {
             ),
           },
         ]}
+      />
+
+      <AdminPagination
+        page={page}
+        totalPages={totalPages}
+        totalItems={filtered.length}
+        pageSize={PAGE_SIZE}
+        itemLabel="profiles"
+        onPageChange={setPage}
       />
 
       {/* Create / Edit Dialog */}

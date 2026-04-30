@@ -86,10 +86,12 @@ export default function MembersCarousel() {
                 </AvatarFallback>
               </Avatar>
               <p className="text-xs text-gray-400">{member.title}</p>
-              <h3 className="font-semibold text-sm">
+              <h3 className="font-semibold text-sm text-blue-900">
                 {member.firstName} {member.lastName} {/* ✅ real name fields */}
               </h3>
-              <p className="text-xs text-gray-500 mt-1">{member.role}</p>
+              <p className="text-xs text-gray-500 mt-1">
+                {member.role.toLocaleLowerCase()}
+              </p>
               <p className="text-xs text-gray-400 mt-1">{member.email}</p>
             </CardContent>
           </Card>

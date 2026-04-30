@@ -23,6 +23,7 @@ import { Label } from "@/components/ui/label";
 import {
   ActionDropdown,
   AdminCard,
+  AdminPagination,
   AdminSearchInput,
   AdminSectionHeader,
   StatCard,
@@ -39,6 +40,7 @@ import { getAdminUser } from "@/lib/api/authHeaders";
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
 
 export default function AdminGalleryPage() {
+  const PAGE_SIZE = 6;
   const [items, setItems] = useState<Gallery[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -52,6 +54,7 @@ export default function AdminGalleryPage() {
   const [description, setDescription] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
     fetchGalleries();
@@ -72,6 +75,13 @@ export default function AdminGalleryPage() {
   const filtered = items.filter((item) =>
     item.description?.toLowerCase().includes(search.toLowerCase()),
   );
+
+  useEffect(() => {
+    setPage(1);
+  }, [search, items.length]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const resetForm = () => {
     setDescription("");
@@ -215,7 +225,7 @@ export default function AdminGalleryPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
-          {filtered.map((item) => (
+          {paginated.map((item) => (
             <AdminCard key={item.id} className="overflow-hidden">
               {item.image ? (
                 <img
@@ -261,6 +271,15 @@ export default function AdminGalleryPage() {
       )}
 
       {/* ── Preview Dialog ── */}
+      <AdminPagination
+        page={page}
+        totalPages={totalPages}
+        totalItems={filtered.length}
+        pageSize={PAGE_SIZE}
+        itemLabel="images"
+        onPageChange={setPage}
+      />
+
       <Dialog open={!!preview} onOpenChange={() => setPreview(null)}>
         <DialogContent className="sm:max-w-3xl">
           <DialogHeader>

@@ -7,6 +7,7 @@ import {
   Image,
   Newspaper,
   Users,
+  Ticket,
   BriefcaseBusiness,
   LogOut,
   ChevronRight,
@@ -34,6 +35,7 @@ const navItems = [
   { name: "News", icon: Newspaper, path: "/admin/news" },
   { name: "Events", icon: Calendar, path: "/admin/events" },
   { name: "Gallery", icon: Image, path: "/admin/gallery" },
+  { name: "Ticket", icon: Ticket, path: "/admin/ticket" },
   { name: "Management", icon: BriefcaseBusiness, path: "/admin/management" },
   { name: "Users", icon: Users, path: "/admin/users" },
 ];

@@ -42,11 +42,21 @@ export default function AdminLogin() {
           name: data.name,
           email: data.email,
           username: data.username,
-          role: data.role, // ✅ save role
+          role: data.role,
         }),
       );
 
-      navigate("/admin", { replace: true });
+      // ✅ Redirect to returnTo if present, else default based on role
+      const params = new URLSearchParams(window.location.search);
+      const returnTo = params.get("returnTo");
+
+      if (returnTo) {
+        navigate(decodeURIComponent(returnTo), { replace: true });
+      } else {
+        // Default: admins go to /admin, employees go to /helpdesk
+        const role = data.role; // e.g. "ADMIN", "EMPLOYEE"
+        navigate(role === "ADMIN" ? "/admin" : "/helpdesk", { replace: true });
+      }
     } catch {
       setError("Error Fail to Loggin");
     } finally {

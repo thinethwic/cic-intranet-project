@@ -15,12 +15,16 @@ import AdminEventsPage from "./Pages/Admin/AdminEventsPage";
 import AdminGalleryPage from "./Pages/Admin/AdminGalleryPage";
 import AdminManagementPage from "./Pages/Admin/AdminManagementPage";
 import AdminLogin from "./Pages/Admin/AdminLogin";
-import ProtectedRoute from "@/ProtectedRoute"; // ✅
+import ProtectedRoute from "@/ProtectedRoute";
 import AdminUsersPage from "./Pages/Admin/AdminUsersPage";
+import AdminTicketsPage from "./Pages/Admin/AdminTicketsPage";
+import HelpDeskPage from "./Pages/Our Segments/components/HelpDeskPage";
+import EmployeeProtectedRoute from "./Pages/EmployeeProtectedRoute";
 
 function App() {
   return (
     <Routes>
+      {/* ── Public routes ── */}
       <Route element={<Layout />}>
         <Route path="/" element={<HomePage />} />
         <Route path="/our-segments/cic-feeds" element={<HomePageFeeds />} />
@@ -28,6 +32,10 @@ function App() {
         <Route path="/our-segments/cic-poulry" element={<HomePagePoulry />} />
         <Route path="/our-segments/asia-vet" element={<HomePageAsiavet />} />
         <Route path="/news/:id" element={<NewsDetailPage />} />
+      </Route>
+
+      <Route element={<EmployeeProtectedRoute />}>
+        <Route path="/helpdesk" element={<HelpDeskPage />} />
       </Route>
 
       {/* ✅ Redirect to /admin if already logged in */}
@@ -42,6 +50,7 @@ function App() {
           <Route path="/admin/news" element={<AdminNewsPage />} />
           <Route path="/admin/events" element={<AdminEventsPage />} />
           <Route path="/admin/gallery" element={<AdminGalleryPage />} />
+          <Route path="/admin/ticket" element={<AdminTicketsPage />} />
           <Route path="/admin/management" element={<AdminManagementPage />} />
           <Route path="/admin/users" element={<AdminUsersPage />} />
         </Route>

@@ -25,6 +25,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { AdminPagination } from "./admin-components";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -220,6 +221,7 @@ function NewsForm({
 
 // ── Main Page ────────────────────────────────────────────────
 export default function AdminNewsPage() {
+  const PAGE_SIZE = 8;
   const [news, setNews] = useState<News[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -239,6 +241,7 @@ export default function AdminNewsPage() {
   );
   const [editImageFile, setEditImageFile] = useState<File | null>(null);
   const [editImagePreview, setEditImagePreview] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
     fetchNews();
@@ -266,6 +269,13 @@ export default function AdminNewsPage() {
         (hotFilter === "Standard only" && !n.isHot))
     );
   });
+
+  useEffect(() => {
+    setPage(1);
+  }, [search, catFilter, hotFilter, news.length]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const hotCount = news.filter((n) => n.isHot).length;
   const catCount = new Set(news.map((n) => n.category)).size;
@@ -454,7 +464,7 @@ export default function AdminNewsPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-          {filtered.map((item) => (
+          {paginated.map((item) => (
             <Card
               key={item.id}
               className="overflow-hidden border-slate-200 hover:border-slate-300 transition-colors group"
@@ -517,11 +527,14 @@ export default function AdminNewsPage() {
         </div>
       )}
 
-      {filtered.length > 0 && (
-        <p className="text-xs text-slate-400 text-right">
-          Showing {filtered.length} of {news.length} articles
-        </p>
-      )}
+      <AdminPagination
+        page={page}
+        totalPages={totalPages}
+        totalItems={filtered.length}
+        pageSize={PAGE_SIZE}
+        itemLabel="articles"
+        onPageChange={setPage}
+      />
 
       {/* ── Create Dialog ── */}
       <Dialog

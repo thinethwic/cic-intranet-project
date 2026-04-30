@@ -1,6 +1,6 @@
 import type * as React from "react";
 import type { LucideIcon } from "lucide-react";
-import { MoreHorizontal, Search } from "lucide-react";
+import { ChevronLeft, ChevronRight, MoreHorizontal, Search } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -293,5 +293,96 @@ export function AdminCardTitle({
         </span>
       )}
     </CardHeader>
+  );
+}
+
+export function AdminPagination({
+  page,
+  totalPages,
+  totalItems,
+  pageSize,
+  itemLabel = "items",
+  onPageChange,
+}: {
+  page: number;
+  totalPages: number;
+  totalItems: number;
+  pageSize: number;
+  itemLabel?: string;
+  onPageChange: (page: number) => void;
+}) {
+  if (totalItems === 0) return null;
+
+  const start = (page - 1) * pageSize + 1;
+  const end = Math.min(page * pageSize, totalItems);
+
+  const pages = Array.from({ length: totalPages }, (_, index) => index + 1).filter(
+    (value) =>
+      value === 1 ||
+      value === totalPages ||
+      Math.abs(value - page) <= 1,
+  );
+
+  const pageTokens: Array<number | "ellipsis"> = [];
+
+  pages.forEach((value, index) => {
+    if (index > 0 && value - pages[index - 1] > 1) {
+      pageTokens.push("ellipsis");
+    }
+    pageTokens.push(value);
+  });
+
+  return (
+    <div className="flex flex-col gap-3 rounded-2xl border border-border/70 bg-card px-4 py-3 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+      <p className="text-xs text-muted-foreground">
+        Showing {start}-{end} of {totalItems} {itemLabel}
+      </p>
+
+      <div className="flex items-center gap-1 self-end sm:self-auto">
+        <Button
+          type="button"
+          variant="outline"
+          size="icon"
+          className="h-8 w-8 rounded-xl"
+          onClick={() => onPageChange(page - 1)}
+          disabled={page === 1}
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </Button>
+
+        {pageTokens.map((token, index) =>
+          token === "ellipsis" ? (
+            <span
+              key={`ellipsis-${index}`}
+              className="px-2 text-xs text-muted-foreground"
+            >
+              ...
+            </span>
+          ) : (
+            <Button
+              key={token}
+              type="button"
+              variant={token === page ? "default" : "outline"}
+              size="sm"
+              className="h-8 min-w-8 rounded-xl px-2"
+              onClick={() => onPageChange(token)}
+            >
+              {token}
+            </Button>
+          ),
+        )}
+
+        <Button
+          type="button"
+          variant="outline"
+          size="icon"
+          className="h-8 w-8 rounded-xl"
+          onClick={() => onPageChange(page + 1)}
+          disabled={page === totalPages}
+        >
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+      </div>
+    </div>
   );
 }

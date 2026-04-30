@@ -50,6 +50,7 @@ import {
   downloadDocument,
 } from "@/lib/api/documentApi";
 import { getAdminUser } from "@/lib/api/authHeaders";
+import { AdminPagination } from "./admin-components";
 
 import { History } from "lucide-react";
 import { getDocumentLogs, type DocumentAccessLog } from "@/lib/api/documentApi";
@@ -122,6 +123,7 @@ function FilterDropdown({
 }
 
 export default function AdminDocumentsPage() {
+  const PAGE_SIZE = 8;
   const [docs, setDocs] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -149,6 +151,7 @@ export default function AdminDocumentsPage() {
   const [logsDoc, setLogsDoc] = useState<Document | null>(null);
   const [logs, setLogs] = useState<DocumentAccessLog[]>([]);
   const [logsLoading, setLogsLoading] = useState(false);
+  const [page, setPage] = useState(1);
 
   const adminUser = getAdminUser();
 
@@ -302,6 +305,13 @@ export default function AdminDocumentsPage() {
     );
   });
 
+  useEffect(() => {
+    setPage(1);
+  }, [search, segFilter, typeFilter, catFilter, docs.length]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
   // Add this handler
   const handleViewLogs = async (doc: Document) => {
     setLogsDoc(doc);
@@ -432,7 +442,7 @@ export default function AdminDocumentsPage() {
                   </TableCell>
                 </TableRow>
               ) : (
-                filtered.map((doc) => (
+                paginated.map((doc) => (
                   <TableRow
                     key={doc.id}
                     className="group border-b border-slate-100 hover:bg-slate-50/70"
@@ -541,11 +551,14 @@ export default function AdminDocumentsPage() {
         </CardContent>
       </Card>
 
-      {filtered.length > 0 && (
-        <p className="text-xs text-slate-400 text-right">
-          Showing {filtered.length} of {docs.length} documents
-        </p>
-      )}
+      <AdminPagination
+        page={page}
+        totalPages={totalPages}
+        totalItems={filtered.length}
+        pageSize={PAGE_SIZE}
+        itemLabel="documents"
+        onPageChange={setPage}
+      />
 
       {/* ── Upload Dialog ── */}
       <Dialog

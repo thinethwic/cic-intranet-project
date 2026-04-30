@@ -1,3 +1,31 @@
+export type TicketStatus = "OPEN" | "IN_PROGRESS" | "RESOLVED" | "CLOSED";
+export type TicketPriority = "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+export type TicketCategory = "IT" | "HR" | "FINANCE" | "FACILITIES" | "OTHER";
+
+export interface Ticket {
+    id: number;
+    ticketNumber: string;
+    title: string;
+    description: string;
+    category: TicketCategory;
+    priority: TicketPriority;
+    status: TicketStatus;
+    segment: string;
+    submittedBy: { id: number; name: string; email: string };
+    assignedTo?: { id: number; name: string; email: string };
+    createdAt: string;
+    updatedAt: string;
+    resolvedAt?: string;
+}
+
+export interface TicketComment {
+    id: number;
+    message: string;
+    commentedBy: { id: number; name: string };
+    isInternal: boolean;
+    createdAt: string;
+}
+
 export interface Document {
     id: number;
     title: string;
