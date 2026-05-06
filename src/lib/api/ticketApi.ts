@@ -1,5 +1,6 @@
-import type { Ticket, TicketStatus, TicketCategory, TicketPriority } from "@/types";
+import type { Ticket, TicketStatus, TicketPriority } from "@/types";
 import { apiFetch } from "./apiFetch";
+import { authHeaders } from "./authHeaders";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
 
@@ -8,8 +9,10 @@ const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
 export interface CreateTicketPayload {
     title: string;
     description: string;
-    category: TicketCategory;
+    category: string;
     priority: TicketPriority;
+    segment: string,
+    department: string | null;
 }
 
 export interface UpdateTicketPayload {
@@ -22,10 +25,12 @@ export interface UpdateTicketPayload {
 
 export interface Comment {
     id: number;
-    ticketId: number;
     message: string;
-    commentedById: number;
-    commentedByName: string;
+    commentedBy: {
+        id: number;
+        name: string;
+        role: "ADMIN" | "AUTHORIZED" | "SERVICE";
+    };
     isInternal: boolean;
     createdAt: string;
 }
@@ -34,6 +39,25 @@ export interface CommentPayload {
     message: string;
     isInternal?: boolean;
 }
+
+export interface AdminUser {
+    id: number;
+    name: string;
+    email: string;
+    username: string;
+    role: "ADMIN" | "AUTHORIZED";
+    active: boolean;
+}
+
+export const getAdminUsers = async (): Promise<AdminUser[]> => {
+    const res = await fetch(`${BASE_URL}/api/v1/users?page=0&size=100`, {
+        headers: authHeaders(),
+    });
+    if (!res.ok) throw new Error("Failed to fetch admin users");
+    const data = await res.json();
+    // Only return active users so you don't assign to inactive accounts
+    return (data.content ?? []).filter((u: AdminUser) => u.active);
+};
 
 // ─── Employee endpoints ───────────────────────────────────────────────────────
 
@@ -166,16 +190,31 @@ export const assignTicket = async (
     return response.json();
 };
 
-export const adminUpdateTicket = async (
-    ticketId: number,
-    payload: UpdateTicketPayload
-): Promise<Ticket> => {
-    const response = await apiFetch(`${BASE_URL}/api/admin/tickets/${ticketId}`, {
-        method: "PATCH",
-        body: JSON.stringify(payload),
-    });
-    if (!response.ok) throw new Error("Failed to update ticket");
-    return response.json();
+export const adminUpdateTicket = async (ticketId: number, data: any) => {
+    // Reshape assignedToId → assignedTo object that Spring expects
+    const { assignedToId, ...rest } = data;
+
+    const payload = {
+        ...rest,
+        ...(assignedToId !== undefined && {
+            assignedTo: assignedToId ? { id: assignedToId } : null,
+        }),
+    };
+
+    const res = await fetch(
+        `${BASE_URL}/api/admin/tickets/${ticketId}`,
+        {
+            method: "PATCH",
+            headers: {
+                ...authHeaders(),
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(payload),
+        },
+    );
+
+    if (!res.ok) throw new Error("Failed to update ticket");
+    return res.json();
 };
 
 export const adminDeleteTicket = async (ticketId: number): Promise<void> => {
@@ -212,3 +251,69 @@ export const adminGetComments = async (
     const data = await response.json();
     return Array.isArray(data) ? data : (data.content ?? []);
 };
+
+export interface TicketCategory {
+    id: number;
+    name: string;
+    segment: string | null;
+    department: string | null;
+    active: boolean;
+}
+
+// For employees — filtered
+export async function getCategories(
+    segment: string,
+    department?: string | null
+): Promise<TicketCategory[]> {
+    const params = new URLSearchParams({ segment });
+    if (department) params.set("department", department);
+
+    const res = await fetch(
+        `${BASE_URL}/api/public/ticket-categories?${params}`,
+        { headers: authHeaders() }
+    );
+    if (!res.ok) throw new Error("Failed to fetch categories");
+    return res.json();
+}
+
+// For admin — all categories
+export async function adminGetCategories(): Promise<TicketCategory[]> {
+    const res = await fetch(`${BASE_URL}/api/admin/ticket-categories`, {
+        headers: authHeaders(),
+    });
+    if (!res.ok) throw new Error("Failed to fetch categories");
+    return res.json();
+}
+
+export async function adminCreateCategory(
+    data: Omit<TicketCategory, "id" | "active">
+): Promise<TicketCategory> {
+    const res = await fetch(`${BASE_URL}/api/admin/ticket-categories`, {
+        method: "POST",
+        headers: authHeaders(),
+        body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error("Failed to create category");
+    return res.json();
+}
+
+export async function adminUpdateCategory(
+    id: number,
+    data: Partial<TicketCategory>
+): Promise<TicketCategory> {
+    const res = await fetch(`${BASE_URL}/api/admin/ticket-categories/${id}`, {
+        method: "PUT",
+        headers: authHeaders(),
+        body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error("Failed to update category");
+    return res.json();
+}
+
+export async function adminDeleteCategory(id: number): Promise<void> {
+    const res = await fetch(`${BASE_URL}/api/admin/ticket-categories/${id}`, {
+        method: "DELETE",
+        headers: authHeaders(),
+    });
+    if (!res.ok) throw new Error("Failed to delete category");
+}

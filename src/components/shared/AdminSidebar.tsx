@@ -36,6 +36,7 @@ const navItems = [
   { name: "Events", icon: Calendar, path: "/admin/events" },
   { name: "Gallery", icon: Image, path: "/admin/gallery" },
   { name: "Ticket", icon: Ticket, path: "/admin/ticket" },
+  { name: "Ticket Category", icon: Ticket, path: "/admin/categories" },
   { name: "Management", icon: BriefcaseBusiness, path: "/admin/management" },
   { name: "Users", icon: Users, path: "/admin/users" },
 ];

@@ -1,4 +1,5 @@
 import { Card, CardContent } from "@/components/ui/card";
+import { encryptSegment } from "@/utils/segmentEncryption";
 import { BriefcaseBusiness, ShipWheelIcon } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -11,7 +12,7 @@ export default function ButtonsSection({ segment }: ButtonsSectionProps) {
     {
       label: "Help Desk",
       icon: ShipWheelIcon,
-      link: segment ? `/helpdesk?segment=${segment}` : "/helpdesk",
+      link: segment ? `/helpdesk?s=${encryptSegment(segment)}` : `/admin/login`, // no segment = send to login, not "/"
     },
     {
       label: "Asset Management",

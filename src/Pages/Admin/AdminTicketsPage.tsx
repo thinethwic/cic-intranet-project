@@ -1,6 +1,8 @@
-import { useEffect, useMemo, useState, type ElementType } from "react";
+import { useEffect, useMemo, useRef, useState, type ElementType } from "react";
 import {
   AlertCircle,
+  Bell,
+  Building2,
   Check,
   CheckCircle2,
   ChevronDown,
@@ -14,6 +16,7 @@ import {
   ShieldCheck,
   TicketIcon,
   Trash2,
+  UserCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,6 +24,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Dialog,
   DialogContent,
@@ -43,15 +47,25 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import type { Ticket, TicketCategory, TicketPriority, TicketStatus } from "@/types";
+import type {
+  Ticket,
+  TicketCategory,
+  TicketPriority,
+  TicketStatus,
+} from "@/types";
 import {
   adminAddComment,
   adminDeleteTicket,
   adminGetComments,
   adminUpdateTicket,
   getAllTickets,
+  getAdminUsers,
   type Comment,
 } from "@/lib/api/ticketApi";
+import type { AdminUser } from "@/lib/api/ticketApi";
+import { getAdminUser } from "@/lib/api/authHeaders";
+
+// ── Configs ─────────────────────────────────────────────────────────────────
 
 const STATUS_CONFIG: Record<
   TicketStatus,
@@ -90,6 +104,25 @@ const PRIORITY_CONFIG: Record<TicketPriority, string> = {
   CRITICAL: "bg-red-50 text-red-700 border-red-200",
 };
 
+const SEGMENT_CONFIG: Record<string, { label: string; className: string }> = {
+  CIC_FEEDS: {
+    label: "CIC Feeds",
+    className: "bg-green-50 text-green-700 border-green-200",
+  },
+  CIC_VET_CARE: {
+    label: "CIC Vet Care",
+    className: "bg-purple-50 text-purple-700 border-purple-200",
+  },
+  CIC_POULTRY: {
+    label: "CIC Poultry",
+    className: "bg-orange-50 text-orange-700 border-orange-200",
+  },
+  AISA_VET: {
+    label: "Asia Vet",
+    className: "bg-teal-50 text-teal-700 border-teal-200",
+  },
+};
+
 const CATEGORY_OPTIONS: TicketCategory[] = [
   "IT",
   "HR",
@@ -97,8 +130,12 @@ const CATEGORY_OPTIONS: TicketCategory[] = [
   "FACILITIES",
   "OTHER",
 ];
-
-const PRIORITY_OPTIONS: TicketPriority[] = ["LOW", "MEDIUM", "HIGH", "CRITICAL"];
+const PRIORITY_OPTIONS: TicketPriority[] = [
+  "LOW",
+  "MEDIUM",
+  "HIGH",
+  "CRITICAL",
+];
 const STATUS_OPTIONS: TicketStatus[] = [
   "OPEN",
   "IN_PROGRESS",
@@ -120,7 +157,11 @@ const EMPTY_EDIT_FORM = {
   category: "IT" as TicketCategory,
   priority: "MEDIUM" as TicketPriority,
   status: "OPEN" as TicketStatus,
+  department: "",
+  assignedToId: null as number | null,
 };
+
+// ── Sub-components ───────────────────────────────────────────────────────────
 
 function FilterDropdown({
   options,
@@ -134,10 +175,9 @@ function FilterDropdown({
   className?: string;
 }) {
   const isActive = value !== options[0];
-
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger>
+      <DropdownMenuTrigger asChild>
         <Button
           variant="outline"
           className={`h-9 min-w-[130px] justify-between gap-2 text-sm font-normal ${
@@ -156,7 +196,9 @@ function FilterDropdown({
             className="flex cursor-pointer items-center justify-between text-sm"
           >
             {option === "IN_PROGRESS" ? "In Progress" : option}
-            {value === option && <Check className="h-3.5 w-3.5 text-blue-600" />}
+            {value === option && (
+              <Check className="h-3.5 w-3.5 text-blue-600" />
+            )}
           </DropdownMenuItem>
         ))}
       </DropdownMenuContent>
@@ -177,7 +219,9 @@ function StatCard({
 }) {
   return (
     <div className="rounded-xl bg-slate-50 p-4 flex items-center gap-4">
-      <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${color}`}>
+      <div
+        className={`flex h-10 w-10 items-center justify-center rounded-lg ${color}`}
+      >
         <Icon className="h-5 w-5" />
       </div>
       <div>
@@ -187,6 +231,8 @@ function StatCard({
     </div>
   );
 }
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
 
 const fmtDate = (value: string) =>
   new Date(value).toLocaleDateString("en-GB", {
@@ -204,6 +250,8 @@ const fmtDateTime = (value: string) =>
     minute: "2-digit",
   });
 
+// ── Page ─────────────────────────────────────────────────────────────────────
+
 export default function AdminTicketsPage() {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
@@ -212,10 +260,12 @@ export default function AdminTicketsPage() {
   const [statusFilter, setStatusFilter] = useState("All");
   const [categoryFilter, setCategoryFilter] = useState("All");
   const [priorityFilter, setPriorityFilter] = useState("All");
+  const [segmentFilter, setSegmentFilter] = useState("All");
 
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
   const [commentsLoading, setCommentsLoading] = useState(false);
+  const [newMessageAlert, setNewMessageAlert] = useState(false);
 
   const [editTicket, setEditTicket] = useState<Ticket | null>(null);
   const [editForm, setEditForm] = useState({ ...EMPTY_EDIT_FORM });
@@ -223,16 +273,96 @@ export default function AdminTicketsPage() {
 
   const [comment, setComment] = useState("");
   const [sendingComment, setSendingComment] = useState(false);
+  const currentViewer = getAdminUser();
 
+  const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
+
+  // ── Refs ─────────────────────────────────────────────────────────────────
+  const commentsEndRef = useRef<HTMLDivElement>(null);
+  const commentsContainerRef = useRef<HTMLDivElement>(null);
+  const shouldScrollRef = useRef(false);
+  const selectedTicketRef = useRef<Ticket | null>(null);
+  const lastUpdatedAtRef = useRef<Record<number, string>>({});
+  const isSeededRef = useRef(false); // ← prevents polling before initial load
+
+  const [pageAlert, setPageAlert] = useState<{
+    ticketNumber: string;
+    title: string;
+  } | null>(null);
+
+  // Keep selectedTicketRef in sync
+  useEffect(() => {
+    selectedTicketRef.current = selectedTicket;
+  }, [selectedTicket]);
+
+  // ── Initial load ─────────────────────────────────────────────────────────
   useEffect(() => {
     fetchTickets();
+    fetchAdminUsers();
   }, []);
+
+  // ── Dialog comment polling (5s while dialog open) ────────────────────────
+  useEffect(() => {
+    if (!selectedTicket) return;
+    const interval = setInterval(() => {
+      fetchComments(selectedTicket.id);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [selectedTicket?.id]);
+
+  // ── Page-level polling (10s, only when dialog closed) ────────────────────
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      // Skip if dialog is open or seeding hasn't finished yet
+      if (selectedTicketRef.current) return;
+      if (!isSeededRef.current) return;
+
+      try {
+        const fresh = await getAllTickets();
+
+        fresh.forEach((ticket) => {
+          const lastSeen = lastUpdatedAtRef.current[ticket.id];
+
+          if (lastSeen === undefined) {
+            // New ticket appeared after initial load — just seed it
+            lastUpdatedAtRef.current[ticket.id] = ticket.updatedAt;
+          } else if (lastSeen !== ticket.updatedAt) {
+            // This ticket changed since last poll — show alert
+            setPageAlert({
+              ticketNumber: ticket.ticketNumber,
+              title: ticket.title,
+            });
+            // Update ref so we don't alert again for same change
+            lastUpdatedAtRef.current[ticket.id] = ticket.updatedAt;
+          }
+        });
+
+        // Silently refresh the table
+        setTickets(fresh);
+      } catch {
+        // silent
+      }
+    }, 10000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // ── Data fetchers ─────────────────────────────────────────────────────────
 
   const fetchTickets = async () => {
     try {
       setLoading(true);
       const data = await getAllTickets();
       setTickets(data);
+
+      // Seed the ref with current updatedAt values
+      // Must happen before isSeededRef is set to true
+      data.forEach((t) => {
+        lastUpdatedAtRef.current[t.id] = t.updatedAt;
+      });
+
+      // Now safe for polling to start comparing
+      isSeededRef.current = true;
     } catch (err) {
       console.error("Failed to fetch tickets", err);
     } finally {
@@ -240,32 +370,93 @@ export default function AdminTicketsPage() {
     }
   };
 
-  const fetchComments = async (ticketId: number) => {
+  const fetchAdminUsers = async () => {
     try {
-      setCommentsLoading(true);
-      const data = await adminGetComments(ticketId);
-      setComments(data);
+      const data = await getAdminUsers();
+      setAdminUsers(data);
     } catch (err) {
-      console.error("Failed to fetch comments", err);
-    } finally {
-      setCommentsLoading(false);
+      console.error("Failed to fetch admin users", err);
     }
   };
 
+  const fetchComments = async (ticketId: number, isInitial = false) => {
+    const container = commentsContainerRef.current;
+    const prevScrollTop = container?.scrollTop ?? 0;
+    const prevScrollHeight = container?.scrollHeight ?? 0;
+
+    try {
+      if (isInitial) setCommentsLoading(true);
+
+      const data = await adminGetComments(ticketId);
+
+      setComments((prev) => {
+        // Nothing changed — skip re-render
+        if (
+          prev.length === data.length &&
+          prev.every(
+            (c, i) => c.id === data[i].id && c.message === data[i].message,
+          )
+        ) {
+          return prev;
+        }
+
+        // Only alert on background polls, not initial open
+        if (!isInitial && prev.length > 0) {
+          const prevIds = new Set(prev.map((c) => c.id));
+          const newFromOther = data.filter(
+            (c) =>
+              !prevIds.has(c.id) && c.commentedBy.id !== currentViewer?.userId,
+          );
+          if (newFromOther.length > 0) {
+            setTimeout(() => setNewMessageAlert(true), 0);
+          }
+        }
+
+        return data;
+      });
+
+      requestAnimationFrame(() => {
+        if (!commentsContainerRef.current) return;
+        if (shouldScrollRef.current) {
+          commentsEndRef.current?.scrollIntoView({ behavior: "smooth" });
+          shouldScrollRef.current = false;
+        } else {
+          const newScrollHeight = commentsContainerRef.current.scrollHeight;
+          commentsContainerRef.current.scrollTop =
+            prevScrollTop + (newScrollHeight - prevScrollHeight);
+        }
+      });
+    } catch (err) {
+      console.error("Failed to fetch comments", err);
+    } finally {
+      if (isInitial) setCommentsLoading(false);
+    }
+  };
+
+  // ── Derived state ─────────────────────────────────────────────────────────
+
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
-
     return tickets.filter((ticket) => {
       return (
         (ticket.title.toLowerCase().includes(q) ||
           ticket.ticketNumber.toLowerCase().includes(q) ||
-          ticket.submittedBy.name.toLowerCase().includes(q)) &&
+          ticket.submittedBy.name.toLowerCase().includes(q) ||
+          (ticket.department ?? "").toLowerCase().includes(q)) &&
         (statusFilter === "All" || ticket.status === statusFilter) &&
         (categoryFilter === "All" || ticket.category === categoryFilter) &&
-        (priorityFilter === "All" || ticket.priority === priorityFilter)
+        (priorityFilter === "All" || ticket.priority === priorityFilter) &&
+        (segmentFilter === "All" || ticket.segment === segmentFilter)
       );
     });
-  }, [tickets, search, statusFilter, categoryFilter, priorityFilter]);
+  }, [
+    tickets,
+    search,
+    statusFilter,
+    categoryFilter,
+    priorityFilter,
+    segmentFilter,
+  ]);
 
   const stats = [
     {
@@ -276,40 +467,46 @@ export default function AdminTicketsPage() {
     },
     {
       label: "Open",
-      value: loading ? "..." : tickets.filter((ticket) => ticket.status === "OPEN").length,
+      value: loading
+        ? "..."
+        : tickets.filter((t) => t.status === "OPEN").length,
       icon: Circle,
       color: "bg-sky-50 text-sky-600",
     },
     {
       label: "In progress",
-      value:
-        loading
-          ? "..."
-          : tickets.filter((ticket) => ticket.status === "IN_PROGRESS").length,
+      value: loading
+        ? "..."
+        : tickets.filter((t) => t.status === "IN_PROGRESS").length,
       icon: Loader2,
       color: "bg-amber-50 text-amber-600",
     },
     {
       label: "Resolved",
-      value:
-        loading
-          ? "..."
-          : tickets.filter((ticket) => ticket.status === "RESOLVED").length,
+      value: loading
+        ? "..."
+        : tickets.filter((t) => t.status === "RESOLVED").length,
       icon: ShieldCheck,
       color: "bg-emerald-50 text-emerald-600",
     },
   ];
 
+  // ── Handlers ──────────────────────────────────────────────────────────────
+
   const openDetails = (ticket: Ticket) => {
     setSelectedTicket(ticket);
     setComment("");
-    fetchComments(ticket.id);
+    setPageAlert(null);
+    setNewMessageAlert(false);
+    shouldScrollRef.current = true;
+    fetchComments(ticket.id, true);
   };
 
   const closeDetails = () => {
     setSelectedTicket(null);
     setComments([]);
     setComment("");
+    setNewMessageAlert(false);
   };
 
   const openEdit = (ticket: Ticket) => {
@@ -320,26 +517,21 @@ export default function AdminTicketsPage() {
       category: ticket.category,
       priority: ticket.priority,
       status: ticket.status,
+      department: ticket.department ?? "",
+      assignedToId: ticket.assignedTo?.id ?? null,
     });
   };
 
   const handleSaveEdit = async () => {
-    if (!editTicket || !editForm.title.trim() || !editForm.description.trim()) {
+    if (!editTicket || !editForm.title.trim() || !editForm.description.trim())
       return;
-    }
-
     try {
       setSaving(true);
       const updated = await adminUpdateTicket(editTicket.id, editForm);
-
       setTickets((prev) =>
-        prev.map((ticket) => (ticket.id === updated.id ? updated : ticket)),
+        prev.map((t) => (t.id === updated.id ? updated : t)),
       );
-
-      if (selectedTicket?.id === updated.id) {
-        setSelectedTicket(updated);
-      }
-
+      if (selectedTicket?.id === updated.id) setSelectedTicket(updated);
       setEditTicket(null);
     } catch (err) {
       console.error("Failed to update ticket", err);
@@ -350,18 +542,11 @@ export default function AdminTicketsPage() {
 
   const handleDelete = async () => {
     if (!deleteTicket) return;
-
     try {
       setSaving(true);
       await adminDeleteTicket(deleteTicket.id);
-      setTickets((prev) =>
-        prev.filter((ticket) => ticket.id !== deleteTicket.id),
-      );
-
-      if (selectedTicket?.id === deleteTicket.id) {
-        closeDetails();
-      }
-
+      setTickets((prev) => prev.filter((t) => t.id !== deleteTicket.id));
+      if (selectedTicket?.id === deleteTicket.id) closeDetails();
       setDeleteTicket(null);
     } catch (err) {
       console.error("Failed to delete ticket", err);
@@ -373,14 +558,10 @@ export default function AdminTicketsPage() {
   const handleStatusUpdate = async (ticketId: number, status: TicketStatus) => {
     try {
       const updated = await adminUpdateTicket(ticketId, { status });
-
       setTickets((prev) =>
-        prev.map((ticket) => (ticket.id === updated.id ? updated : ticket)),
+        prev.map((t) => (t.id === updated.id ? updated : t)),
       );
-
-      if (selectedTicket?.id === updated.id) {
-        setSelectedTicket(updated);
-      }
+      if (selectedTicket?.id === updated.id) setSelectedTicket(updated);
     } catch (err) {
       console.error("Failed to update status", err);
     }
@@ -388,9 +569,10 @@ export default function AdminTicketsPage() {
 
   const handleAddComment = async () => {
     if (!selectedTicket || !comment.trim()) return;
-
     try {
       setSendingComment(true);
+      setNewMessageAlert(false);
+      shouldScrollRef.current = true;
       await adminAddComment(selectedTicket.id, {
         message: comment,
         isInternal: false,
@@ -404,34 +586,117 @@ export default function AdminTicketsPage() {
     }
   };
 
+  // ── Comment helpers ───────────────────────────────────────────────────────
+
+  const getCommentRole = (entry: Comment) => {
+    if (entry.commentedBy.role === "AUTHORIZED") return "AUTHORIZED" as const;
+    if (entry.commentedBy.role === "SERVICE") return "SERVICE" as const;
+    return "ADMIN" as const;
+  };
+
+  const getCommentAppearance = (entry: Comment) => {
+    const isMine =
+      String(entry.commentedBy.id) === String(currentViewer?.userId);
+    const role = getCommentRole(entry);
+
+    if (role === "SERVICE") {
+      return {
+        align: isMine ? "justify-end" : "justify-start",
+        bubble:
+          "rounded-bl-md border-emerald-200 bg-emerald-50/95 text-emerald-950",
+        name: "text-emerald-900",
+        badge: "bg-emerald-100 text-emerald-700",
+        badgeLabel: "Service",
+      };
+    }
+    if (role === "AUTHORIZED") {
+      return {
+        align: isMine ? "justify-end" : "justify-start",
+        bubble:
+          "rounded-bl-md border-violet-200 bg-violet-50/95 text-violet-950",
+        name: "text-violet-900",
+        badge: "bg-violet-100 text-violet-700",
+        badgeLabel: "Authorized",
+      };
+    }
+    return {
+      align: isMine ? "justify-end" : "justify-start",
+      bubble: "rounded-bl-md border-blue-200 bg-blue-50/95 text-blue-950",
+      name: "text-blue-900",
+      badge: "bg-blue-100 text-blue-700",
+      badgeLabel: "Admin",
+    };
+  };
+
+  // ── Render ────────────────────────────────────────────────────────────────
+
   return (
     <div className="space-y-6 p-6">
+      {/* ── Header ── */}
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Support Tickets</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">
+            Support Tickets
+          </h1>
           <p className="mt-1 text-sm text-slate-500">
             Review, update, edit, and remove employee support requests.
           </p>
         </div>
       </div>
 
+      {/* ── Page-level alert ── */}
+      {pageAlert && (
+        <Alert className="border-blue-200 bg-blue-50">
+          <Bell className="h-4 w-4 text-blue-600" />
+          <AlertDescription className="flex items-center justify-between">
+            <span className="text-sm text-blue-800">
+              <span className="font-semibold">{pageAlert.ticketNumber}</span>
+              {" — "}
+              <span className="font-medium">{pageAlert.title}</span>
+              {" has a new update."}
+            </span>
+            <div className="ml-4 flex items-center gap-3">
+              <button
+                onClick={() => {
+                  const ticket = tickets.find(
+                    (t) => t.ticketNumber === pageAlert.ticketNumber,
+                  );
+                  if (ticket) openDetails(ticket);
+                  setPageAlert(null);
+                }}
+                className="text-xs font-medium text-blue-700 underline hover:text-blue-900"
+              >
+                View ticket
+              </button>
+              <button
+                onClick={() => setPageAlert(null)}
+                className="text-xs text-blue-500 underline hover:text-blue-700"
+              >
+                Dismiss
+              </button>
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* ── Stats ── */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {stats.map((item) => (
           <StatCard key={item.label} {...item} />
         ))}
       </div>
 
+      {/* ── Filters ── */}
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative min-w-[220px] flex-1">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
           <Input
             className="h-9 pl-9"
-            placeholder="Search by ticket, title or employee..."
+            placeholder="Search by ticket, title, employee or department..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-
         <FilterDropdown
           options={["All", ...STATUS_OPTIONS]}
           value={statusFilter}
@@ -447,8 +712,42 @@ export default function AdminTicketsPage() {
           value={priorityFilter}
           onChange={setPriorityFilter}
         />
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="outline"
+              className={`h-9 min-w-[130px] justify-between gap-2 text-sm font-normal ${
+                segmentFilter !== "All" ? "border-blue-500 text-blue-600" : ""
+              }`}
+            >
+              <span>
+                {segmentFilter === "All"
+                  ? "All Segments"
+                  : (SEGMENT_CONFIG[segmentFilter]?.label ?? segmentFilter)}
+              </span>
+              <ChevronDown className="h-3.5 w-3.5 opacity-50" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="min-w-[160px]">
+            {["All", ...Object.keys(SEGMENT_CONFIG)].map((key) => (
+              <DropdownMenuItem
+                key={key}
+                onClick={() => setSegmentFilter(key)}
+                className="flex cursor-pointer items-center justify-between text-sm"
+              >
+                {key === "All"
+                  ? "All Segments"
+                  : (SEGMENT_CONFIG[key]?.label ?? key)}
+                {segmentFilter === key && (
+                  <Check className="h-3.5 w-3.5 text-blue-600" />
+                )}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
+      {/* ── Tickets Table ── */}
       <Card className="overflow-hidden border border-slate-200 shadow-sm">
         <CardContent className="p-0">
           <Table>
@@ -456,6 +755,12 @@ export default function AdminTicketsPage() {
               <TableRow className="bg-slate-50 hover:bg-slate-50">
                 <TableHead className="pl-5 text-xs font-semibold uppercase tracking-wide text-slate-500">
                   Ticket
+                </TableHead>
+                <TableHead className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Department
+                </TableHead>
+                <TableHead className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Segment
                 </TableHead>
                 <TableHead className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                   Category
@@ -470,6 +775,9 @@ export default function AdminTicketsPage() {
                   Submitted By
                 </TableHead>
                 <TableHead className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Assigned To
+                </TableHead>
+                <TableHead className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                   Updated
                 </TableHead>
                 <TableHead className="pr-5 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -481,7 +789,7 @@ export default function AdminTicketsPage() {
               {loading ? (
                 <TableRow>
                   <TableCell
-                    colSpan={7}
+                    colSpan={10}
                     className="py-14 text-center text-sm text-slate-400"
                   >
                     Loading tickets...
@@ -490,7 +798,7 @@ export default function AdminTicketsPage() {
               ) : filtered.length === 0 ? (
                 <TableRow>
                   <TableCell
-                    colSpan={7}
+                    colSpan={10}
                     className="py-14 text-center text-sm text-slate-400"
                   >
                     <TicketIcon className="mx-auto mb-2 h-8 w-8 opacity-25" />
@@ -501,6 +809,9 @@ export default function AdminTicketsPage() {
                 filtered.map((ticket) => {
                   const status = STATUS_CONFIG[ticket.status];
                   const StatusIcon = status.icon;
+                  const seg = ticket.segment
+                    ? SEGMENT_CONFIG[ticket.segment]
+                    : null;
 
                   return (
                     <TableRow
@@ -516,6 +827,28 @@ export default function AdminTicketsPage() {
                             {ticket.title}
                           </p>
                         </div>
+                      </TableCell>
+                      <TableCell className="py-3.5">
+                        {ticket.department ? (
+                          <span className="inline-flex items-center gap-1.5 text-xs text-slate-600">
+                            <Building2 className="h-3.5 w-3.5 text-slate-400" />
+                            {ticket.department}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-slate-300">—</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="py-3.5">
+                        {seg ? (
+                          <Badge
+                            variant="outline"
+                            className={`px-2 text-[10px] ${seg.className}`}
+                          >
+                            {seg.label}
+                          </Badge>
+                        ) : (
+                          <span className="text-xs text-slate-300">—</span>
+                        )}
                       </TableCell>
                       <TableCell className="py-3.5">
                         <span className="inline-flex items-center gap-2 text-xs text-slate-600">
@@ -544,6 +877,18 @@ export default function AdminTicketsPage() {
                       </TableCell>
                       <TableCell className="py-3.5 text-sm text-slate-600">
                         {ticket.submittedBy.name}
+                      </TableCell>
+                      <TableCell className="py-3.5">
+                        {ticket.assignedTo ? (
+                          <span className="inline-flex items-center gap-1.5 text-xs text-slate-600">
+                            <UserCheck className="h-3.5 w-3.5 text-emerald-500" />
+                            {ticket.assignedTo.name}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-slate-300">
+                            Unassigned
+                          </span>
+                        )}
                       </TableCell>
                       <TableCell className="py-3.5 text-xs text-slate-400">
                         {fmtDate(ticket.updatedAt)}
@@ -594,6 +939,7 @@ export default function AdminTicketsPage() {
         </p>
       )}
 
+      {/* ── Ticket Detail Dialog ── */}
       <Dialog
         open={!!selectedTicket}
         onOpenChange={(open) => {
@@ -605,6 +951,9 @@ export default function AdminTicketsPage() {
             (() => {
               const status = STATUS_CONFIG[selectedTicket.status];
               const StatusIcon = status.icon;
+              const seg = selectedTicket.segment
+                ? SEGMENT_CONFIG[selectedTicket.segment]
+                : null;
 
               return (
                 <>
@@ -626,6 +975,23 @@ export default function AdminTicketsPage() {
                       >
                         {selectedTicket.priority}
                       </Badge>
+                      {seg && (
+                        <Badge
+                          variant="outline"
+                          className={`px-2 text-[10px] ${seg.className}`}
+                        >
+                          {seg.label}
+                        </Badge>
+                      )}
+                      {selectedTicket.department && (
+                        <Badge
+                          variant="outline"
+                          className="px-2 text-[10px] bg-slate-50 text-slate-600 border-slate-200"
+                        >
+                          <Building2 className="mr-1 h-3 w-3" />
+                          {selectedTicket.department}
+                        </Badge>
+                      )}
                     </div>
                     <DialogTitle className="text-left text-blue-900">
                       {selectedTicket.title}
@@ -636,16 +1002,28 @@ export default function AdminTicketsPage() {
                       <span>By {selectedTicket.submittedBy.name}</span>
                       <span>•</span>
                       <span>{fmtDateTime(selectedTicket.createdAt)}</span>
-                      {selectedTicket.assignedTo && (
+                      {selectedTicket.assignedTo ? (
                         <>
                           <span>•</span>
-                          <span>Assigned to {selectedTicket.assignedTo.name}</span>
+                          <span className="inline-flex items-center gap-1 text-emerald-600 font-medium">
+                            <UserCheck className="h-3 w-3" />
+                            Assigned to {selectedTicket.assignedTo.name}
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <span>•</span>
+                          <span className="text-slate-300">Unassigned</span>
                         </>
                       )}
                     </div>
                   </DialogHeader>
 
-                  <div className="flex-1 space-y-5 overflow-y-auto px-6 py-4">
+                  {/* ── Scrollable body ── */}
+                  <div
+                    ref={commentsContainerRef}
+                    className="flex-1 space-y-5 overflow-y-auto px-6 py-4"
+                  >
                     <div className="rounded-2xl bg-slate-50 p-4">
                       <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
                         Description
@@ -663,12 +1041,13 @@ export default function AdminTicketsPage() {
                         {STATUS_OPTIONS.map((value) => {
                           const config = STATUS_CONFIG[value];
                           const active = selectedTicket.status === value;
-
                           return (
                             <button
                               key={value}
                               type="button"
-                              onClick={() => handleStatusUpdate(selectedTicket.id, value)}
+                              onClick={() =>
+                                handleStatusUpdate(selectedTicket.id, value)
+                              }
                               disabled={active}
                               className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-all disabled:cursor-not-allowed ${
                                 active
@@ -685,13 +1064,41 @@ export default function AdminTicketsPage() {
 
                     <div className="space-y-3">
                       <div className="flex items-center justify-between gap-3">
-                        <Label className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                          Conversation
-                        </Label>
+                        <div className="flex items-center gap-2">
+                          <Label className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                            Conversation
+                          </Label>
+                          <span className="flex items-center gap-1.5 text-xs text-emerald-500 font-medium">
+                            <span className="relative flex h-2 w-2">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                              <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+                            </span>
+                            Live
+                          </span>
+                        </div>
                         <span className="text-xs text-slate-400">
-                          {comments.length} comment{comments.length === 1 ? "" : "s"}
+                          {comments.length} comment
+                          {comments.length === 1 ? "" : "s"}
                         </span>
                       </div>
+
+                      {/* ── In-dialog new message alert ── */}
+                      {newMessageAlert && (
+                        <Alert className="border-blue-200 bg-blue-50">
+                          <Bell className="h-4 w-4 text-blue-600" />
+                          <AlertDescription className="flex items-center justify-between">
+                            <span className="text-sm font-medium text-blue-800">
+                              New reply received
+                            </span>
+                            <button
+                              onClick={() => setNewMessageAlert(false)}
+                              className="ml-4 text-xs text-blue-500 underline hover:text-blue-700"
+                            >
+                              Dismiss
+                            </button>
+                          </AlertDescription>
+                        </Alert>
+                      )}
 
                       {commentsLoading ? (
                         <div className="rounded-2xl border border-slate-200 bg-white px-4 py-10 text-center text-sm text-slate-400">
@@ -703,37 +1110,40 @@ export default function AdminTicketsPage() {
                         </div>
                       ) : (
                         <div className="space-y-3">
-                          {comments.map((entry) => (
-                            <div
-                              key={entry.id}
-                              className={`flex ${
-                                entry.commentedById === selectedTicket.submittedBy.id
-                                  ? "justify-start"
-                                  : "justify-end"
-                              }`}
-                            >
+                          {comments.map((entry) => {
+                            const appearance = getCommentAppearance(entry);
+                            return (
                               <div
-                                className={`max-w-[85%] rounded-[20px] border px-4 py-3 text-sm shadow-sm ${
-                                  entry.commentedById === selectedTicket.submittedBy.id
-                                    ? "rounded-bl-md border-slate-200 bg-white"
-                                    : "rounded-br-md border-blue-100 bg-blue-50"
-                                }`}
+                                key={entry.id}
+                                className={`flex ${appearance.align}`}
                               >
-                                <div className="mb-1.5 flex items-center gap-2">
-                                  <span className="text-xs font-semibold text-slate-700">
-                                    {entry.commentedByName}
-                                  </span>
-                                  <span className="ml-auto inline-flex items-center gap-1 text-[11px] text-slate-400">
-                                    <Clock3 className="h-3 w-3" />
-                                    {fmtDateTime(entry.createdAt)}
-                                  </span>
+                                <div
+                                  className={`max-w-[85%] rounded-[20px] border px-4 py-3 text-sm shadow-sm ${appearance.bubble}`}
+                                >
+                                  <div className="mb-1.5 flex items-center gap-2">
+                                    <span
+                                      className={`text-xs font-semibold ${appearance.name}`}
+                                    >
+                                      {entry.commentedBy.name}
+                                    </span>
+                                    <span
+                                      className={`rounded-full px-2 py-0.5 text-[10px] ${appearance.badge}`}
+                                    >
+                                      {appearance.badgeLabel}
+                                    </span>
+                                    <span className="ml-auto inline-flex items-center gap-1 text-[11px] text-slate-400">
+                                      <Clock3 className="h-3 w-3" />
+                                      {fmtDateTime(entry.createdAt)}
+                                    </span>
+                                  </div>
+                                  <p className="whitespace-pre-wrap break-words leading-relaxed text-current">
+                                    {entry.message}
+                                  </p>
                                 </div>
-                                <p className="whitespace-pre-wrap break-words leading-relaxed text-slate-600">
-                                  {entry.message}
-                                </p>
                               </div>
-                            </div>
-                          ))}
+                            );
+                          })}
+                          <div ref={commentsEndRef} />
                         </div>
                       )}
                     </div>
@@ -766,6 +1176,7 @@ export default function AdminTicketsPage() {
         </DialogContent>
       </Dialog>
 
+      {/* ── Edit Ticket Dialog ── */}
       <Dialog
         open={!!editTicket}
         onOpenChange={(open) => {
@@ -779,13 +1190,14 @@ export default function AdminTicketsPage() {
               Edit ticket
             </DialogTitle>
             <DialogDescription>
-              Update ticket details and workflow status.
+              Update ticket details, assignment, and workflow status.
             </DialogDescription>
           </DialogHeader>
-
           <div className="grid gap-4">
             <div className="space-y-1.5">
-              <Label className="text-xs font-medium text-slate-600">Title</Label>
+              <Label className="text-xs font-medium text-slate-600">
+                Title
+              </Label>
               <Input
                 value={editForm.title}
                 onChange={(e) =>
@@ -793,7 +1205,6 @@ export default function AdminTicketsPage() {
                 }
               />
             </div>
-
             <div className="space-y-1.5">
               <Label className="text-xs font-medium text-slate-600">
                 Description
@@ -809,7 +1220,25 @@ export default function AdminTicketsPage() {
                 className="min-h-28 resize-none"
               />
             </div>
-
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-slate-600">
+                Department
+              </Label>
+              <div className="relative">
+                <Building2 className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <Input
+                  value={editForm.department}
+                  onChange={(e) =>
+                    setEditForm((prev) => ({
+                      ...prev,
+                      department: e.target.value,
+                    }))
+                  }
+                  placeholder="e.g. Sales, Engineering, Operations"
+                  className="pl-9"
+                />
+              </div>
+            </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label className="text-xs font-medium text-slate-600">
@@ -844,9 +1273,10 @@ export default function AdminTicketsPage() {
                 />
               </div>
             </div>
-
             <div className="space-y-1.5">
-              <Label className="text-xs font-medium text-slate-600">Status</Label>
+              <Label className="text-xs font-medium text-slate-600">
+                Status
+              </Label>
               <FilterDropdown
                 options={STATUS_OPTIONS}
                 value={editForm.status}
@@ -859,8 +1289,42 @@ export default function AdminTicketsPage() {
                 className="w-full"
               />
             </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-slate-600">
+                Assign To
+              </Label>
+              <div className="relative">
+                <UserCheck className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <select
+                  value={editForm.assignedToId ?? ""}
+                  onChange={(e) =>
+                    setEditForm((prev) => ({
+                      ...prev,
+                      assignedToId: e.target.value
+                        ? Number(e.target.value)
+                        : null,
+                    }))
+                  }
+                  className="h-10 w-full rounded-md border border-slate-200 bg-white pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-blue-200"
+                >
+                  {adminUsers.length === 0 ? (
+                    <option value="" disabled>
+                      Loading users...
+                    </option>
+                  ) : (
+                    <>
+                      <option value="">Unassigned</option>
+                      {adminUsers.map((user) => (
+                        <option key={user.id} value={user.id}>
+                          {user.name} ({user.role})
+                        </option>
+                      ))}
+                    </>
+                  )}
+                </select>
+              </div>
+            </div>
           </div>
-
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditTicket(null)}>
               Cancel
@@ -868,9 +1332,7 @@ export default function AdminTicketsPage() {
             <Button
               onClick={handleSaveEdit}
               disabled={
-                saving ||
-                !editForm.title.trim() ||
-                !editForm.description.trim()
+                saving || !editForm.title.trim() || !editForm.description.trim()
               }
               className="bg-blue-600 text-white hover:bg-blue-700"
             >
@@ -880,6 +1342,7 @@ export default function AdminTicketsPage() {
         </DialogContent>
       </Dialog>
 
+      {/* ── Delete Confirm Dialog ── */}
       <Dialog
         open={!!deleteTicket}
         onOpenChange={(open) => {

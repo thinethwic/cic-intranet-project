@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Plus,
   Search,
@@ -18,14 +18,16 @@ import {
   Building2,
   FileText,
   LogOut,
+  Bell,
 } from "lucide-react";
-import { useLocation, useSearchParams } from "react-router-dom";
+import { Navigate, useLocation, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Dialog,
   DialogContent,
@@ -34,24 +36,20 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import type { Ticket, TicketCategory, TicketPriority } from "@/types";
+import type { Ticket, TicketPriority } from "@/types";
 import {
   createTicket,
   getMyTickets,
   addComment,
   getComments,
+  getCategories,
   type Comment,
+  type TicketCategory,
 } from "@/lib/api/ticketApi";
 import { mapPathToSegment } from "@/utils/segmentMapper";
 import { getAdminUser, logout } from "@/lib/api/authHeaders";
-
-const CATEGORIES: TicketCategory[] = [
-  "IT",
-  "HR",
-  "FINANCE",
-  "FACILITIES",
-  "OTHER",
-];
+import { decryptSegment } from "@/utils/segmentEncryption";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 const PRIORITIES: TicketPriority[] = ["LOW", "MEDIUM", "HIGH", "CRITICAL"];
 
@@ -104,12 +102,15 @@ const SEGMENT_CONFIG: Record<string, { label: string; class: string }> = {
   },
 };
 
-const CATEGORY_ICONS: Record<TicketCategory, typeof Laptop> = {
-  IT: Laptop,
-  HR: Users,
-  FINANCE: Landmark,
-  FACILITIES: Building2,
-  OTHER: FileText,
+// ── Dynamic category icon helper (replaces hardcoded CATEGORY_ICONS) ─────────
+const getCategoryIcon = (category: string) => {
+  const map: Record<string, typeof Laptop> = {
+    IT: Laptop,
+    HR: Users,
+    FINANCE: Landmark,
+    FACILITIES: Building2,
+  };
+  return map[category] ?? FileText;
 };
 
 const isKnownSegment = (
@@ -123,11 +124,9 @@ const fmtDate = (d: string) => {
   const diff = now.getTime() - date.getTime();
   const hours = Math.floor(diff / 3600000);
   const days = Math.floor(diff / 86400000);
-
   if (hours < 1) return "Just now";
   if (hours < 24) return `${hours}h ago`;
   if (days < 7) return `${days}d ago`;
-
   return date.toLocaleDateString("en-GB", {
     day: "numeric",
     month: "short",
@@ -137,24 +136,21 @@ const fmtDate = (d: string) => {
 
 export default function HelpDeskPage() {
   const { pathname } = useLocation();
+  const currentUser = useCurrentUser();
   const [searchParams] = useSearchParams();
 
   const pathSegment = mapPathToSegment(pathname.slice(1));
-  const querySegment = searchParams.get("segment");
-  const currentSegment = isKnownSegment(querySegment)
-    ? querySegment
+  const encryptedParam = searchParams.get("s");
+  const decryptedParam = encryptedParam ? decryptSegment(encryptedParam) : null;
+
+  const currentSegment = isKnownSegment(decryptedParam)
+    ? decryptedParam
     : pathSegment && isKnownSegment(pathSegment)
       ? pathSegment
       : undefined;
 
-  const EMPTY_FORM = {
-    title: "",
-    description: "",
-    category: "IT" as TicketCategory,
-    priority: "MEDIUM" as TicketPriority,
-    segment: currentSegment ?? "",
-  };
-
+  // ── State ─────────────────────────────────────────────────────────────────
+  const [categories, setCategories] = useState<TicketCategory[]>([]);
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -162,26 +158,72 @@ export default function HelpDeskPage() {
   const [segmentFilter, setSegmentFilter] = useState<string>(
     currentSegment ?? "All",
   );
+  const [categoryFilter, setCategoryFilter] = useState<string>("All");
   const [showCreate, setShowCreate] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
-  const [form, setForm] = useState({ ...EMPTY_FORM });
   const [saving, setSaving] = useState(false);
   const [comment, setComment] = useState("");
   const [comments, setComments] = useState<Comment[]>([]);
   const [commentsLoading, setCommentsLoading] = useState(false);
+  const [newMessageAlert, setNewMessageAlert] = useState(false);
+
   const currentViewer = getAdminUser();
 
+  // ── Form — function so it always reads latest state ───────────────────────
+  const makeEmptyForm = () => ({
+    title: "",
+    description: "",
+    category: categories[0]?.name ?? "",
+    priority: "MEDIUM" as TicketPriority,
+    segment: currentSegment ?? "",
+    department: currentUser?.department ?? (null as string | null),
+  });
+
+  const [form, setForm] = useState(makeEmptyForm);
+
+  // ── Refs ──────────────────────────────────────────────────────────────────
+  const commentsEndRef = useRef<HTMLDivElement>(null);
+  const commentsContainerRef = useRef<HTMLDivElement>(null);
+  const shouldScrollRef = useRef(false);
+
+  // ── Effects ───────────────────────────────────────────────────────────────
+
+  // Fetch categories based on segment + department
+  useEffect(() => {
+    if (!currentSegment) return;
+    getCategories(currentSegment, currentUser?.department)
+      .then((data) => {
+        setCategories(data);
+        // Pre-select first category once loaded
+        setForm((prev) => ({
+          ...prev,
+          category: prev.category || data[0]?.name || "",
+        }));
+      })
+      .catch(console.error);
+  }, [currentSegment, currentUser?.department]);
+
+  // Fetch tickets on mount
   useEffect(() => {
     fetchMyTickets();
   }, []);
 
+  // Sync segment filter + form segment when URL changes
   useEffect(() => {
     setSegmentFilter(currentSegment ?? "All");
-    setForm((prev) => ({
-      ...prev,
-      segment: currentSegment ?? "",
-    }));
+    setForm((prev) => ({ ...prev, segment: currentSegment ?? "" }));
   }, [currentSegment]);
+
+  // Poll comments while ticket dialog is open
+  useEffect(() => {
+    if (!selectedTicket) return;
+    const interval = setInterval(() => {
+      fetchComments(selectedTicket.id);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [selectedTicket?.id]);
+
+  // ── Data fetchers ─────────────────────────────────────────────────────────
 
   const fetchMyTickets = async () => {
     try {
@@ -195,31 +237,79 @@ export default function HelpDeskPage() {
     }
   };
 
+  const fetchComments = async (ticketId: number, isInitial = false) => {
+    const container = commentsContainerRef.current;
+    const prevScrollTop = container?.scrollTop ?? 0;
+    const prevScrollHeight = container?.scrollHeight ?? 0;
+
+    try {
+      if (isInitial) setCommentsLoading(true);
+
+      const data = await getComments(ticketId);
+
+      setComments((prev) => {
+        if (
+          prev.length === data.length &&
+          prev.every(
+            (c, i) => c.id === data[i].id && c.message === data[i].message,
+          )
+        ) {
+          return prev;
+        }
+
+        if (!isInitial && prev.length > 0) {
+          const prevIds = new Set(prev.map((c) => c.id));
+          const newFromOther = data.filter(
+            (c) =>
+              !prevIds.has(c.id) && c.commentedBy.id !== currentViewer?.userId,
+          );
+          if (newFromOther.length > 0) {
+            setTimeout(() => setNewMessageAlert(true), 0);
+          }
+        }
+
+        return data;
+      });
+
+      requestAnimationFrame(() => {
+        if (!commentsContainerRef.current) return;
+        if (shouldScrollRef.current) {
+          commentsEndRef.current?.scrollIntoView({ behavior: "smooth" });
+          shouldScrollRef.current = false;
+        } else {
+          const newScrollHeight = commentsContainerRef.current.scrollHeight;
+          commentsContainerRef.current.scrollTop =
+            prevScrollTop + (newScrollHeight - prevScrollHeight);
+        }
+      });
+    } catch (err) {
+      console.error(err);
+    } finally {
+      if (isInitial) setCommentsLoading(false);
+    }
+  };
+
+  // ── Handlers ──────────────────────────────────────────────────────────────
+
   const handleLogout = () => {
     logout();
     window.location.replace("/");
   };
 
-  const filtered = useMemo(() => {
-    return tickets.filter((t) => {
-      const q = search.toLowerCase();
-      return (
-        (t.title.toLowerCase().includes(q) ||
-          t.ticketNumber.toLowerCase().includes(q)) &&
-        (statusFilter === "All" || t.status === statusFilter) &&
-        (segmentFilter === "All" || t.segment === segmentFilter)
-      );
-    });
-  }, [tickets, search, statusFilter, segmentFilter]);
-
   const handleCreate = async () => {
     if (!form.title.trim() || !form.description.trim()) return;
-
     try {
       setSaving(true);
-      await createTicket(form);
+      await createTicket({
+        title: form.title.trim(),
+        description: form.description.trim(),
+        category: form.category,
+        priority: form.priority,
+        segment: form.segment,
+        department: form.department?.trim() || null,
+      });
       await fetchMyTickets();
-      setForm({ ...EMPTY_FORM });
+      setForm(makeEmptyForm());
       setShowCreate(false);
     } catch (err) {
       console.error(err);
@@ -228,36 +318,84 @@ export default function HelpDeskPage() {
     }
   };
 
-  const fetchComments = async (ticketId: number) => {
-    try {
-      setCommentsLoading(true);
-      const data = await getComments(ticketId);
-      setComments(data);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setCommentsLoading(false);
-    }
-  };
-
   const openTicket = (ticket: Ticket) => {
     setSelectedTicket(ticket);
-    fetchComments(ticket.id);
+    setNewMessageAlert(false);
+    shouldScrollRef.current = true;
+    fetchComments(ticket.id, true);
   };
 
   const handleAddComment = async () => {
     if (!comment.trim() || !selectedTicket) return;
-
     try {
+      setNewMessageAlert(false);
+      shouldScrollRef.current = true;
       await addComment(selectedTicket.id, { message: comment });
       setComment("");
-      await fetchComments(selectedTicket.id);
+      await fetchComments(selectedTicket.id, false);
     } catch (err) {
       console.error(err);
     }
   };
 
+  // ── Comment appearance ────────────────────────────────────────────────────
+
+  const getCommentRole = (entry: Comment) => {
+    if (entry.commentedBy.role === "AUTHORIZED") return "AUTHORIZED" as const;
+    if (entry.commentedBy.role === "SERVICE") return "SERVICE" as const;
+    return "ADMIN" as const;
+  };
+
+  const getCommentAppearance = (entry: Comment) => {
+    const isMine =
+      String(entry.commentedBy.id) === String(currentViewer?.userId);
+    const role = getCommentRole(entry);
+
+    if (role === "SERVICE") {
+      return {
+        align: isMine ? "justify-end" : "justify-start",
+        bubble:
+          "rounded-bl-md border-emerald-200 bg-emerald-50/95 text-emerald-950",
+        name: "text-emerald-900",
+        badge: "bg-emerald-100 text-emerald-700",
+        badgeLabel: "Service",
+      };
+    }
+    if (role === "AUTHORIZED") {
+      return {
+        align: isMine ? "justify-end" : "justify-start",
+        bubble:
+          "rounded-bl-md border-violet-200 bg-violet-50/95 text-violet-950",
+        name: "text-violet-900",
+        badge: "bg-violet-100 text-violet-700",
+        badgeLabel: "Authorized",
+      };
+    }
+    return {
+      align: isMine ? "justify-end" : "justify-start",
+      bubble: "rounded-bl-md border-blue-200 bg-blue-50/95 text-blue-950",
+      name: "text-blue-900",
+      badge: "bg-blue-100 text-blue-700",
+      badgeLabel: "Admin",
+    };
+  };
+
+  // ── Derived state ─────────────────────────────────────────────────────────
+  const filtered = useMemo(() => {
+    return tickets.filter((t) => {
+      const q = search.toLowerCase();
+      return (
+        (t.title.toLowerCase().includes(q) ||
+          t.ticketNumber.toLowerCase().includes(q)) &&
+        (statusFilter === "All" || t.status === statusFilter) &&
+        (segmentFilter === "All" || t.segment === segmentFilter) &&
+        (categoryFilter === "All" || t.category === categoryFilter) // ← add this
+      );
+    });
+  }, [tickets, search, statusFilter, segmentFilter, categoryFilter]);
+
   const statusTabs = ["All", "OPEN", "IN_PROGRESS", "RESOLVED", "CLOSED"];
+
   const currentSegmentLabel = currentSegment
     ? (SEGMENT_CONFIG[currentSegment]?.label ?? currentSegment)
     : "All segments";
@@ -293,23 +431,37 @@ export default function HelpDeskPage() {
     },
   ];
 
+  // ── Guard ─────────────────────────────────────────────────────────────────
+  if (!currentSegment) {
+    return <Navigate to="/" replace />;
+  }
+
+  // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div className="bg-white">
+      {/* ── Hero ── */}
       <section className="max-w-7xl mx-auto px-4 py-6 md:py-8">
         <div className="rounded-[28px] border border-slate-200 bg-[linear-gradient(135deg,#f8fbff_0%,#eef5ff_45%,#ffffff_100%)] p-6 shadow-sm md:p-8">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
             <div className="max-w-3xl">
-              <div className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
+              <div className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
                 <Headset className="h-3.5 w-3.5" />
                 Employee Support Center
               </div>
               <h1 className="mt-4 text-3xl font-bold text-blue-900 md:text-4xl">
                 Help Desk
               </h1>
-              <p className="mt-3 text-sm leading-relaxed text-slate-600 md:text-base">
-                Submit support requests, follow progress, and keep every update
-                organized in one place for your segment team.
-              </p>
+              {currentUser?.isService ? (
+                <p className="mt-3 text-sm leading-relaxed text-slate-600 md:text-base">
+                  Manage, respond to, and resolve support tickets submitted by
+                  employees across all segments.
+                </p>
+              ) : (
+                <p className="mt-3 text-sm leading-relaxed text-slate-600 md:text-base">
+                  Submit support requests, follow progress, and keep every
+                  update organized in one place for your segment team.
+                </p>
+              )}
               <div className="mt-5 flex flex-wrap items-center gap-3">
                 <div className="rounded-full border border-blue-100 bg-white px-3 py-1.5 text-xs font-medium text-slate-600">
                   Segment:{" "}
@@ -323,13 +475,23 @@ export default function HelpDeskPage() {
                     {filtered.length}
                   </span>
                 </div>
+                {currentUser && (
+                  <div className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600">
+                    Logged in as:{" "}
+                    <span className="font-semibold text-slate-900">
+                      {currentUser.name}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
-
             <div className="grid gap-3 sm:min-w-72">
               <Button
-                onClick={() => setShowCreate(true)}
-                className="h-11 rounded-2xl bg-blue-900 px-4 text-white hover:bg-blue-800"
+                onClick={() => {
+                  setForm(makeEmptyForm());
+                  setShowCreate(true);
+                }}
+                className="h-11 rounded-2xl bg-emerald-700 px-4 text-white hover:bg-emerald-600"
               >
                 <Plus className="mr-2 h-4 w-4" />
                 Create New Ticket
@@ -347,11 +509,11 @@ export default function HelpDeskPage() {
         </div>
       </section>
 
+      {/* ── Stats ── */}
       <section className="max-w-7xl mx-auto px-4 py-2">
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
           {statsData.map((s) => {
             const StatIcon = s.icon;
-
             return (
               <Card
                 key={s.label}
@@ -369,7 +531,6 @@ export default function HelpDeskPage() {
                         {s.value}
                       </p>
                     </div>
-
                     <div
                       className={`flex h-11 w-11 items-center justify-center rounded-2xl ${s.iconClass}`}
                     >
@@ -383,6 +544,7 @@ export default function HelpDeskPage() {
         </div>
       </section>
 
+      {/* ── Filters + Ticket List ── */}
       <section className="max-w-7xl mx-auto px-4 py-6">
         <div className="grid gap-6 xl:grid-cols-[0.9fr_1.55fr]">
           <Card className="h-fit border border-slate-200 bg-white shadow-sm">
@@ -398,7 +560,6 @@ export default function HelpDeskPage() {
                   Narrow down tickets by keyword, status, and segment.
                 </p>
               </div>
-
               <div className="space-y-4">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -409,7 +570,6 @@ export default function HelpDeskPage() {
                     onChange={(e) => setSearch(e.target.value)}
                   />
                 </div>
-
                 <div className="space-y-2">
                   <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
                     Status
@@ -429,6 +589,42 @@ export default function HelpDeskPage() {
                       </button>
                     ))}
                   </div>
+                  {categories.length > 0 && (
+                    <div className="space-y-2">
+                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+                        Category
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          onClick={() => setCategoryFilter("All")}
+                          className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
+                            categoryFilter === "All"
+                              ? "border-blue-900 bg-blue-900 text-white"
+                              : "border-slate-200 bg-white text-slate-500 hover:border-blue-200 hover:text-blue-700"
+                          }`}
+                        >
+                          All Categories
+                        </button>
+                        {categories.map((cat) => {
+                          const CatIcon = getCategoryIcon(cat.name);
+                          return (
+                            <button
+                              key={cat.id}
+                              onClick={() => setCategoryFilter(cat.name)}
+                              className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
+                                categoryFilter === cat.name
+                                  ? "border-blue-900 bg-blue-900 text-white"
+                                  : "border-slate-200 bg-white text-slate-500 hover:border-blue-200 hover:text-blue-700"
+                              }`}
+                            >
+                              <CatIcon className="h-3 w-3" />
+                              {cat.name}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </CardContent>
@@ -444,7 +640,6 @@ export default function HelpDeskPage() {
                   Support requests
                 </h2>
               </div>
-
               <div className="hidden items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-500 shadow-sm sm:flex">
                 <Circle className="h-3 w-3 fill-emerald-500 text-emerald-500" />
                 {filtered.length} records
@@ -487,8 +682,7 @@ export default function HelpDeskPage() {
                   const priority = PRIORITY_CONFIG[ticket.priority];
                   const segment = SEGMENT_CONFIG[ticket.segment];
                   const StatusIcon = status.icon;
-                  const CategoryIcon = CATEGORY_ICONS[ticket.category];
-
+                  const CategoryIcon = getCategoryIcon(ticket.category); // ← dynamic
                   return (
                     <Card
                       key={ticket.id}
@@ -501,7 +695,6 @@ export default function HelpDeskPage() {
                             <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-800 ring-1 ring-blue-100">
                               <CategoryIcon className="h-5 w-5" />
                             </div>
-
                             <div className="min-w-0">
                               <div className="mb-2 flex flex-wrap items-center gap-2">
                                 <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold tracking-[0.14em] text-slate-500">
@@ -528,8 +721,16 @@ export default function HelpDeskPage() {
                                     {segment.label}
                                   </Badge>
                                 )}
+                                {ticket.department && (
+                                  <Badge
+                                    variant="outline"
+                                    className="rounded-full px-2.5 text-[10px] bg-slate-50 text-slate-600 border-slate-200"
+                                  >
+                                    <Building2 className="mr-1 h-3 w-3" />
+                                    {ticket.department}
+                                  </Badge>
+                                )}
                               </div>
-
                               <p className="text-base font-semibold text-slate-900 transition-colors group-hover:text-blue-900">
                                 {ticket.title}
                               </p>
@@ -538,13 +739,11 @@ export default function HelpDeskPage() {
                               </p>
                             </div>
                           </div>
-
                           <div className="flex items-center justify-between gap-4 border-t border-slate-100 pt-3 lg:border-t-0 lg:pt-0">
                             <div className="flex items-center gap-2 text-xs font-medium text-slate-400">
                               <Clock className="h-3.5 w-3.5" />
                               {fmtDate(ticket.createdAt)}
                             </div>
-
                             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-400 transition-colors group-hover:bg-blue-50 group-hover:text-blue-600">
                               <ChevronRight className="h-4 w-4" />
                             </div>
@@ -560,10 +759,11 @@ export default function HelpDeskPage() {
         </div>
       </section>
 
+      {/* ── Create Ticket Dialog ── */}
       <Dialog
         open={showCreate}
         onOpenChange={(open) => {
-          if (!open) setForm({ ...EMPTY_FORM });
+          if (!open) setForm(makeEmptyForm());
           setShowCreate(open);
         }}
       >
@@ -580,7 +780,6 @@ export default function HelpDeskPage() {
                 </DialogDescription>
               </div>
             </DialogHeader>
-
             <div className="space-y-5 px-6 py-6">
               <div className="grid gap-5 md:grid-cols-2">
                 <div className="space-y-1.5 md:col-span-2">
@@ -596,7 +795,6 @@ export default function HelpDeskPage() {
                     className="h-11 rounded-2xl border-slate-200 bg-slate-50/70 shadow-none focus-visible:ring-blue-200"
                   />
                 </div>
-
                 <div className="space-y-1.5 md:col-span-2">
                   <Label className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
                     Description <span className="text-red-500">*</span>
@@ -613,7 +811,6 @@ export default function HelpDeskPage() {
                     className="h-32 resize-none rounded-2xl border-slate-200 bg-slate-50/70 shadow-none focus-visible:ring-blue-200"
                   />
                 </div>
-
                 <div className="space-y-1.5">
                   <Label className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
                     Category
@@ -621,19 +818,23 @@ export default function HelpDeskPage() {
                   <select
                     value={form.category}
                     onChange={(e) =>
-                      setForm((prev) => ({
-                        ...prev,
-                        category: e.target.value as TicketCategory,
-                      }))
+                      setForm((prev) => ({ ...prev, category: e.target.value }))
                     }
                     className="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50/70 px-3 text-sm outline-none focus:ring-2 focus:ring-blue-200"
                   >
-                    {CATEGORIES.map((category) => (
-                      <option key={category}>{category}</option>
-                    ))}
+                    {categories.length === 0 ? (
+                      <option value="" disabled>
+                        Loading categories...
+                      </option>
+                    ) : (
+                      categories.map((cat) => (
+                        <option key={cat.id} value={cat.name}>
+                          {cat.name}
+                        </option>
+                      ))
+                    )}
                   </select>
                 </div>
-
                 <div className="space-y-1.5">
                   <Label className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
                     Priority
@@ -648,12 +849,35 @@ export default function HelpDeskPage() {
                     }
                     className="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50/70 px-3 text-sm outline-none focus:ring-2 focus:ring-blue-200"
                   >
-                    {PRIORITIES.map((priority) => (
-                      <option key={priority}>{priority}</option>
+                    {PRIORITIES.map((p) => (
+                      <option key={p}>{p}</option>
                     ))}
                   </select>
                 </div>
-
+                <div className="space-y-1.5 md:col-span-2">
+                  <Label className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                    Department
+                  </Label>
+                  <div className="relative">
+                    <Building2 className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                    <Input
+                      placeholder="e.g. Sales, Engineering, Operations"
+                      value={form.department ?? ""}
+                      onChange={(e) =>
+                        setForm((prev) => ({
+                          ...prev,
+                          department: e.target.value,
+                        }))
+                      }
+                      readOnly={!!currentUser?.department}
+                      className={`h-11 rounded-2xl border-slate-200 bg-slate-50/70 pl-9 shadow-none focus-visible:ring-blue-200 ${
+                        currentUser?.department
+                          ? "cursor-default opacity-70"
+                          : ""
+                      }`}
+                    />
+                  </div>
+                </div>
                 <div className="space-y-1.5 md:col-span-2">
                   <Label className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
                     Segment
@@ -664,25 +888,22 @@ export default function HelpDeskPage() {
                       "bg-slate-50 text-slate-500 border-slate-200"
                     }`}
                   >
-                    {(SEGMENT_CONFIG[form.segment]?.label ?? form.segment) ||
-                      "-"}
+                    {SEGMENT_CONFIG[form.segment]?.label ?? form.segment ?? "-"}
                   </div>
                 </div>
               </div>
             </div>
-
             <DialogFooter className="border-t border-slate-100 px-6 py-4">
               <Button
                 variant="outline"
                 onClick={() => {
-                  setForm({ ...EMPTY_FORM });
+                  setForm(makeEmptyForm());
                   setShowCreate(false);
                 }}
                 className="rounded-2xl border-slate-200"
               >
                 Cancel
               </Button>
-
               <Button
                 onClick={handleCreate}
                 disabled={
@@ -697,32 +918,31 @@ export default function HelpDeskPage() {
         </DialogContent>
       </Dialog>
 
+      {/* ── Ticket Detail Dialog ── */}
       <Dialog
         open={!!selectedTicket}
         onOpenChange={(open) => {
-          if (!open) setSelectedTicket(null);
+          if (!open) {
+            setSelectedTicket(null);
+            setNewMessageAlert(false);
+          }
         }}
       >
-        <DialogContent className="h-[92vh] w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] rounded-[28px] border-0 p-0 shadow-[0_24px_80px_-36px_rgba(15,23,42,0.45)] sm:h-auto sm:max-h-[90vh] sm:w-full sm:max-w-3xl">
+        <DialogContent className="flex flex-col h-[92vh] w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] rounded-[28px] border-0 p-0 shadow-[0_24px_80px_-36px_rgba(15,23,42,0.45)] sm:h-[85vh] sm:max-h-[85vh] sm:w-full sm:max-w-3xl overflow-hidden">
           {selectedTicket &&
             (() => {
               const status = STATUS_CONFIG[selectedTicket.status];
               const segment = SEGMENT_CONFIG[selectedTicket.segment];
               const StatusIcon = status.icon;
-              const CategoryIcon = CATEGORY_ICONS[selectedTicket.category];
-
+              const CategoryIcon = getCategoryIcon(selectedTicket.category); // ← dynamic
               return (
                 <>
                   <DialogHeader className="shrink-0 border-b border-slate-100 bg-linear-to-r from-slate-950 via-blue-950 to-blue-900 px-6 py-5 text-white">
                     <div className="flex items-start gap-4">
-                      {/* Icon */}
                       <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/10 ring-1 ring-white/15">
                         <CategoryIcon className="h-5 w-5 text-white" />
                       </div>
-
-                      {/* Main content — takes all remaining width */}
                       <div className="min-w-0 flex-1">
-                        {/* Badges row */}
                         <div className="mb-2.5 flex flex-wrap items-center gap-2">
                           <span className="rounded-full bg-white/10 px-2.5 py-1 text-xs font-semibold text-blue-100">
                             {selectedTicket.ticketNumber}
@@ -748,14 +968,19 @@ export default function HelpDeskPage() {
                               {segment.label}
                             </Badge>
                           )}
+                          {selectedTicket.department && (
+                            <Badge
+                              variant="outline"
+                              className="border-white/15 bg-white/10 px-2 text-[10px] text-white"
+                            >
+                              <Building2 className="mr-1 h-3 w-3" />
+                              {selectedTicket.department}
+                            </Badge>
+                          )}
                         </div>
-
-                        {/* Title */}
                         <DialogTitle className="text-left text-2xl font-semibold leading-tight text-white">
                           {selectedTicket.title}
                         </DialogTitle>
-
-                        {/* Meta row */}
                         <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-blue-100/75">
                           <span className="inline-flex items-center gap-1.5">
                             <CategoryIcon className="h-3.5 w-3.5" />
@@ -775,13 +1000,15 @@ export default function HelpDeskPage() {
                           )}
                         </div>
                       </div>
-
-                      {/* Close button placeholder space — so title doesn't collide with X */}
                       <div className="w-8 shrink-0" />
                     </div>
                   </DialogHeader>
 
-                  <div className="flex-1 space-y-4 overflow-y-auto bg-slate-50/80 px-6 py-5">
+                  <div
+                    ref={commentsContainerRef}
+                    style={{ flex: 1, overflowY: "auto", minHeight: 0 }}
+                    className="space-y-4 bg-slate-50/80 px-6 py-5"
+                  >
                     <Card className="border border-slate-200/80 bg-white shadow-sm">
                       <CardContent className="p-4">
                         <p className="mb-2 text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
@@ -795,14 +1022,40 @@ export default function HelpDeskPage() {
 
                     <div className="space-y-3">
                       <div className="flex items-center justify-between gap-3">
-                        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-                          Conversation
-                        </p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+                            Conversation
+                          </p>
+                          <span className="flex items-center gap-1.5 text-xs text-emerald-500 font-medium">
+                            <span className="relative flex h-2 w-2">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                              <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+                            </span>
+                            Live
+                          </span>
+                        </div>
                         <span className="text-xs text-slate-400">
                           {comments.length} comment
                           {comments.length === 1 ? "" : "s"}
                         </span>
                       </div>
+
+                      {newMessageAlert && (
+                        <Alert className="rounded-2xl border-blue-200 bg-blue-50 text-blue-800">
+                          <Bell className="h-4 w-4 text-blue-600" />
+                          <AlertDescription className="flex items-center justify-between">
+                            <span className="text-sm font-medium">
+                              New reply received
+                            </span>
+                            <button
+                              onClick={() => setNewMessageAlert(false)}
+                              className="ml-4 text-xs text-blue-500 underline hover:text-blue-700"
+                            >
+                              Dismiss
+                            </button>
+                          </AlertDescription>
+                        </Alert>
+                      )}
 
                       {commentsLoading ? (
                         <div className="rounded-3xl border border-slate-200 bg-white px-4 py-10 text-center text-sm text-slate-400">
@@ -814,54 +1067,39 @@ export default function HelpDeskPage() {
                         </div>
                       ) : (
                         <div className="space-y-3">
-                          {comments.map((c) => (
-                            <div
-                              key={c.id}
-                              className={`flex ${
-                                c.commentedById === currentViewer?.userId
-                                  ? "justify-end"
-                                  : "justify-start"
-                              }`}
-                            >
+                          {comments.map((c) => {
+                            const appearance = getCommentAppearance(c);
+                            return (
                               <div
-                                className={`max-w-[92%] rounded-[22px] border px-4 py-3 text-sm shadow-sm sm:max-w-[78%] ${
-                                  c.commentedById ===
-                                  selectedTicket.submittedBy.id
-                                    ? "rounded-br-md border-blue-100 bg-blue-50/90"
-                                    : "rounded-bl-md border-emerald-100 bg-emerald-50/90"
-                                }`}
+                                key={c.id}
+                                className={`flex ${appearance.align}`}
                               >
-                                <div className="mb-2 flex flex-wrap items-center gap-2">
-                                  <span
-                                    className={`text-xs font-semibold ${
-                                      c.commentedById ===
-                                      selectedTicket.submittedBy.id
-                                        ? "text-blue-900"
-                                        : "text-emerald-900"
-                                    }`}
-                                  >
-                                    {c.commentedByName}
-                                  </span>
-                                  {c.commentedById ===
-                                  selectedTicket.submittedBy.id ? (
-                                    <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] text-blue-700">
-                                      User
+                                <div
+                                  className={`max-w-[92%] rounded-[22px] border px-4 py-3 text-sm shadow-sm sm:max-w-[78%] ${appearance.bubble}`}
+                                >
+                                  <div className="mb-2 flex flex-wrap items-center gap-2">
+                                    <span
+                                      className={`text-xs font-semibold ${appearance.name}`}
+                                    >
+                                      {c.commentedBy.name}
                                     </span>
-                                  ) : (
-                                    <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] text-emerald-700">
-                                      Support
+                                    <span
+                                      className={`rounded-full px-2 py-0.5 text-[10px] ${appearance.badge}`}
+                                    >
+                                      {appearance.badgeLabel}
                                     </span>
-                                  )}
-                                  <span className="ml-auto text-[11px] text-slate-400">
-                                    {fmtDate(c.createdAt)}
-                                  </span>
+                                    <span className="ml-auto text-[11px] text-slate-400">
+                                      {fmtDate(c.createdAt)}
+                                    </span>
+                                  </div>
+                                  <p className="whitespace-pre-wrap break-words leading-relaxed text-current">
+                                    {c.message}
+                                  </p>
                                 </div>
-                                <p className="whitespace-pre-wrap break-words leading-relaxed text-slate-700">
-                                  {c.message}
-                                </p>
                               </div>
-                            </div>
-                          ))}
+                            );
+                          })}
+                          <div ref={commentsEndRef} />
                         </div>
                       )}
                     </div>
