@@ -22,3 +22,9 @@ export const mapPathToSegment = (path: string): Segment | undefined => {
 export const mapSegmentToPath = (segment: Segment): string => {
     return segmentToPath[segment];
 };
+
+export const roleLabels: Record<string, string> = {
+    TOP_MANAGEMENT: "Top Management",
+    STAFF: "Staff",
+    ADMIN: "General Maneger",
+};

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import WelcomeCard from "@/components/WelcomeCard";
+import { roleLabels } from "@/utils/segmentMapper";
 
 interface Person {
   name: string;
@@ -57,7 +58,7 @@ export default function WelcomeCarousel({ people }: Props) {
           >
             <WelcomeCard
               name={person.name}
-              role={person.role}
+              role={roleLabels[person.role] ?? person.role}
               joinedDate={person.joinedDate}
             />
           </div>

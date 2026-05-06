@@ -6,6 +6,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useMembers } from "@/hooks/useMembers";
+import { roleLabels } from "@/utils/segmentMapper";
 
 const AUTO_INTERVAL = 3000;
 
@@ -14,7 +15,6 @@ export default function MembersCarousel() {
 
   // ✅ filter only — no .map(), use Member fields directly
   const topManagement = members.filter((m) => m.role === "TOP_MANAGEMENT");
-
   const scrollRef = useRef<HTMLDivElement>(null);
   const [index, setIndex] = useState(0);
 
@@ -90,7 +90,7 @@ export default function MembersCarousel() {
                 {member.firstName} {member.lastName} {/* ✅ real name fields */}
               </h3>
               <p className="text-xs text-gray-500 mt-1">
-                {member.role.toLocaleLowerCase()}
+                {roleLabels[member.role] ?? member.role}
               </p>
               <p className="text-xs text-gray-400 mt-1">{member.email}</p>
             </CardContent>

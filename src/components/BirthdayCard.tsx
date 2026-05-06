@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Calendar } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { formatBirthdayDate, daysUntilBirthday } from "@/utils/birthday";
+import { roleLabels } from "@/utils/segmentMapper";
 
 interface Props {
   name: string;
@@ -42,7 +43,9 @@ export default function BirthdayCard({ name, role, message, dob }: Props) {
           <h2 className="text-lg font-bold text-gray-900 leading-tight">
             {name}
           </h2>
-          <p className="text-xs text-gray-400 mt-0.5">{role}</p>
+          <p className="text-xs text-gray-400 mt-0.5">
+            {roleLabels[role] ?? role}
+          </p>
         </div>
 
         <div className="flex gap-0">

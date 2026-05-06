@@ -1,4 +1,5 @@
 import { Card } from "@/components/ui/card";
+import { roleLabels } from "@/utils/segmentMapper";
 import { CalendarDays } from "lucide-react";
 
 interface Item {
@@ -40,7 +41,7 @@ export default function UpcomingBirthdays({ list }: Props) {
                 <div className="min-w-0">
                   <p className="text-xs font-medium truncate">{item.name}</p>
                   <p className="text-[10px] text-gray-500 truncate">
-                    {item.role}
+                    {roleLabels[item.role] ?? item.role}
                   </p>
                 </div>
               </div>

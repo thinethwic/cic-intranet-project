@@ -16,6 +16,12 @@ export default function OurPeopleCard() {
   const [index, setIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
 
+  const roleLabels: Record<string, string> = {
+    TOP_MANAGEMENT: "Top Management",
+    STAFF: "Staff",
+    ADMIN: "General Maneger",
+  };
+
   useEffect(() => {
     if (!isPaused) return;
     const resume = setTimeout(() => setIsPaused(false), 6000);
@@ -73,7 +79,9 @@ export default function OurPeopleCard() {
         {person.title} {person.firstName} {person.lastName}
       </p>{" "}
       {/* ✅ */}
-      <p className="text-xs text-gray-600 mt-0.5">{person.role}</p>{" "}
+      <p className="text-xs text-gray-600 mt-0.5">
+        {roleLabels[person.role] ?? person.role}
+      </p>{" "}
       {/* ✅ already correct */}
       <p className="text-xs text-gray-400 mt-1">{person.email}</p>{" "}
       {/* ✅ already correct */}
