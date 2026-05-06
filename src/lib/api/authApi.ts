@@ -7,6 +7,8 @@ export interface AuthorizedUser {
     email: string;
     username: string;
     role: string;
+    segment: string;
+    department: string;
 }
 
 export const loginAuthorized = async (

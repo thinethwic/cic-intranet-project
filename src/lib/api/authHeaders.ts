@@ -1,5 +1,6 @@
 export const authHeaders = (): Record<string, string> => {
     const token = localStorage.getItem("admin_token");
+    console.log(token)
     return {
         "Content-Type": "application/json",  // ← ADD THIS
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -12,6 +13,8 @@ export const getAdminUser = (): {
     email: string;
     username: string;
     role: string; // ✅ add role
+    segment: string;
+    department: string;
 } | null => {
     const raw = localStorage.getItem("admin_user");
     if (!raw) return null;

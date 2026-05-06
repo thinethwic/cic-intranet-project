@@ -9,6 +9,7 @@ import {
   Users,
   UserCheck,
   UserX,
+  Settings,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -49,22 +50,39 @@ interface User {
   username: string;
   name: string;
   email: string;
-  role: "ADMIN" | "AUTHORIZED";
+  role: "ADMIN" | "AUTHORIZED" | "SERVICE";
   active: boolean;
+  segment?: string;
+  department?: string;
   createdAt?: string;
 }
 
-const ROLE_OPTIONS = ["ADMIN", "AUTHORIZED"];
-const FILTER_ROLES = ["All", "ADMIN", "AUTHORIZED"];
+const ROLE_OPTIONS = ["ADMIN", "AUTHORIZED", "SERVICE"];
+const FILTER_ROLES = ["All", "ADMIN", "AUTHORIZED", "SERVICE"];
 const FILTER_STATUS = ["All", "Active", "Inactive"];
+const SEGMENT_OPTIONS = [
+  "CIC_FEEDS",
+  "CIC_VET_CARE",
+  "CIC_POULTRY",
+  "AISA_VET",
+];
+
+const SEGMENT_LABELS: Record<string, string> = {
+  CIC_FEEDS: "CIC Feeds",
+  CIC_VET_CARE: "CIC Vet Care",
+  CIC_POULTRY: "CIC Poultry",
+  AISA_VET: "Aisa Vet",
+};
 
 const EMPTY_FORM = {
   username: "",
   name: "",
   email: "",
   password: "",
-  role: "AUTHORIZED" as "ADMIN" | "AUTHORIZED",
+  role: "AUTHORIZED" as "ADMIN" | "AUTHORIZED" | "SERVICE",
   active: true,
+  segment: "",
+  department: "",
 };
 
 const EMPTY_EDIT_FORM = {
@@ -72,8 +90,10 @@ const EMPTY_EDIT_FORM = {
   name: "",
   email: "",
   password: "",
-  role: "AUTHORIZED" as "ADMIN" | "AUTHORIZED",
+  role: "AUTHORIZED" as "ADMIN" | "AUTHORIZED" | "SERVICE",
   active: true,
+  segment: "",
+  department: "",
 };
 
 function StatCard({
@@ -168,7 +188,8 @@ export default function AdminUsersPage() {
     if (
       !createForm.username.trim() ||
       !createForm.email.trim() ||
-      !createForm.password.trim()
+      !createForm.password.trim() ||
+      !createForm.segment
     )
       return;
     try {
@@ -203,6 +224,8 @@ export default function AdminUsersPage() {
       password: "",
       role: user.role,
       active: user.active,
+      segment: user.segment ?? "",
+      department: user.department ?? "",
     });
   };
 
@@ -217,16 +240,13 @@ export default function AdminUsersPage() {
         email: editForm.email,
         role: editForm.role,
         active: editForm.active,
+        segment: editForm.segment || undefined,
+        department: editForm.department.trim() || undefined,
       };
-      if (editForm.password.trim()) {
-        payload.password = editForm.password;
-      }
+      if (editForm.password.trim()) payload.password = editForm.password;
       const res = await fetch(`${API}/${editUser.id}`, {
         method: "PUT",
-        headers: {
-          ...authHeaders(),
-          "Content-Type": "application/json", // ✅ override the wrong content-type
-        },
+        headers: { ...authHeaders(), "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
       if (!res.ok) {
@@ -263,13 +283,15 @@ export default function AdminUsersPage() {
     try {
       await fetch(`${API}/${user.id}`, {
         method: "PUT",
-        headers: {
-          ...authHeaders(),
-          "Content-Type": "application/json", // ✅ add this
-        },
+        headers: { ...authHeaders(), "Content-Type": "application/json" },
         body: JSON.stringify({
-          ...user,
+          username: user.username,
+          name: user.name,
+          email: user.email,
+          role: user.role,
           active: !user.active,
+          segment: user.segment ?? undefined,
+          department: user.department ?? undefined,
         }),
       });
       await fetchUsers();
@@ -294,7 +316,58 @@ export default function AdminUsersPage() {
   const roleColor = (role: string) =>
     role === "ADMIN"
       ? "bg-purple-50 text-purple-800 border-purple-200"
-      : "bg-blue-50 text-blue-800 border-blue-200";
+      : role === "SERVICE"
+        ? "bg-amber-50 text-amber-800 border-amber-200"
+        : "bg-blue-50 text-blue-800 border-blue-200";
+
+  // ── Reusable segment + department fields ─────────────────
+  const SegmentDeptFields = ({
+    segment,
+    department,
+    onSegmentChange,
+    onDeptChange,
+  }: {
+    segment: string;
+    department: string;
+    onSegmentChange: (v: string) => void;
+    onDeptChange: (v: string) => void;
+  }) => (
+    <div className="grid grid-cols-2 gap-3">
+      <div className="space-y-1.5">
+        <Label className="text-xs font-medium text-slate-600">
+          Segment <span className="text-red-400">*</span>
+        </Label>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="outline"
+              className={`w-full justify-between text-sm font-normal ${!segment ? "text-slate-400" : ""}`}
+            >
+              {segment ? SEGMENT_LABELS[segment] : "Select segment"}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="w-full">
+            {SEGMENT_OPTIONS.map((s) => (
+              <DropdownMenuItem key={s} onClick={() => onSegmentChange(s)}>
+                {SEGMENT_LABELS[s]}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+      <div className="space-y-1.5">
+        <Label className="text-xs font-medium text-slate-600">
+          Department{" "}
+          <span className="text-slate-400 font-normal">(optional)</span>
+        </Label>
+        <Input
+          placeholder="e.g. Finance"
+          value={department}
+          onChange={(e) => onDeptChange(e.target.value)}
+        />
+      </div>
+    </div>
+  );
 
   return (
     <div className="space-y-6 p-6">
@@ -353,8 +426,6 @@ export default function AdminUsersPage() {
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-
-        {/* Role filter */}
         <DropdownMenu>
           <DropdownMenuTrigger>
             <Button
@@ -372,8 +443,6 @@ export default function AdminUsersPage() {
             ))}
           </DropdownMenuContent>
         </DropdownMenu>
-
-        {/* Status filter */}
         <DropdownMenu>
           <DropdownMenuTrigger>
             <Button
@@ -409,6 +478,9 @@ export default function AdminUsersPage() {
                   Role
                 </TableHead>
                 <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                  Location
+                </TableHead>
+                <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
                   Status
                 </TableHead>
                 <TableHead className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
@@ -423,7 +495,7 @@ export default function AdminUsersPage() {
               {loading ? (
                 <TableRow>
                   <TableCell
-                    colSpan={6}
+                    colSpan={7}
                     className="text-center py-14 text-slate-400 text-sm"
                   >
                     Loading users...
@@ -432,7 +504,7 @@ export default function AdminUsersPage() {
               ) : filtered.length === 0 ? (
                 <TableRow>
                   <TableCell
-                    colSpan={6}
+                    colSpan={7}
                     className="text-center py-14 text-slate-400 text-sm"
                   >
                     <Users className="w-8 h-8 mx-auto mb-2 opacity-25" />
@@ -471,6 +543,11 @@ export default function AdminUsersPage() {
                             <ShieldCheck className="w-2.5 h-2.5 mr-1 inline" />
                             ADMIN
                           </>
+                        ) : user.role === "SERVICE" ? (
+                          <>
+                            <Settings className="w-2.5 h-2.5 mr-1 inline" />
+                            SERVICE
+                          </>
                         ) : (
                           <>
                             <ShieldOff className="w-2.5 h-2.5 mr-1 inline" />
@@ -478,6 +555,22 @@ export default function AdminUsersPage() {
                           </>
                         )}
                       </Badge>
+                    </TableCell>
+                    <TableCell className="py-3.5">
+                      {user.segment ? (
+                        <div>
+                          <p className="text-xs font-medium text-slate-700">
+                            {SEGMENT_LABELS[user.segment] ?? user.segment}
+                          </p>
+                          {user.department && (
+                            <p className="text-[11px] text-slate-400">
+                              {user.department}
+                            </p>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-slate-300 text-xs">—</span>
+                      )}
                     </TableCell>
                     <TableCell className="py-3.5">
                       <div className="flex items-center gap-2">
@@ -537,9 +630,7 @@ export default function AdminUsersPage() {
       <Dialog
         open={showCreate}
         onOpenChange={(o) => {
-          if (!o) {
-            setCreateForm({ ...EMPTY_FORM });
-          }
+          if (!o) setCreateForm({ ...EMPTY_FORM });
           setShowCreate(o);
         }}
       >
@@ -608,7 +699,7 @@ export default function AdminUsersPage() {
             <div className="space-y-1.5">
               <Label className="text-xs font-medium text-slate-600">Role</Label>
               <DropdownMenu>
-                <DropdownMenuTrigger>
+                <DropdownMenuTrigger asChild>
                   <Button
                     variant="outline"
                     className="w-full justify-between text-sm font-normal"
@@ -630,6 +721,17 @@ export default function AdminUsersPage() {
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
+            {/* ── Segment + Department ── */}
+            <SegmentDeptFields
+              segment={createForm.segment}
+              department={createForm.department}
+              onSegmentChange={(v) =>
+                setCreateForm((p) => ({ ...p, segment: v }))
+              }
+              onDeptChange={(v) =>
+                setCreateForm((p) => ({ ...p, department: v }))
+              }
+            />
             <div className="flex items-center justify-between py-2 border-t border-slate-100">
               <div>
                 <p className="text-sm font-medium">Active</p>
@@ -661,6 +763,7 @@ export default function AdminUsersPage() {
                 !createForm.username.trim() ||
                 !createForm.email.trim() ||
                 !createForm.password.trim() ||
+                !createForm.segment ||
                 saving
               }
               className="bg-blue-600 hover:bg-blue-700 text-white"
@@ -741,7 +844,7 @@ export default function AdminUsersPage() {
             <div className="space-y-1.5">
               <Label className="text-xs font-medium text-slate-600">Role</Label>
               <DropdownMenu>
-                <DropdownMenuTrigger>
+                <DropdownMenuTrigger asChild>
                   <Button
                     variant="outline"
                     className="w-full justify-between text-sm font-normal"
@@ -763,6 +866,17 @@ export default function AdminUsersPage() {
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
+            {/* ── Segment + Department ── */}
+            <SegmentDeptFields
+              segment={editForm.segment}
+              department={editForm.department}
+              onSegmentChange={(v) =>
+                setEditForm((p) => ({ ...p, segment: v }))
+              }
+              onDeptChange={(v) =>
+                setEditForm((p) => ({ ...p, department: v }))
+              }
+            />
             <div className="flex items-center justify-between py-2 border-t border-slate-100">
               <div>
                 <p className="text-sm font-medium">Active</p>

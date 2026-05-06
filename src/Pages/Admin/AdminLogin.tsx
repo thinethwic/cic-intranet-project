@@ -73,9 +73,7 @@ export default function AdminLogin() {
               <ShieldCheck className="h-7 w-7" />
             </div>
             <div>
-              <h1 className="text-2xl font-semibold tracking-tight">
-                Admin Login
-              </h1>
+              <h1 className="text-2xl font-semibold tracking-tight">Login</h1>
               <p className="mt-1 text-sm text-muted-foreground">
                 Sign in to manage the CIC intranet dashboard.
               </p>
