@@ -1,15 +1,9 @@
 import { useParams, useNavigate } from "react-router-dom";
-import {
-  ArrowLeft,
-  Calendar,
-  Tag,
-  Share2,
-  Bookmark,
-  Clock,
-} from "lucide-react";
+import { ArrowLeft, Calendar, Share2, Bookmark, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useNewsById, useNews } from "@/hooks/useNews";
+import NotFoundPage from "./shared/NotFoundPage";
 
 const BASE_IMAGE_URL =
   import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
@@ -71,32 +65,11 @@ export default function NewsDetailPage() {
   }
 
   if (error) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-4 text-slate-500">
-        <div className="w-full max-w-sm min-h-40 flex flex-col items-center justify-center gap-3 border border-dashed border-red-200 rounded-2xl bg-red-50">
-          <p className="text-sm font-medium text-red-400">
-            Failed to load article. Please try again later.
-          </p>
-          <Button variant="outline" onClick={() => navigate(-1)}>
-            <ArrowLeft className="w-4 h-4 mr-2" /> Go back
-          </Button>
-        </div>
-      </div>
-    );
+    return <NotFoundPage />;
   }
 
   if (!news) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-4 text-slate-500">
-        <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center">
-          <Tag className="w-7 h-7 opacity-40" />
-        </div>
-        <p className="text-lg font-medium">Article not found</p>
-        <Button variant="outline" onClick={() => navigate(-1)}>
-          <ArrowLeft className="w-4 h-4 mr-2" /> Go back
-        </Button>
-      </div>
-    );
+    return <NotFoundPage />;
   }
 
   return (

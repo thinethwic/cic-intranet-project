@@ -20,6 +20,8 @@ import AdminUsersPage from "./Pages/Admin/AdminUsersPage";
 import AdminTicketsPage from "./Pages/Admin/AdminTicketsPage";
 import HelpDeskPage from "./Pages/Our Segments/components/HelpDeskPage";
 import EmployeeProtectedRoute from "./Pages/EmployeeProtectedRoute";
+import NotFoundPage from "./components/shared/NotFoundPage";
+import AdminCategoriesPage from "./Pages/Admin/AdminCategoriesPage";
 
 function App() {
   return (
@@ -38,10 +40,8 @@ function App() {
         <Route path="/helpdesk" element={<HelpDeskPage />} />
       </Route>
 
-      {/* ✅ Redirect to /admin if already logged in */}
       <Route path="/admin/login" element={<AdminLogin />} />
 
-      {/* ✅ All admin routes protected */}
       <Route element={<ProtectedRoute />}>
         <Route path="/admin" element={<AdminLayout />}>
           <Route index element={<AdminDashboard />} />
@@ -53,8 +53,12 @@ function App() {
           <Route path="/admin/ticket" element={<AdminTicketsPage />} />
           <Route path="/admin/management" element={<AdminManagementPage />} />
           <Route path="/admin/users" element={<AdminUsersPage />} />
+          <Route path="/admin/categories" element={<AdminCategoriesPage />} />
         </Route>
       </Route>
+
+      {/* ✅ Catch-all — must be last */}
+      <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );
 }
