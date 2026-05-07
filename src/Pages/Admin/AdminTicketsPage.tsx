@@ -59,6 +59,8 @@ import {
 } from "@/lib/api/ticketApi";
 import type { AdminUser } from "@/lib/api/ticketApi";
 import { getAdminUser } from "@/lib/api/authHeaders";
+import { AdminPagination } from "./admin-components";
+import { getUserFriendlyErrorMessage } from "@/lib/api/apiUtils";
 
 // ── Configs ─────────────────────────────────────────────────────────────────
 
@@ -149,6 +151,26 @@ const EMPTY_EDIT_FORM = {
   department: "",
   assignedToId: null as number | null,
 };
+
+const getLatestCommentSnapshot = (entries: Comment[]) => {
+  if (entries.length === 0) return null;
+
+  const latest = entries[entries.length - 1];
+  return {
+    id: latest.id,
+    authorId: latest.commentedBy.id,
+  };
+};
+
+interface NotificationItem {
+  id: string;
+  ticketId: number;
+  ticketNumber: string;
+  title: string;
+  description: string;
+  createdAt: string;
+  unread: boolean;
+}
 
 // ── Sub-components ───────────────────────────────────────────────────────────
 
@@ -245,10 +267,12 @@ export default function AdminTicketsPage() {
   const currentViewer = getAdminUser();
   const isAdmin = currentViewer?.role === "ADMIN";
   const adminSegment = currentViewer?.segment ?? null;
+  const activeUserId = currentViewer?.userId ?? null;
 
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [categoryFilter, setCategoryFilter] = useState("All");
@@ -266,8 +290,11 @@ export default function AdminTicketsPage() {
 
   const [comment, setComment] = useState("");
   const [sendingComment, setSendingComment] = useState(false);
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
 
   const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   // ── Refs ─────────────────────────────────────────────────────────────────
   const commentsEndRef = useRef<HTMLDivElement>(null);
@@ -275,12 +302,40 @@ export default function AdminTicketsPage() {
   const shouldScrollRef = useRef(false);
   const selectedTicketRef = useRef<Ticket | null>(null);
   const lastUpdatedAtRef = useRef<Record<number, string>>({});
+  const latestCommentIdRef = useRef<Record<number, number | null>>({});
   const isSeededRef = useRef(false);
 
   const [pageAlert, setPageAlert] = useState<{
     ticketNumber: string;
     title: string;
   } | null>(null);
+  const unreadNotificationCount = notifications.filter(
+    (item) => item.unread,
+  ).length;
+
+  const appendNotification = (
+    notification: Omit<NotificationItem, "unread">,
+  ) => {
+    setNotifications((prev) => {
+      if (prev.some((item) => item.id === notification.id)) {
+        return prev;
+      }
+
+      return [{ ...notification, unread: true }, ...prev].slice(0, 10);
+    });
+  };
+
+  const markNotificationRead = (id: string) => {
+    setNotifications((prev) =>
+      prev.map((item) => (item.id === id ? { ...item, unread: false } : item)),
+    );
+  };
+
+  const markAllNotificationsRead = () => {
+    setNotifications((prev) =>
+      prev.map((item) => ({ ...item, unread: false })),
+    );
+  };
 
   useEffect(() => {
     selectedTicketRef.current = selectedTicket;
@@ -304,35 +359,64 @@ export default function AdminTicketsPage() {
   // ── Page-level polling ────────────────────────────────────────────────────
   useEffect(() => {
     const interval = setInterval(async () => {
-      if (selectedTicketRef.current) return;
       if (!isSeededRef.current) return;
       try {
         const fresh = await getAllTickets();
-        fresh.forEach((ticket) => {
+        for (const ticket of fresh) {
           const lastSeen = lastUpdatedAtRef.current[ticket.id];
           if (lastSeen === undefined) {
             lastUpdatedAtRef.current[ticket.id] = ticket.updatedAt;
           } else if (lastSeen !== ticket.updatedAt) {
-            setPageAlert({
-              ticketNumber: ticket.ticketNumber,
-              title: ticket.title,
-            });
+            if (selectedTicketRef.current?.id === ticket.id) {
+              lastUpdatedAtRef.current[ticket.id] = ticket.updatedAt;
+              continue;
+            }
+
+            const commentData = await adminGetComments(ticket.id);
+            const latestComment = getLatestCommentSnapshot(commentData);
+            const previousCommentId =
+              latestCommentIdRef.current[ticket.id] ?? null;
+
+            if (latestComment) {
+              latestCommentIdRef.current[ticket.id] = latestComment.id;
+            }
+
+            if (
+              latestComment &&
+              latestComment.id !== previousCommentId &&
+              latestComment.authorId !== activeUserId
+            ) {
+              appendNotification({
+                id: `ticket-${ticket.id}-comment-${latestComment.id}`,
+                ticketId: ticket.id,
+                ticketNumber: ticket.ticketNumber,
+                title: ticket.title,
+                description: "New message received on this ticket.",
+                createdAt: ticket.updatedAt,
+              });
+              setPageAlert({
+                ticketNumber: ticket.ticketNumber,
+                title: ticket.title,
+              });
+            }
+
             lastUpdatedAtRef.current[ticket.id] = ticket.updatedAt;
           }
-        });
+        }
         setTickets(fresh);
       } catch {
         // silent
       }
     }, 10000);
     return () => clearInterval(interval);
-  }, []);
+  }, [activeUserId]);
 
   // ── Data fetchers ─────────────────────────────────────────────────────────
 
   const fetchTickets = async () => {
     try {
       setLoading(true);
+      setError("");
       const data = await getAllTickets();
       setTickets(data);
       data.forEach((t) => {
@@ -341,6 +425,10 @@ export default function AdminTicketsPage() {
       isSeededRef.current = true;
     } catch (err) {
       console.error("Failed to fetch tickets", err);
+      setTickets([]);
+      setError(
+        getUserFriendlyErrorMessage(err, "Unable to load tickets right now."),
+      );
     } finally {
       setLoading(false);
     }
@@ -362,6 +450,8 @@ export default function AdminTicketsPage() {
     try {
       if (isInitial) setCommentsLoading(true);
       const data = await adminGetComments(ticketId);
+      const latestComment = getLatestCommentSnapshot(data);
+      latestCommentIdRef.current[ticketId] = latestComment?.id ?? null;
       setComments((prev) => {
         if (
           prev.length === data.length &&
@@ -374,10 +464,21 @@ export default function AdminTicketsPage() {
         if (!isInitial && prev.length > 0) {
           const prevIds = new Set(prev.map((c) => c.id));
           const newFromOther = data.filter(
-            (c) =>
-              !prevIds.has(c.id) && c.commentedBy.id !== currentViewer?.userId,
+            (c) => !prevIds.has(c.id) && c.commentedBy.id !== activeUserId,
           );
           if (newFromOther.length > 0) {
+            newFromOther.forEach((entry) => {
+              appendNotification({
+                id: `ticket-${ticketId}-comment-${entry.id}`,
+                ticketId,
+                ticketNumber:
+                  selectedTicketRef.current?.ticketNumber ??
+                  `Ticket ${ticketId}`,
+                title: selectedTicketRef.current?.title ?? "Support ticket",
+                description: `${entry.commentedBy.name}: ${entry.message.slice(0, 80)}`,
+                createdAt: entry.createdAt,
+              });
+            });
             setTimeout(() => setNewMessageAlert(true), 0);
           }
         }
@@ -435,6 +536,23 @@ export default function AdminTicketsPage() {
     adminSegment,
   ]);
 
+  useEffect(() => {
+    setPage(1);
+  }, [
+    search,
+    statusFilter,
+    categoryFilter,
+    priorityFilter,
+    segmentFilter,
+    pageSize,
+  ]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const paginatedTickets = filtered.slice(
+    (page - 1) * pageSize,
+    page * pageSize,
+  );
+
   const stats = useMemo(
     () => [
       {
@@ -478,6 +596,11 @@ export default function AdminTicketsPage() {
     setComment("");
     setPageAlert(null);
     setNewMessageAlert(false);
+    setNotifications((prev) =>
+      prev.map((item) =>
+        item.ticketId === ticket.id ? { ...item, unread: false } : item,
+      ),
+    );
     shouldScrollRef.current = true;
     fetchComments(ticket.id, true);
   };
@@ -575,8 +698,7 @@ export default function AdminTicketsPage() {
   };
 
   const getCommentAppearance = (entry: Comment) => {
-    const isMine =
-      String(entry.commentedBy.id) === String(currentViewer?.userId);
+    const isMine = String(entry.commentedBy.id) === String(activeUserId);
     const role = getCommentRole(entry);
     if (role === "SERVICE") {
       return {
@@ -626,6 +748,84 @@ export default function AdminTicketsPage() {
             )}
           </p>
         </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger>
+            <Button
+              variant="outline"
+              size="icon"
+              className="relative h-10 w-10 rounded-xl"
+            >
+              <Bell className="h-4 w-4" />
+              {unreadNotificationCount > 0 && (
+                <span className="absolute right-2 top-2 h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-white" />
+              )}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-80 p-0">
+            <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+              <div>
+                <p className="text-sm font-medium text-slate-900">
+                  Notifications
+                </p>
+                <p className="text-xs text-slate-400">
+                  {unreadNotificationCount} unread
+                </p>
+              </div>
+              {notifications.length > 0 && (
+                <button
+                  type="button"
+                  onClick={markAllNotificationsRead}
+                  className="text-xs text-blue-600 hover:text-blue-800"
+                >
+                  Mark all read
+                </button>
+              )}
+            </div>
+            <div className="max-h-80 overflow-y-auto">
+              {notifications.length === 0 ? (
+                <div className="px-4 py-6 text-sm text-slate-400">
+                  No notifications yet
+                </div>
+              ) : (
+                notifications.map((notification) => (
+                  <button
+                    key={notification.id}
+                    type="button"
+                    onClick={() => {
+                      markNotificationRead(notification.id);
+                      const ticket = tickets.find(
+                        (item) => item.id === notification.ticketId,
+                      );
+                      if (ticket) openDetails(ticket);
+                    }}
+                    className="flex w-full items-start gap-3 border-b border-slate-100 px-4 py-3 text-left hover:bg-slate-50"
+                  >
+                    <div className="relative mt-1">
+                      <Bell className="h-4 w-4 text-slate-400" />
+                      {notification.unread && (
+                        <span className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full bg-red-500" />
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium text-slate-900">
+                        {notification.ticketNumber}
+                      </p>
+                      <p className="truncate text-xs text-slate-500">
+                        {notification.title}
+                      </p>
+                      <p className="mt-1 line-clamp-2 text-xs text-slate-400">
+                        {notification.description}
+                      </p>
+                      <p className="mt-1 text-[11px] text-slate-400">
+                        {fmtDateTime(notification.createdAt)}
+                      </p>
+                    </div>
+                  </button>
+                ))
+              )}
+            </div>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {/* ── Page-level alert ── */}
@@ -783,6 +983,15 @@ export default function AdminTicketsPage() {
                     Loading tickets...
                   </TableCell>
                 </TableRow>
+              ) : error ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={8}
+                    className="py-14 text-center text-sm text-slate-400"
+                  >
+                    {error}
+                  </TableCell>
+                </TableRow>
               ) : filtered.length === 0 ? (
                 <TableRow>
                   <TableCell
@@ -794,7 +1003,7 @@ export default function AdminTicketsPage() {
                   </TableCell>
                 </TableRow>
               ) : (
-                filtered.map((ticket) => {
+                paginatedTickets.map((ticket) => {
                   const status = STATUS_CONFIG[ticket.status];
                   const StatusIcon = status.icon;
                   const seg = ticket.segment
@@ -927,6 +1136,19 @@ export default function AdminTicketsPage() {
         </p>
       )}
 
+      <AdminPagination
+        page={page}
+        totalPages={totalPages}
+        totalItems={filtered.length}
+        pageSize={pageSize}
+        itemLabel="tickets"
+        onPageChange={setPage}
+        onPageSizeChange={(nextSize) => {
+          setPage(1);
+          setPageSize(nextSize);
+        }}
+      />
+
       {/* ── Ticket Detail Dialog ── */}
       <Dialog
         open={!!selectedTicket}
@@ -984,11 +1206,13 @@ export default function AdminTicketsPage() {
                       {selectedTicket.title}
                     </DialogTitle>
                     <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-400">
-                      <span>{selectedTicket.category}</span>
+                      <span>Category: {selectedTicket.category}</span>
                       <span>•</span>
-                      <span>By {selectedTicket.submittedBy.name}</span>
+                      <span>Created By: {selectedTicket.submittedBy.name}</span>
                       <span>•</span>
-                      <span>{fmtDateTime(selectedTicket.createdAt)}</span>
+                      <span>
+                        Created At: {fmtDateTime(selectedTicket.createdAt)}
+                      </span>
                       {selectedTicket.assignedTo ? (
                         <>
                           <span>•</span>

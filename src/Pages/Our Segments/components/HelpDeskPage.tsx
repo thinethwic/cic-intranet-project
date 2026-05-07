@@ -36,6 +36,11 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import type { Ticket, TicketPriority } from "@/types";
 import {
   createTicket,
@@ -134,6 +139,26 @@ const fmtDate = (d: string) => {
   });
 };
 
+interface NotificationItem {
+  id: string;
+  ticketId: number;
+  ticketNumber: string;
+  title: string;
+  description: string;
+  createdAt: string;
+  unread: boolean;
+}
+
+const getLatestCommentSnapshot = (entries: Comment[]) => {
+  if (entries.length === 0) return null;
+
+  const latest = entries[entries.length - 1];
+  return {
+    id: latest.id,
+    authorId: latest.commentedBy.id,
+  };
+};
+
 export default function HelpDeskPage() {
   const { pathname } = useLocation();
   const currentUser = useCurrentUser();
@@ -166,8 +191,37 @@ export default function HelpDeskPage() {
   const [comments, setComments] = useState<Comment[]>([]);
   const [commentsLoading, setCommentsLoading] = useState(false);
   const [newMessageAlert, setNewMessageAlert] = useState(false);
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
 
   const currentViewer = getAdminUser();
+  const activeUserId = currentUser?.userId ?? currentViewer?.userId ?? null;
+  const unreadNotificationCount = notifications.filter(
+    (item) => item.unread,
+  ).length;
+
+  const appendNotification = (
+    notification: Omit<NotificationItem, "unread">,
+  ) => {
+    setNotifications((prev) => {
+      if (prev.some((item) => item.id === notification.id)) {
+        return prev;
+      }
+
+      return [{ ...notification, unread: true }, ...prev].slice(0, 10);
+    });
+  };
+
+  const markNotificationRead = (id: string) => {
+    setNotifications((prev) =>
+      prev.map((item) => (item.id === id ? { ...item, unread: false } : item)),
+    );
+  };
+
+  const markAllNotificationsRead = () => {
+    setNotifications((prev) =>
+      prev.map((item) => ({ ...item, unread: false })),
+    );
+  };
 
   // ── Form — function so it always reads latest state ───────────────────────
   const makeEmptyForm = () => ({
@@ -185,6 +239,10 @@ export default function HelpDeskPage() {
   const commentsEndRef = useRef<HTMLDivElement>(null);
   const commentsContainerRef = useRef<HTMLDivElement>(null);
   const shouldScrollRef = useRef(false);
+  const selectedTicketRef = useRef<Ticket | null>(null);
+  const lastUpdatedAtRef = useRef<Record<number, string>>({});
+  const latestCommentIdRef = useRef<Record<number, number | null>>({});
+  const isSeededRef = useRef(false);
 
   // ── Effects ───────────────────────────────────────────────────────────────
 
@@ -208,6 +266,10 @@ export default function HelpDeskPage() {
     fetchMyTickets();
   }, []);
 
+  useEffect(() => {
+    selectedTicketRef.current = selectedTicket;
+  }, [selectedTicket]);
+
   // Sync segment filter + form segment when URL changes
   useEffect(() => {
     setSegmentFilter(currentSegment ?? "All");
@@ -223,6 +285,61 @@ export default function HelpDeskPage() {
     return () => clearInterval(interval);
   }, [selectedTicket?.id]);
 
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      if (!isSeededRef.current) return;
+
+      try {
+        const fresh = await getMyTickets();
+        for (const ticket of fresh) {
+          const lastSeen = lastUpdatedAtRef.current[ticket.id];
+          if (lastSeen === undefined) {
+            lastUpdatedAtRef.current[ticket.id] = ticket.updatedAt;
+            continue;
+          }
+
+          if (lastSeen !== ticket.updatedAt) {
+            if (selectedTicketRef.current?.id === ticket.id) {
+              lastUpdatedAtRef.current[ticket.id] = ticket.updatedAt;
+              continue;
+            }
+
+            const commentData = await getComments(ticket.id);
+            const latestComment = getLatestCommentSnapshot(commentData);
+            const previousCommentId = latestCommentIdRef.current[ticket.id] ?? null;
+
+            if (latestComment) {
+              latestCommentIdRef.current[ticket.id] = latestComment.id;
+            }
+
+            if (
+              latestComment &&
+              latestComment.id !== previousCommentId &&
+              latestComment.authorId !== activeUserId
+            ) {
+              appendNotification({
+                id: `ticket-${ticket.id}-comment-${latestComment.id}`,
+                ticketId: ticket.id,
+                ticketNumber: ticket.ticketNumber,
+                title: ticket.title,
+                description: "New message received on this ticket.",
+                createdAt: ticket.updatedAt,
+              });
+            }
+
+            lastUpdatedAtRef.current[ticket.id] = ticket.updatedAt;
+          }
+        }
+
+        setTickets(fresh);
+      } catch (err) {
+        console.error(err);
+      }
+    }, 10000);
+
+    return () => clearInterval(interval);
+  }, [activeUserId]);
+
   // ── Data fetchers ─────────────────────────────────────────────────────────
 
   const fetchMyTickets = async () => {
@@ -230,6 +347,10 @@ export default function HelpDeskPage() {
       setLoading(true);
       const data = await getMyTickets();
       setTickets(data);
+      data.forEach((ticket) => {
+        lastUpdatedAtRef.current[ticket.id] = ticket.updatedAt;
+      });
+      isSeededRef.current = true;
     } catch (err) {
       console.error(err);
     } finally {
@@ -246,6 +367,8 @@ export default function HelpDeskPage() {
       if (isInitial) setCommentsLoading(true);
 
       const data = await getComments(ticketId);
+      const latestComment = getLatestCommentSnapshot(data);
+      latestCommentIdRef.current[ticketId] = latestComment?.id ?? null;
 
       setComments((prev) => {
         if (
@@ -260,10 +383,20 @@ export default function HelpDeskPage() {
         if (!isInitial && prev.length > 0) {
           const prevIds = new Set(prev.map((c) => c.id));
           const newFromOther = data.filter(
-            (c) =>
-              !prevIds.has(c.id) && c.commentedBy.id !== currentViewer?.userId,
+            (c) => !prevIds.has(c.id) && c.commentedBy.id !== activeUserId,
           );
           if (newFromOther.length > 0) {
+            newFromOther.forEach((entry) => {
+              appendNotification({
+                id: `ticket-${ticketId}-comment-${entry.id}`,
+                ticketId,
+                ticketNumber:
+                  selectedTicketRef.current?.ticketNumber ?? `Ticket ${ticketId}`,
+                title: selectedTicketRef.current?.title ?? "Help desk ticket",
+                description: `${entry.commentedBy.name}: ${entry.message.slice(0, 80)}`,
+                createdAt: entry.createdAt,
+              });
+            });
             setTimeout(() => setNewMessageAlert(true), 0);
           }
         }
@@ -321,6 +454,11 @@ export default function HelpDeskPage() {
   const openTicket = (ticket: Ticket) => {
     setSelectedTicket(ticket);
     setNewMessageAlert(false);
+    setNotifications((prev) =>
+      prev.map((item) =>
+        item.ticketId === ticket.id ? { ...item, unread: false } : item,
+      ),
+    );
     shouldScrollRef.current = true;
     fetchComments(ticket.id, true);
   };
@@ -347,8 +485,7 @@ export default function HelpDeskPage() {
   };
 
   const getCommentAppearance = (entry: Comment) => {
-    const isMine =
-      String(entry.commentedBy.id) === String(currentViewer?.userId);
+    const isMine = String(entry.commentedBy.id) === String(activeUserId);
     const role = getCommentRole(entry);
 
     if (role === "SERVICE") {
@@ -486,6 +623,84 @@ export default function HelpDeskPage() {
               </div>
             </div>
             <div className="grid gap-3 sm:min-w-72">
+              <DropdownMenu>
+                <DropdownMenuTrigger>
+                  <Button
+                    variant="outline"
+                    className="relative h-11 rounded-2xl border-slate-200 bg-white px-4 text-slate-600 hover:border-blue-200 hover:text-blue-700"
+                  >
+                    <Bell className="mr-2 h-4 w-4" />
+                    Notifications
+                    {unreadNotificationCount > 0 && (
+                      <span className="absolute right-3 top-3 h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-white" />
+                    )}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-80 p-0">
+                  <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+                    <div>
+                      <p className="text-sm font-medium text-slate-900">
+                        Notifications
+                      </p>
+                      <p className="text-xs text-slate-400">
+                        {unreadNotificationCount} unread
+                      </p>
+                    </div>
+                    {notifications.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={markAllNotificationsRead}
+                        className="text-xs text-blue-600 hover:text-blue-800"
+                      >
+                        Mark all read
+                      </button>
+                    )}
+                  </div>
+                  <div className="max-h-80 overflow-y-auto">
+                    {notifications.length === 0 ? (
+                      <div className="px-4 py-6 text-sm text-slate-400">
+                        No notifications yet
+                      </div>
+                    ) : (
+                      notifications.map((notification) => (
+                        <button
+                          key={notification.id}
+                          type="button"
+                          onClick={() => {
+                            markNotificationRead(notification.id);
+                            const ticket = tickets.find(
+                              (item) => item.id === notification.ticketId,
+                            );
+                            if (ticket) openTicket(ticket);
+                          }}
+                          className="flex w-full items-start gap-3 border-b border-slate-100 px-4 py-3 text-left hover:bg-slate-50"
+                        >
+                          <div className="relative mt-1">
+                            <Bell className="h-4 w-4 text-slate-400" />
+                            {notification.unread && (
+                              <span className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full bg-red-500" />
+                            )}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-medium text-slate-900">
+                              {notification.ticketNumber}
+                            </p>
+                            <p className="truncate text-xs text-slate-500">
+                              {notification.title}
+                            </p>
+                            <p className="mt-1 line-clamp-2 text-xs text-slate-400">
+                              {notification.description}
+                            </p>
+                            <p className="mt-1 text-[11px] text-slate-400">
+                              {fmtDate(notification.createdAt)}
+                            </p>
+                          </div>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                </DropdownMenuContent>
+              </DropdownMenu>
               <Button
                 onClick={() => {
                   setForm(makeEmptyForm());
@@ -924,6 +1139,8 @@ export default function HelpDeskPage() {
         onOpenChange={(open) => {
           if (!open) {
             setSelectedTicket(null);
+            setComments([]);
+            setComment("");
             setNewMessageAlert(false);
           }
         }}
