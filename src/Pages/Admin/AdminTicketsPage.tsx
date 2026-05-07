@@ -357,29 +357,22 @@ export default function AdminTicketsPage() {
   }, [selectedTicket?.id]);
 
   // ── Page-level polling ────────────────────────────────────────────────────
-  // Replace your existing page-level polling useEffect with this:
   useEffect(() => {
     const interval = setInterval(async () => {
       if (!isSeededRef.current) return;
-
       try {
-        const fresh = await getMyTickets();
+        const fresh = await getAllTickets();
         for (const ticket of fresh) {
           const lastSeen = lastUpdatedAtRef.current[ticket.id];
           if (lastSeen === undefined) {
             lastUpdatedAtRef.current[ticket.id] = ticket.updatedAt;
-            continue;
-          }
-
-          if (lastSeen !== ticket.updatedAt) {
-            // Skip if this ticket's dialog is currently open (handled by fetchComments)
+          } else if (lastSeen !== ticket.updatedAt) {
             if (selectedTicketRef.current?.id === ticket.id) {
               lastUpdatedAtRef.current[ticket.id] = ticket.updatedAt;
               continue;
             }
 
-            // Fetch comments to check if there's a new one from someone else
-            const commentData = await getComments(ticket.id);
+            const commentData = await adminGetComments(ticket.id);
             const latestComment = getLatestCommentSnapshot(commentData);
             const previousCommentId =
               latestCommentIdRef.current[ticket.id] ?? null;
@@ -391,7 +384,7 @@ export default function AdminTicketsPage() {
             if (
               latestComment &&
               latestComment.id !== previousCommentId &&
-              latestComment.authorId !== activeUserId // ← only notify for others' messages
+              latestComment.authorId !== activeUserId
             ) {
               appendNotification({
                 id: `ticket-${ticket.id}-comment-${latestComment.id}`,
@@ -401,21 +394,22 @@ export default function AdminTicketsPage() {
                 description: "New message received on this ticket.",
                 createdAt: ticket.updatedAt,
               });
+              setPageAlert({
+                ticketNumber: ticket.ticketNumber,
+                title: ticket.title,
+              });
             }
 
             lastUpdatedAtRef.current[ticket.id] = ticket.updatedAt;
           }
         }
-
         setTickets(fresh);
-      } catch (err) {
-        console.error(err);
+      } catch {
+        // silent
       }
     }, 10000);
-
     return () => clearInterval(interval);
   }, [activeUserId]);
-
   // ── Data fetchers ─────────────────────────────────────────────────────────
 
   const fetchTickets = async () => {
