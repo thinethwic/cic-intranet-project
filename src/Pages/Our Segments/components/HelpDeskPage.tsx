@@ -285,6 +285,7 @@ export default function HelpDeskPage() {
     return () => clearInterval(interval);
   }, [selectedTicket?.id]);
 
+  // Replace your existing page-level polling useEffect with this:
   useEffect(() => {
     const interval = setInterval(async () => {
       if (!isSeededRef.current) return;
@@ -299,14 +300,17 @@ export default function HelpDeskPage() {
           }
 
           if (lastSeen !== ticket.updatedAt) {
+            // Skip if this ticket's dialog is currently open (handled by fetchComments)
             if (selectedTicketRef.current?.id === ticket.id) {
               lastUpdatedAtRef.current[ticket.id] = ticket.updatedAt;
               continue;
             }
 
+            // Fetch comments to check if there's a new one from someone else
             const commentData = await getComments(ticket.id);
             const latestComment = getLatestCommentSnapshot(commentData);
-            const previousCommentId = latestCommentIdRef.current[ticket.id] ?? null;
+            const previousCommentId =
+              latestCommentIdRef.current[ticket.id] ?? null;
 
             if (latestComment) {
               latestCommentIdRef.current[ticket.id] = latestComment.id;
@@ -315,7 +319,7 @@ export default function HelpDeskPage() {
             if (
               latestComment &&
               latestComment.id !== previousCommentId &&
-              latestComment.authorId !== activeUserId
+              latestComment.authorId !== activeUserId // ← only notify for others' messages
             ) {
               appendNotification({
                 id: `ticket-${ticket.id}-comment-${latestComment.id}`,
@@ -391,7 +395,8 @@ export default function HelpDeskPage() {
                 id: `ticket-${ticketId}-comment-${entry.id}`,
                 ticketId,
                 ticketNumber:
-                  selectedTicketRef.current?.ticketNumber ?? `Ticket ${ticketId}`,
+                  selectedTicketRef.current?.ticketNumber ??
+                  `Ticket ${ticketId}`,
                 title: selectedTicketRef.current?.title ?? "Help desk ticket",
                 description: `${entry.commentedBy.name}: ${entry.message.slice(0, 80)}`,
                 createdAt: entry.createdAt,
