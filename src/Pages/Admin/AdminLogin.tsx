@@ -43,19 +43,24 @@ export default function AdminLogin() {
           email: data.email,
           username: data.username,
           role: data.role,
+          segment: data.segment ?? null, // ← add
+          department: data.department ?? null, // ← add
         }),
       );
 
       // ✅ Redirect to returnTo if present, else default based on role
       const params = new URLSearchParams(window.location.search);
       const returnTo = params.get("returnTo");
+      const role: string = data.role;
 
       if (returnTo) {
         navigate(decodeURIComponent(returnTo), { replace: true });
       } else {
-        // Default: admins go to /admin, employees go to /helpdesk
-        const role = data.role; // e.g. "ADMIN", "EMPLOYEE"
-        navigate(role === "ADMIN" ? "/admin" : "/helpdesk", { replace: true });
+        if (role === "SUPER_ADMIN" || role === "ADMIN") {
+          navigate("/admin", { replace: true });
+        } else {
+          navigate("/helpdesk", { replace: true });
+        }
       }
     } catch {
       setError("Error Fail to Loggin");

@@ -12,7 +12,7 @@ export const getAdminUser = (): {
     name: string;
     email: string;
     username: string;
-    role: string; // ✅ add role
+    role: "SUPER_ADMIN" | "ADMIN" | "AUTHORIZED" | "SERVICE"; // ✅ add role
     segment: string;
     department: string;
 } | null => {

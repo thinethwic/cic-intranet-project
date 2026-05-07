@@ -9,6 +9,7 @@ import {
   ImagePlus,
   ChevronDown,
   Check,
+  Clock,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -32,7 +33,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import type { News } from "@/types";
 import {
   getAllNews,
   createNews,
@@ -42,8 +42,23 @@ import {
 } from "@/lib/api/newsApi";
 import { getAdminUser } from "@/lib/api/authHeaders";
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+// ── Types ─────────────────────────────────────────────────────────────────────
 
+export interface News {
+  id: number;
+  title: string;
+  description: string;
+  content: string;
+  image: string;
+  category: string;
+  isHot: boolean; // matches Java's @JsonProperty — backend sends "hot"
+  hotSince: string | null;
+  createdAt: string;
+}
+
+// ── Constants ─────────────────────────────────────────────────────────────────
+
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
 const CATEGORIES = ["CIC_FEEDS", "CIC_VET_CARE", "CIC_POULTRY", "AISA_VET"];
 const CAT_FILTER = ["All", ...CATEGORIES];
 const HOT_FILTER = ["All news", "Hot only", "Standard only"];
@@ -56,14 +71,38 @@ const EMPTY_FORM = {
   isHot: false,
 };
 
-// ── FilterDropdown ───────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function fmtDate(d?: string | null) {
+  if (!d) return "";
+  try {
+    return new Date(d).toLocaleDateString("en-GB", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
+  } catch {
+    return d;
+  }
+}
+
+/** Returns how many days are left before the hot label expires (30-day window). */
+function hotDaysLeft(hotSince?: string | null): number | null {
+  if (!hotSince) return null;
+  const expiresAt = new Date(hotSince);
+  expiresAt.setDate(expiresAt.getDate() + 30);
+  const diff = Math.ceil((expiresAt.getTime() - Date.now()) / 86_400_000);
+  return diff > 0 ? diff : 0;
+}
+
+// ── FilterDropdown ────────────────────────────────────────────────────────────
+
 function FilterDropdown({
   options,
   value,
   onChange,
   className,
 }: {
-  label?: string;
   options: string[];
   value: string;
   onChange: (v: string) => void;
@@ -74,7 +113,9 @@ function FilterDropdown({
       <DropdownMenuTrigger>
         <Button
           variant="outline"
-          className={`h-9 gap-2 text-sm font-normal justify-between ${value !== options[0] ? "border-blue-500 text-blue-600" : ""} ${className ?? ""}`}
+          className={`h-9 gap-2 text-sm font-normal justify-between ${
+            value !== options[0] ? "border-blue-500 text-blue-600" : ""
+          } ${className ?? ""}`}
         >
           <span>{value}</span>
           <ChevronDown className="w-3.5 h-3.5 opacity-50" />
@@ -96,7 +137,8 @@ function FilterDropdown({
   );
 }
 
-// ── ImageUploadZone ──────────────────────────────────────────
+// ── ImageUploadZone ───────────────────────────────────────────────────────────
+
 function ImageUploadZone({
   preview,
   onFileChange,
@@ -146,18 +188,22 @@ function ImageUploadZone({
   );
 }
 
-// ── NewsForm ─────────────────────────────────────────────────
+// ── NewsForm ──────────────────────────────────────────────────────────────────
+// Defined at module scope — never inside the parent — to prevent remount/focus loss.
+
+interface NewsFormProps {
+  form: typeof EMPTY_FORM;
+  setForm: React.Dispatch<React.SetStateAction<typeof EMPTY_FORM>>;
+  imagePreview: string | null;
+  onImageChange: (file: File) => void;
+}
+
 function NewsForm({
   form,
   setForm,
   imagePreview,
   onImageChange,
-}: {
-  form: typeof EMPTY_FORM;
-  setForm: React.Dispatch<React.SetStateAction<typeof EMPTY_FORM>>;
-  imagePreview: string | null;
-  onImageChange: (file: File) => void;
-}) {
+}: NewsFormProps) {
   const set = (k: string, v: any) => setForm((p) => ({ ...p, [k]: v }));
   return (
     <div className="space-y-4">
@@ -169,6 +215,7 @@ function NewsForm({
           placeholder="Enter article title"
           value={form.title}
           onChange={(e) => set("title", e.target.value)}
+          autoComplete="off"
         />
       </div>
 
@@ -210,7 +257,7 @@ function NewsForm({
         <div>
           <p className="text-sm font-medium">Mark as hot news</p>
           <p className="text-xs text-slate-400 mt-0.5">
-            Shows in the hot news slider
+            Shows in the hot news slider · auto-expires after 30 days
           </p>
         </div>
         <Switch checked={form.isHot} onCheckedChange={(v) => set("isHot", v)} />
@@ -219,7 +266,8 @@ function NewsForm({
   );
 }
 
-// ── Main Page ────────────────────────────────────────────────
+// ── Main Page ─────────────────────────────────────────────────────────────────
+
 export default function AdminNewsPage() {
   const PAGE_SIZE = 8;
   const [news, setNews] = useState<News[]>([]);
@@ -231,6 +279,7 @@ export default function AdminNewsPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [editItem, setEditItem] = useState<News | null>(null);
   const [deleteId, setDeleteId] = useState<number | null>(null);
+  const [page, setPage] = useState(1);
 
   const [createForm, setCreateForm] = useState({ ...EMPTY_FORM });
   const [editForm, setEditForm] = useState({ ...EMPTY_FORM });
@@ -241,7 +290,6 @@ export default function AdminNewsPage() {
   );
   const [editImageFile, setEditImageFile] = useState<File | null>(null);
   const [editImagePreview, setEditImagePreview] = useState<string | null>(null);
-  const [page, setPage] = useState(1);
 
   useEffect(() => {
     fetchNews();
@@ -250,8 +298,7 @@ export default function AdminNewsPage() {
   const fetchNews = async () => {
     try {
       setLoading(true);
-      const data = await getAllNews();
-      setNews(data);
+      setNews(await getAllNews());
     } catch (err) {
       console.error("Failed to fetch news", err);
     } finally {
@@ -276,24 +323,10 @@ export default function AdminNewsPage() {
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-
   const hotCount = news.filter((n) => n.isHot).length;
   const catCount = new Set(news.map((n) => n.category)).size;
 
-  const fmtDate = (d: string) => {
-    if (!d) return "";
-    try {
-      return new Date(d).toLocaleDateString("en-GB", {
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-      });
-    } catch {
-      return d;
-    }
-  };
-
-  // ── Create ───────────────────────────────────────────────
+  // ── Create ────────────────────────────────────────────────
   const handleCreate = async () => {
     if (!createForm.title.trim()) return;
     try {
@@ -309,16 +342,14 @@ export default function AdminNewsPage() {
               description: createForm.description,
               content: createForm.content,
               category: createForm.category,
-              isHot: createForm.isHot,
+              hot: createForm.isHot, // ← "hot" matches the Java field name
               authorId: adminUser?.userId ?? null,
             }),
           ],
           { type: "application/json" },
         ),
       );
-      if (createImageFile) {
-        formData.append("image", createImageFile);
-      }
+      if (createImageFile) formData.append("image", createImageFile);
       await createNews(formData);
       await fetchNews();
       setCreateForm({ ...EMPTY_FORM });
@@ -332,7 +363,7 @@ export default function AdminNewsPage() {
     }
   };
 
-  // ── Open Edit ────────────────────────────────────────────
+  // ── Open Edit ─────────────────────────────────────────────
   const openEdit = (item: News) => {
     setEditItem(item);
     setEditForm({
@@ -346,29 +377,21 @@ export default function AdminNewsPage() {
     setEditImagePreview(item.image ? `${BASE_URL}${item.image}` : null);
   };
 
-  // ── Save Edit ────────────────────────────────────────────const handleSaveEdit = async () => {
+  // ── Save Edit ─────────────────────────────────────────────
   const handleSaveEdit = async () => {
-    console.log("editImageFile:", editImageFile);
     if (!editItem) return;
     try {
       setSaving(true);
       const adminUser = getAdminUser();
-
-      // ✅ Always update metadata
       await updateNews(editItem.id, {
         title: editForm.title,
         description: editForm.description,
         content: editForm.content,
         category: editForm.category,
-        isHot: editForm.isHot,
+        isHot: editForm.isHot, // ← "hot" matches the Java field name
         authorId: adminUser?.userId ?? null,
       });
-
-      // ✅ Only update image if a new one was selected
-      if (editImageFile) {
-        await updateNewsImage(editItem.id, editImageFile);
-      }
-
+      if (editImageFile) await updateNewsImage(editItem.id, editImageFile);
       await fetchNews();
       setEditItem(null);
       setEditImageFile(null);
@@ -380,7 +403,7 @@ export default function AdminNewsPage() {
     }
   };
 
-  // ── Delete ───────────────────────────────────────────────
+  // ── Delete ────────────────────────────────────────────────
   const handleDelete = async () => {
     if (!deleteId) return;
     try {
@@ -390,6 +413,19 @@ export default function AdminNewsPage() {
     } catch (err) {
       console.error("Failed to delete news", err);
     }
+  };
+
+  const resetCreate = () => {
+    setCreateForm({ ...EMPTY_FORM });
+    setCreateImageFile(null);
+    setCreateImagePreview(null);
+    setShowCreate(false);
+  };
+
+  const resetEdit = () => {
+    setEditItem(null);
+    setEditImageFile(null);
+    setEditImagePreview(null);
   };
 
   return (
@@ -464,66 +500,86 @@ export default function AdminNewsPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-          {paginated.map((item) => (
-            <Card
-              key={item.id}
-              className="overflow-hidden border-slate-200 hover:border-slate-300 transition-colors group"
-            >
-              {item.image ? (
-                <img
-                  src={`${BASE_URL}${item.image}`}
-                  alt={item.title}
-                  className="w-full h-44 object-cover block"
-                />
-              ) : (
-                <div className="w-full h-44 bg-slate-100 flex items-center justify-center">
-                  <ImagePlus className="w-8 h-8 text-slate-300" />
-                </div>
-              )}
-              <CardContent className="p-4">
-                <div className="flex gap-2 mb-2 flex-wrap">
-                  <Badge className="text-[10px] bg-blue-50 text-blue-800 border border-blue-200 hover:bg-blue-50">
-                    {item.category}
-                  </Badge>
-                  {item.isHot && (
-                    <Badge className="text-[10px] bg-red-50 text-red-800 border border-red-200 hover:bg-red-50 gap-1">
-                      <Flame className="w-2.5 h-2.5" /> Hot
+          {paginated.map((item) => {
+            const daysLeft = hotDaysLeft(item.hotSince);
+            return (
+              <Card
+                key={item.id}
+                className="overflow-hidden border-slate-200 hover:border-slate-300 transition-colors group"
+              >
+                {item.image ? (
+                  <img
+                    src={`${BASE_URL}${item.image}`}
+                    alt={item.title}
+                    className="w-full h-44 object-cover block"
+                  />
+                ) : (
+                  <div className="w-full h-44 bg-slate-100 flex items-center justify-center">
+                    <ImagePlus className="w-8 h-8 text-slate-300" />
+                  </div>
+                )}
+                <CardContent className="p-4">
+                  <div className="flex gap-2 mb-2 flex-wrap">
+                    <Badge className="text-[10px] bg-blue-50 text-blue-800 border border-blue-200 hover:bg-blue-50">
+                      {item.category}
                     </Badge>
+                    {item.isHot && (
+                      <Badge className="text-[10px] bg-red-50 text-red-800 border border-red-200 hover:bg-red-50 gap-1">
+                        <Flame className="w-2.5 h-2.5" /> Hot
+                      </Badge>
+                    )}
+                  </div>
+
+                  <p className="text-sm font-medium text-slate-800 line-clamp-2 leading-snug mb-1.5">
+                    {item.title}
+                  </p>
+                  <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed mb-3">
+                    {item.description}
+                  </p>
+
+                  <div className="flex items-center gap-3 text-[11px] text-slate-400 mb-1">
+                    <span className="flex items-center gap-1">
+                      <Calendar className="w-3 h-3" />
+                      {fmtDate(item.createdAt)}
+                    </span>
+                  </div>
+
+                  {/* Hot expiry indicator */}
+                  {item.isHot && daysLeft !== null && (
+                    <div
+                      className={`flex items-center gap-1 text-[11px] mb-3 ${
+                        daysLeft <= 5 ? "text-red-500" : "text-amber-500"
+                      }`}
+                    >
+                      <Clock className="w-3 h-3" />
+                      {daysLeft === 0
+                        ? "Expires today"
+                        : `Hot expires in ${daysLeft}d`}
+                    </div>
                   )}
-                </div>
-                <p className="text-sm font-medium text-slate-800 line-clamp-2 leading-snug mb-1.5">
-                  {item.title}
-                </p>
-                <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed mb-3">
-                  {item.description}
-                </p>
-                <div className="flex items-center gap-3 text-[11px] text-slate-400 mb-3">
-                  <span className="flex items-center gap-1">
-                    <Calendar className="w-3 h-3" />
-                    {item.createdAt ? fmtDate(item.createdAt) : ""}
-                  </span>
-                </div>
-                <div className="flex gap-2 pt-3 border-t border-slate-100">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="flex-1 h-8 text-xs hover:bg-blue-50 hover:text-blue-700"
-                    onClick={() => openEdit(item)}
-                  >
-                    <Pencil className="w-3.5 h-3.5 mr-1.5" /> Edit
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="flex-1 h-8 text-xs hover:bg-red-50 hover:text-red-700"
-                    onClick={() => setDeleteId(item.id)}
-                  >
-                    <Trash2 className="w-3.5 h-3.5 mr-1.5" /> Delete
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+
+                  <div className="flex gap-2 pt-3 border-t border-slate-100">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="flex-1 h-8 text-xs hover:bg-blue-50 hover:text-blue-700"
+                      onClick={() => openEdit(item)}
+                    >
+                      <Pencil className="w-3.5 h-3.5 mr-1.5" /> Edit
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="flex-1 h-8 text-xs hover:bg-red-50 hover:text-red-700"
+                      onClick={() => setDeleteId(item.id)}
+                    >
+                      <Trash2 className="w-3.5 h-3.5 mr-1.5" /> Delete
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       )}
 
@@ -540,12 +596,8 @@ export default function AdminNewsPage() {
       <Dialog
         open={showCreate}
         onOpenChange={(o) => {
-          if (!o) {
-            setCreateForm({ ...EMPTY_FORM });
-            setCreateImageFile(null);
-            setCreateImagePreview(null);
-          }
-          setShowCreate(o);
+          if (!o) resetCreate();
+          else setShowCreate(true);
         }}
       >
         <DialogContent className="sm:max-w-lg p-0 gap-0 overflow-hidden max-h-[90vh] flex flex-col">
@@ -569,15 +621,7 @@ export default function AdminNewsPage() {
             />
           </div>
           <DialogFooter className="px-6 py-4 border-t border-slate-100 shrink-0">
-            <Button
-              variant="outline"
-              onClick={() => {
-                setCreateForm({ ...EMPTY_FORM });
-                setCreateImageFile(null);
-                setCreateImagePreview(null);
-                setShowCreate(false);
-              }}
-            >
+            <Button variant="outline" onClick={resetCreate}>
               Cancel
             </Button>
             <Button
@@ -595,11 +639,7 @@ export default function AdminNewsPage() {
       <Dialog
         open={!!editItem}
         onOpenChange={(o) => {
-          if (!o) {
-            setEditItem(null);
-            setEditImageFile(null);
-            setEditImagePreview(null);
-          }
+          if (!o) resetEdit();
         }}
       >
         <DialogContent className="sm:max-w-lg p-0 gap-0 overflow-hidden max-h-[90vh] flex flex-col">
@@ -623,14 +663,7 @@ export default function AdminNewsPage() {
             />
           </div>
           <DialogFooter className="px-6 py-4 border-t border-slate-100 shrink-0">
-            <Button
-              variant="outline"
-              onClick={() => {
-                setEditItem(null);
-                setEditImageFile(null);
-                setEditImagePreview(null);
-              }}
-            >
+            <Button variant="outline" onClick={resetEdit}>
               Cancel
             </Button>
             <Button

@@ -24,7 +24,7 @@ export interface TicketComment {
     commentedBy: {
         id: number;
         name: string;
-        role: "ADMIN" | "AUTHORIZED" | "USER"; // ← add this
+        role: "ADMIN" | "AUTHORIZED" | "SERVICE"; // ← add this
     };
     isInternal: boolean;
     createdAt: string;
@@ -51,6 +51,7 @@ export interface News {
     image: string;
     category: string;
     isHot: boolean;
+    hotSince: string | null;
     createdAt: string; // ✅ add this
 }
 

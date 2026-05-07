@@ -16,6 +16,7 @@ import AdminGalleryPage from "./Pages/Admin/AdminGalleryPage";
 import AdminManagementPage from "./Pages/Admin/AdminManagementPage";
 import AdminLogin from "./Pages/Admin/AdminLogin";
 import ProtectedRoute from "@/ProtectedRoute";
+import SuperAdminRoute from "@/SuperAdminRoute";
 import AdminUsersPage from "./Pages/Admin/AdminUsersPage";
 import AdminTicketsPage from "./Pages/Admin/AdminTicketsPage";
 import HelpDeskPage from "./Pages/Our Segments/components/HelpDeskPage";
@@ -36,28 +37,36 @@ function App() {
         <Route path="/news/:id" element={<NewsDetailPage />} />
       </Route>
 
+      {/* ── Employee routes ── */}
       <Route element={<EmployeeProtectedRoute />}>
         <Route path="/helpdesk" element={<HelpDeskPage />} />
       </Route>
 
+      {/* ── Admin login ── */}
       <Route path="/admin/login" element={<AdminLogin />} />
 
+      {/* ── Admin routes (SUPER_ADMIN + ADMIN) ── */}
       <Route element={<ProtectedRoute />}>
         <Route path="/admin" element={<AdminLayout />}>
-          <Route index element={<AdminDashboard />} />
-          <Route path="/admin/videos" element={<AdminVideosPage />} />
-          <Route path="/admin/documents" element={<AdminDocumentsPage />} />
-          <Route path="/admin/news" element={<AdminNewsPage />} />
-          <Route path="/admin/events" element={<AdminEventsPage />} />
-          <Route path="/admin/gallery" element={<AdminGalleryPage />} />
-          <Route path="/admin/ticket" element={<AdminTicketsPage />} />
-          <Route path="/admin/management" element={<AdminManagementPage />} />
-          <Route path="/admin/users" element={<AdminUsersPage />} />
-          <Route path="/admin/categories" element={<AdminCategoriesPage />} />
+          {/* Shared: ADMIN + SUPER_ADMIN */}
+          <Route path="ticket" element={<AdminTicketsPage />} />
+
+          {/* SUPER_ADMIN only */}
+          <Route element={<SuperAdminRoute />}>
+            <Route index element={<AdminDashboard />} />
+            <Route path="videos" element={<AdminVideosPage />} />
+            <Route path="documents" element={<AdminDocumentsPage />} />
+            <Route path="news" element={<AdminNewsPage />} />
+            <Route path="events" element={<AdminEventsPage />} />
+            <Route path="gallery" element={<AdminGalleryPage />} />
+            <Route path="management" element={<AdminManagementPage />} />
+            <Route path="users" element={<AdminUsersPage />} />
+            <Route path="categories" element={<AdminCategoriesPage />} />
+          </Route>
         </Route>
       </Route>
 
-      {/* ✅ Catch-all — must be last */}
+      {/* ── Catch-all ── */}
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );

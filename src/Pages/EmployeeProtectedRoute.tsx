@@ -2,15 +2,18 @@ import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { decryptSegment } from "@/utils/segmentEncryption";
 import { mapPathToSegment } from "@/utils/segmentMapper";
 
-type UserRole = "ADMIN" | "SERVICE" | "AUTHORIZED";
+type UserRole = "SUPER_ADMIN" | "ADMIN" | "SERVICE" | "AUTHORIZED";
 
 interface JwtPayload {
   exp: number;
   sub: string;
   role?: UserRole;
   roles?: UserRole[];
-  location?: string; // ← JWT segment field
+  location?: string;
 }
+
+const ADMIN_ROLES: UserRole[] = ["SUPER_ADMIN", "ADMIN"];
+const ALLOWED_ROLES: UserRole[] = ["SERVICE", "AUTHORIZED", ...ADMIN_ROLES];
 
 function parseToken(token: string): JwtPayload | null {
   try {
@@ -26,62 +29,38 @@ function isTokenExpired(payload: JwtPayload): boolean {
 
 function getUserRole(payload: JwtPayload): UserRole | null {
   if (payload.role) return payload.role;
-  if (payload.roles && payload.roles.length > 0) return payload.roles[0];
+  if (payload.roles?.length) return payload.roles[0];
   return null;
 }
 
-const ALLOWED_ROLES: UserRole[] = ["SERVICE", "AUTHORIZED", "ADMIN"];
+function clearAuth() {
+  localStorage.removeItem("admin_token");
+  localStorage.removeItem("admin_user");
+}
 
-export default function HelpDeskProtectedRoute() {
+export default function EmployeeProtectedRoute() {
   const location = useLocation();
   const token = localStorage.getItem("admin_token");
   const returnTo = `${location.pathname}${location.search}${location.hash}`;
+  const loginUrl = `/admin/login?returnTo=${encodeURIComponent(returnTo)}`;
 
-  // ── No token ─────────────────────────────────────────────────────────────
-  if (!token) {
-    return (
-      <Navigate
-        to={`/admin/login?returnTo=${encodeURIComponent(returnTo)}`}
-        replace
-      />
-    );
-  }
+  if (!token) return <Navigate to={loginUrl} replace />;
 
   const payload = parseToken(token);
+  if (!payload) return <Navigate to={loginUrl} replace />;
 
-  // ── Invalid token ─────────────────────────────────────────────────────────
-  if (!payload) {
-    return (
-      <Navigate
-        to={`/admin/login?returnTo=${encodeURIComponent(returnTo)}`}
-        replace
-      />
-    );
-  }
-
-  // ── Expired token ─────────────────────────────────────────────────────────
   if (isTokenExpired(payload)) {
-    localStorage.removeItem("admin_token");
-    localStorage.removeItem("admin_user");
-    return (
-      <Navigate
-        to={`/admin/login?returnTo=${encodeURIComponent(returnTo)}`}
-        replace
-      />
-    );
+    clearAuth();
+    return <Navigate to={loginUrl} replace />;
   }
 
   const role = getUserRole(payload);
-
-  // ── Role not allowed ──────────────────────────────────────────────────────
   if (!role || !ALLOWED_ROLES.includes(role)) {
     return <Navigate to="/unauthorized" replace />;
   }
 
-  // ── Segment check for non-admins ──────────────────────────────────────────
-  if (role !== "ADMIN") {
-    const jwtSegment = payload.location;
-
+  // Segment check — skip for SUPER_ADMIN and ADMIN
+  if (!ADMIN_ROLES.includes(role)) {
     const searchParams = new URLSearchParams(location.search);
     const encryptedParam = searchParams.get("s");
     const decryptedParam = encryptedParam
@@ -90,16 +69,9 @@ export default function HelpDeskProtectedRoute() {
     const pathSegment = mapPathToSegment(location.pathname.slice(1));
     const currentSegment = decryptedParam ?? pathSegment ?? null;
 
-    if (!jwtSegment || jwtSegment !== currentSegment) {
-      // ← Clear storage before redirecting
-      localStorage.removeItem("admin_token");
-      localStorage.removeItem("admin_user");
-      return (
-        <Navigate
-          to={`/admin/login?returnTo=${encodeURIComponent(returnTo)}`}
-          replace
-        />
-      );
+    if (!payload.location || payload.location !== currentSegment) {
+      clearAuth();
+      return <Navigate to={loginUrl} replace />;
     }
   }
 

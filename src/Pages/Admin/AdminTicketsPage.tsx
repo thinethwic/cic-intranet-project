@@ -47,12 +47,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import type {
-  Ticket,
-  TicketCategory,
-  TicketPriority,
-  TicketStatus,
-} from "@/types";
+import type { Ticket, TicketPriority, TicketStatus } from "@/types";
 import {
   adminAddComment,
   adminDeleteTicket,
@@ -123,13 +118,7 @@ const SEGMENT_CONFIG: Record<string, { label: string; className: string }> = {
   },
 };
 
-const CATEGORY_OPTIONS: TicketCategory[] = [
-  "IT",
-  "HR",
-  "FINANCE",
-  "FACILITIES",
-  "OTHER",
-];
+const CATEGORY_OPTIONS = ["IT", "HR", "FINANCE", "FACILITIES", "OTHER"];
 const PRIORITY_OPTIONS: TicketPriority[] = [
   "LOW",
   "MEDIUM",
@@ -143,7 +132,7 @@ const STATUS_OPTIONS: TicketStatus[] = [
   "CLOSED",
 ];
 
-const CATEGORY_ICONS: Record<TicketCategory, string> = {
+const CATEGORY_ICONS: Record<string, string> = {
   IT: "IT",
   HR: "HR",
   FINANCE: "FN",
@@ -154,7 +143,7 @@ const CATEGORY_ICONS: Record<TicketCategory, string> = {
 const EMPTY_EDIT_FORM = {
   title: "",
   description: "",
-  category: "IT" as TicketCategory,
+  category: "",
   priority: "MEDIUM" as TicketPriority,
   status: "OPEN" as TicketStatus,
   department: "",
@@ -177,7 +166,7 @@ function FilterDropdown({
   const isActive = value !== options[0];
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
+      <DropdownMenuTrigger>
         <Button
           variant="outline"
           className={`h-9 min-w-[130px] justify-between gap-2 text-sm font-normal ${
@@ -253,6 +242,10 @@ const fmtDateTime = (value: string) =>
 // ── Page ─────────────────────────────────────────────────────────────────────
 
 export default function AdminTicketsPage() {
+  const currentViewer = getAdminUser();
+  const isAdmin = currentViewer?.role === "ADMIN";
+  const adminSegment = currentViewer?.segment ?? null;
+
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -273,7 +266,6 @@ export default function AdminTicketsPage() {
 
   const [comment, setComment] = useState("");
   const [sendingComment, setSendingComment] = useState(false);
-  const currentViewer = getAdminUser();
 
   const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
 
@@ -283,14 +275,13 @@ export default function AdminTicketsPage() {
   const shouldScrollRef = useRef(false);
   const selectedTicketRef = useRef<Ticket | null>(null);
   const lastUpdatedAtRef = useRef<Record<number, string>>({});
-  const isSeededRef = useRef(false); // ← prevents polling before initial load
+  const isSeededRef = useRef(false);
 
   const [pageAlert, setPageAlert] = useState<{
     ticketNumber: string;
     title: string;
   } | null>(null);
 
-  // Keep selectedTicketRef in sync
   useEffect(() => {
     selectedTicketRef.current = selectedTicket;
   }, [selectedTicket]);
@@ -301,7 +292,7 @@ export default function AdminTicketsPage() {
     fetchAdminUsers();
   }, []);
 
-  // ── Dialog comment polling (5s while dialog open) ────────────────────────
+  // ── Dialog comment polling ────────────────────────────────────────────────
   useEffect(() => {
     if (!selectedTicket) return;
     const interval = setInterval(() => {
@@ -310,40 +301,30 @@ export default function AdminTicketsPage() {
     return () => clearInterval(interval);
   }, [selectedTicket?.id]);
 
-  // ── Page-level polling (10s, only when dialog closed) ────────────────────
+  // ── Page-level polling ────────────────────────────────────────────────────
   useEffect(() => {
     const interval = setInterval(async () => {
-      // Skip if dialog is open or seeding hasn't finished yet
       if (selectedTicketRef.current) return;
       if (!isSeededRef.current) return;
-
       try {
         const fresh = await getAllTickets();
-
         fresh.forEach((ticket) => {
           const lastSeen = lastUpdatedAtRef.current[ticket.id];
-
           if (lastSeen === undefined) {
-            // New ticket appeared after initial load — just seed it
             lastUpdatedAtRef.current[ticket.id] = ticket.updatedAt;
           } else if (lastSeen !== ticket.updatedAt) {
-            // This ticket changed since last poll — show alert
             setPageAlert({
               ticketNumber: ticket.ticketNumber,
               title: ticket.title,
             });
-            // Update ref so we don't alert again for same change
             lastUpdatedAtRef.current[ticket.id] = ticket.updatedAt;
           }
         });
-
-        // Silently refresh the table
         setTickets(fresh);
       } catch {
         // silent
       }
     }, 10000);
-
     return () => clearInterval(interval);
   }, []);
 
@@ -354,14 +335,9 @@ export default function AdminTicketsPage() {
       setLoading(true);
       const data = await getAllTickets();
       setTickets(data);
-
-      // Seed the ref with current updatedAt values
-      // Must happen before isSeededRef is set to true
       data.forEach((t) => {
         lastUpdatedAtRef.current[t.id] = t.updatedAt;
       });
-
-      // Now safe for polling to start comparing
       isSeededRef.current = true;
     } catch (err) {
       console.error("Failed to fetch tickets", err);
@@ -383,14 +359,10 @@ export default function AdminTicketsPage() {
     const container = commentsContainerRef.current;
     const prevScrollTop = container?.scrollTop ?? 0;
     const prevScrollHeight = container?.scrollHeight ?? 0;
-
     try {
       if (isInitial) setCommentsLoading(true);
-
       const data = await adminGetComments(ticketId);
-
       setComments((prev) => {
-        // Nothing changed — skip re-render
         if (
           prev.length === data.length &&
           prev.every(
@@ -399,8 +371,6 @@ export default function AdminTicketsPage() {
         ) {
           return prev;
         }
-
-        // Only alert on background polls, not initial open
         if (!isInitial && prev.length > 0) {
           const prevIds = new Set(prev.map((c) => c.id));
           const newFromOther = data.filter(
@@ -411,10 +381,8 @@ export default function AdminTicketsPage() {
             setTimeout(() => setNewMessageAlert(true), 0);
           }
         }
-
         return data;
       });
-
       requestAnimationFrame(() => {
         if (!commentsContainerRef.current) return;
         if (shouldScrollRef.current) {
@@ -438,6 +406,10 @@ export default function AdminTicketsPage() {
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
     return tickets.filter((ticket) => {
+      // ADMIN: always restrict to their segment only
+      if (isAdmin && adminSegment && ticket.segment !== adminSegment)
+        return false;
+
       return (
         (ticket.title.toLowerCase().includes(q) ||
           ticket.ticketNumber.toLowerCase().includes(q) ||
@@ -446,7 +418,10 @@ export default function AdminTicketsPage() {
         (statusFilter === "All" || ticket.status === statusFilter) &&
         (categoryFilter === "All" || ticket.category === categoryFilter) &&
         (priorityFilter === "All" || ticket.priority === priorityFilter) &&
-        (segmentFilter === "All" || ticket.segment === segmentFilter)
+        // Segment filter only applies to SUPER_ADMIN
+        (!isAdmin
+          ? segmentFilter === "All" || ticket.segment === segmentFilter
+          : true)
       );
     });
   }, [
@@ -456,40 +431,45 @@ export default function AdminTicketsPage() {
     categoryFilter,
     priorityFilter,
     segmentFilter,
+    isAdmin,
+    adminSegment,
   ]);
 
-  const stats = [
-    {
-      label: "Total tickets",
-      value: loading ? "..." : tickets.length,
-      icon: TicketIcon,
-      color: "bg-blue-50 text-blue-600",
-    },
-    {
-      label: "Open",
-      value: loading
-        ? "..."
-        : tickets.filter((t) => t.status === "OPEN").length,
-      icon: Circle,
-      color: "bg-sky-50 text-sky-600",
-    },
-    {
-      label: "In progress",
-      value: loading
-        ? "..."
-        : tickets.filter((t) => t.status === "IN_PROGRESS").length,
-      icon: Loader2,
-      color: "bg-amber-50 text-amber-600",
-    },
-    {
-      label: "Resolved",
-      value: loading
-        ? "..."
-        : tickets.filter((t) => t.status === "RESOLVED").length,
-      icon: ShieldCheck,
-      color: "bg-emerald-50 text-emerald-600",
-    },
-  ];
+  const stats = useMemo(
+    () => [
+      {
+        label: "Total tickets",
+        value: loading ? "..." : filtered.length,
+        icon: TicketIcon,
+        color: "bg-blue-50 text-blue-600",
+      },
+      {
+        label: "Open",
+        value: loading
+          ? "..."
+          : filtered.filter((t) => t.status === "OPEN").length,
+        icon: Circle,
+        color: "bg-sky-50 text-sky-600",
+      },
+      {
+        label: "In progress",
+        value: loading
+          ? "..."
+          : filtered.filter((t) => t.status === "IN_PROGRESS").length,
+        icon: Loader2,
+        color: "bg-amber-50 text-amber-600",
+      },
+      {
+        label: "Resolved",
+        value: loading
+          ? "..."
+          : filtered.filter((t) => t.status === "RESOLVED").length,
+        icon: ShieldCheck,
+        color: "bg-emerald-50 text-emerald-600",
+      },
+    ],
+    [filtered, loading],
+  );
 
   // ── Handlers ──────────────────────────────────────────────────────────────
 
@@ -598,7 +578,6 @@ export default function AdminTicketsPage() {
     const isMine =
       String(entry.commentedBy.id) === String(currentViewer?.userId);
     const role = getCommentRole(entry);
-
     if (role === "SERVICE") {
       return {
         align: isMine ? "justify-end" : "justify-start",
@@ -640,6 +619,11 @@ export default function AdminTicketsPage() {
           </h1>
           <p className="mt-1 text-sm text-slate-500">
             Review, update, edit, and remove employee support requests.
+            {isAdmin && adminSegment && (
+              <span className="ml-2 inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700 border border-blue-200">
+                {SEGMENT_CONFIG[adminSegment]?.label ?? adminSegment}
+              </span>
+            )}
           </p>
         </div>
       </div>
@@ -712,39 +696,43 @@ export default function AdminTicketsPage() {
           value={priorityFilter}
           onChange={setPriorityFilter}
         />
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="outline"
-              className={`h-9 min-w-[130px] justify-between gap-2 text-sm font-normal ${
-                segmentFilter !== "All" ? "border-blue-500 text-blue-600" : ""
-              }`}
-            >
-              <span>
-                {segmentFilter === "All"
-                  ? "All Segments"
-                  : (SEGMENT_CONFIG[segmentFilter]?.label ?? segmentFilter)}
-              </span>
-              <ChevronDown className="h-3.5 w-3.5 opacity-50" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="min-w-[160px]">
-            {["All", ...Object.keys(SEGMENT_CONFIG)].map((key) => (
-              <DropdownMenuItem
-                key={key}
-                onClick={() => setSegmentFilter(key)}
-                className="flex cursor-pointer items-center justify-between text-sm"
+
+        {/* Segment filter — SUPER_ADMIN only */}
+        {!isAdmin && (
+          <DropdownMenu>
+            <DropdownMenuTrigger>
+              <Button
+                variant="outline"
+                className={`h-9 min-w-[130px] justify-between gap-2 text-sm font-normal ${
+                  segmentFilter !== "All" ? "border-blue-500 text-blue-600" : ""
+                }`}
               >
-                {key === "All"
-                  ? "All Segments"
-                  : (SEGMENT_CONFIG[key]?.label ?? key)}
-                {segmentFilter === key && (
-                  <Check className="h-3.5 w-3.5 text-blue-600" />
-                )}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
+                <span>
+                  {segmentFilter === "All"
+                    ? "All Segments"
+                    : (SEGMENT_CONFIG[segmentFilter]?.label ?? segmentFilter)}
+                </span>
+                <ChevronDown className="h-3.5 w-3.5 opacity-50" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="min-w-[160px]">
+              {["All", ...Object.keys(SEGMENT_CONFIG)].map((key) => (
+                <DropdownMenuItem
+                  key={key}
+                  onClick={() => setSegmentFilter(key)}
+                  className="flex cursor-pointer items-center justify-between text-sm"
+                >
+                  {key === "All"
+                    ? "All Segments"
+                    : (SEGMENT_CONFIG[key]?.label ?? key)}
+                  {segmentFilter === key && (
+                    <Check className="h-3.5 w-3.5 text-blue-600" />
+                  )}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
       </div>
 
       {/* ── Tickets Table ── */}
@@ -812,7 +800,6 @@ export default function AdminTicketsPage() {
                   const seg = ticket.segment
                     ? SEGMENT_CONFIG[ticket.segment]
                     : null;
-
                   return (
                     <TableRow
                       key={ticket.id}
@@ -935,7 +922,8 @@ export default function AdminTicketsPage() {
 
       {filtered.length > 0 && !loading && (
         <p className="text-right text-xs text-slate-400">
-          Showing {filtered.length} of {tickets.length} tickets
+          Showing {filtered.length} of{" "}
+          {isAdmin ? filtered.length : tickets.length} tickets
         </p>
       )}
 
@@ -954,7 +942,6 @@ export default function AdminTicketsPage() {
               const seg = selectedTicket.segment
                 ? SEGMENT_CONFIG[selectedTicket.segment]
                 : null;
-
               return (
                 <>
                   <DialogHeader className="shrink-0 border-b border-slate-100 px-6 py-4">
@@ -1019,7 +1006,6 @@ export default function AdminTicketsPage() {
                     </div>
                   </DialogHeader>
 
-                  {/* ── Scrollable body ── */}
                   <div
                     ref={commentsContainerRef}
                     className="flex-1 space-y-5 overflow-y-auto px-6 py-4"
@@ -1082,7 +1068,6 @@ export default function AdminTicketsPage() {
                         </span>
                       </div>
 
-                      {/* ── In-dialog new message alert ── */}
                       {newMessageAlert && (
                         <Alert className="border-blue-200 bg-blue-50">
                           <Bell className="h-4 w-4 text-blue-600" />
@@ -1186,8 +1171,7 @@ export default function AdminTicketsPage() {
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Edit3 className="h-4 w-4 text-blue-600" />
-              Edit ticket
+              <Edit3 className="h-4 w-4 text-blue-600" /> Edit ticket
             </DialogTitle>
             <DialogDescription>
               Update ticket details, assignment, and workflow status.
@@ -1248,10 +1232,7 @@ export default function AdminTicketsPage() {
                   options={CATEGORY_OPTIONS}
                   value={editForm.category}
                   onChange={(value) =>
-                    setEditForm((prev) => ({
-                      ...prev,
-                      category: value as TicketCategory,
-                    }))
+                    setEditForm((prev) => ({ ...prev, category: value }))
                   }
                   className="w-full"
                 />

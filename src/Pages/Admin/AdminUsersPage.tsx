@@ -10,6 +10,7 @@ import {
   UserCheck,
   UserX,
   Settings,
+  type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,6 +42,11 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { authHeaders } from "@/lib/api/authHeaders";
 import { AdminPagination } from "./admin-components";
+import {
+  adminGetDepartments,
+  type Department,
+  type SegmentValue,
+} from "@/lib/api/departmentApi";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
 const API = `${BASE_URL}/api/v1/users`;
@@ -50,15 +56,15 @@ interface User {
   username: string;
   name: string;
   email: string;
-  role: "ADMIN" | "AUTHORIZED" | "SERVICE";
+  role: "SUPER_ADMIN" | "ADMIN" | "AUTHORIZED" | "SERVICE";
   active: boolean;
   segment?: string;
   department?: string;
   createdAt?: string;
 }
 
-const ROLE_OPTIONS = ["ADMIN", "AUTHORIZED", "SERVICE"];
-const FILTER_ROLES = ["All", "ADMIN", "AUTHORIZED", "SERVICE"];
+const ROLE_OPTIONS = ["SUPER_ADMIN", "ADMIN", "AUTHORIZED", "SERVICE"];
+const FILTER_ROLES = ["All", "SUPER_ADMIN", "ADMIN", "AUTHORIZED", "SERVICE"];
 const FILTER_STATUS = ["All", "Active", "Inactive"];
 const SEGMENT_OPTIONS = [
   "CIC_FEEDS",
@@ -71,7 +77,7 @@ const SEGMENT_LABELS: Record<string, string> = {
   CIC_FEEDS: "CIC Feeds",
   CIC_VET_CARE: "CIC Vet Care",
   CIC_POULTRY: "CIC Poultry",
-  AISA_VET: "Aisa Vet",
+  AISA_VET: "Asia Vet",
 };
 
 const EMPTY_FORM = {
@@ -79,22 +85,13 @@ const EMPTY_FORM = {
   name: "",
   email: "",
   password: "",
-  role: "AUTHORIZED" as "ADMIN" | "AUTHORIZED" | "SERVICE",
+  role: "AUTHORIZED" as "SUPER_ADMIN" | "ADMIN" | "AUTHORIZED" | "SERVICE",
   active: true,
   segment: "",
   department: "",
 };
 
-const EMPTY_EDIT_FORM = {
-  username: "",
-  name: "",
-  email: "",
-  password: "",
-  role: "AUTHORIZED" as "ADMIN" | "AUTHORIZED" | "SERVICE",
-  active: true,
-  segment: "",
-  department: "",
-};
+// ── Stat card ─────────────────────────────────────────────────────────────────
 
 function StatCard({
   label,
@@ -122,6 +119,90 @@ function StatCard({
   );
 }
 
+// ── Segment + Department fields ───────────────────────────────────────────────
+// Defined at module scope so React never treats it as a new component type on
+// re-render (which would remount inputs and cause letter-by-letter loss).
+
+interface SegmentDeptFieldsProps {
+  segment: string;
+  department: string;
+  departments: Department[]; // pre-fetched by the parent for the current segment
+  loadingDepts: boolean;
+  onSegmentChange: (v: string) => void;
+  onDeptChange: (v: string) => void;
+}
+
+function SegmentDeptFields({
+  segment,
+  department,
+  departments,
+  loadingDepts,
+  onSegmentChange,
+  onDeptChange,
+}: SegmentDeptFieldsProps) {
+  return (
+    <div className="grid grid-cols-2 gap-3">
+      {/* Segment */}
+      <div className="space-y-1.5">
+        <Label className="text-xs font-medium text-slate-600">
+          Segment <span className="text-red-400">*</span>
+        </Label>
+        <DropdownMenu>
+          <DropdownMenuTrigger>
+            <Button
+              variant="outline"
+              className={`w-full justify-between text-sm font-normal ${!segment ? "text-slate-400" : ""}`}
+            >
+              {segment ? SEGMENT_LABELS[segment] : "Select segment"}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="w-full">
+            {SEGMENT_OPTIONS.map((s) => (
+              <DropdownMenuItem key={s} onClick={() => onSegmentChange(s)}>
+                {SEGMENT_LABELS[s]}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
+      {/* Department — select when segment chosen, plain input otherwise */}
+      <div className="space-y-1.5">
+        <Label className="text-xs font-medium text-slate-600">
+          Department{" "}
+          <span className="text-slate-400 font-normal">(optional)</span>
+        </Label>
+        {segment ? (
+          <select
+            value={department}
+            onChange={(e) => onDeptChange(e.target.value)}
+            disabled={loadingDepts}
+            className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm outline-none focus:ring-2 focus:ring-blue-200 disabled:opacity-50"
+          >
+            <option value="">
+              {loadingDepts ? "Loading…" : "All Departments"}
+            </option>
+            {departments.map((d) => (
+              <option key={d.id} value={d.name}>
+                {d.name}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <Input
+            placeholder="e.g. Finance"
+            value={department}
+            onChange={(e) => onDeptChange(e.target.value)}
+            autoComplete="off"
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Page ──────────────────────────────────────────────────────────────────────
+
 export default function AdminUsersPage() {
   const PAGE_SIZE = 8;
   const [users, setUsers] = useState<User[]>([]);
@@ -130,14 +211,62 @@ export default function AdminUsersPage() {
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("All");
   const [statusFilter, setStatusFilter] = useState("All");
+  const [page, setPage] = useState(1);
 
   const [showCreate, setShowCreate] = useState(false);
   const [editUser, setEditUser] = useState<User | null>(null);
   const [deleteUser, setDeleteUser] = useState<User | null>(null);
 
   const [createForm, setCreateForm] = useState({ ...EMPTY_FORM });
-  const [editForm, setEditForm] = useState({ ...EMPTY_EDIT_FORM });
-  const [page, setPage] = useState(1);
+  const [editForm, setEditForm] = useState({ ...EMPTY_FORM });
+
+  // Departments for the segment currently chosen in each dialog
+  const [createDepts, setCreateDepts] = useState<Department[]>([]);
+  const [createDeptsLoading, setCreateDeptsLoading] = useState(false);
+  const [editDepts, setEditDepts] = useState<Department[]>([]);
+  const [editDeptsLoading, setEditDeptsLoading] = useState(false);
+
+  // ── Fetch departments when segment changes (create form) ──
+  useEffect(() => {
+    if (!createForm.segment) {
+      setCreateDepts([]);
+      return;
+    }
+    let cancelled = false;
+    setCreateDeptsLoading(true);
+    adminGetDepartments(createForm.segment as SegmentValue)
+      .then((d) => {
+        if (!cancelled) setCreateDepts(d);
+      })
+      .catch(console.error)
+      .finally(() => {
+        if (!cancelled) setCreateDeptsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [createForm.segment]);
+
+  // ── Fetch departments when segment changes (edit form) ────
+  useEffect(() => {
+    if (!editForm.segment) {
+      setEditDepts([]);
+      return;
+    }
+    let cancelled = false;
+    setEditDeptsLoading(true);
+    adminGetDepartments(editForm.segment as SegmentValue)
+      .then((d) => {
+        if (!cancelled) setEditDepts(d);
+      })
+      .catch(console.error)
+      .finally(() => {
+        if (!cancelled) setEditDeptsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [editForm.segment]);
 
   useEffect(() => {
     fetchUsers();
@@ -183,7 +312,7 @@ export default function AdminUsersPage() {
   const activeCount = users.filter((u) => u.active).length;
   const inactiveCount = users.filter((u) => !u.active).length;
 
-  // ── Create ───────────────────────────────────────────────
+  // ── Create ────────────────────────────────────────────────
   const handleCreate = async () => {
     if (
       !createForm.username.trim() ||
@@ -196,8 +325,12 @@ export default function AdminUsersPage() {
       setSaving(true);
       const res = await fetch(API, {
         method: "POST",
-        headers: authHeaders(),
-        body: JSON.stringify(createForm),
+        headers: { ...authHeaders(), "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...createForm,
+          department: createForm.department.trim() || undefined,
+          segment: createForm.segment || undefined,
+        }),
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
@@ -214,7 +347,7 @@ export default function AdminUsersPage() {
     }
   };
 
-  // ── Open Edit ────────────────────────────────────────────
+  // ── Open Edit ─────────────────────────────────────────────
   const openEdit = (user: User) => {
     setEditUser(user);
     setEditForm({
@@ -229,7 +362,7 @@ export default function AdminUsersPage() {
     });
   };
 
-  // ── Save Edit ────────────────────────────────────────────
+  // ── Save Edit ─────────────────────────────────────────────
   const handleSaveEdit = async () => {
     if (!editUser) return;
     try {
@@ -263,7 +396,7 @@ export default function AdminUsersPage() {
     }
   };
 
-  // ── Delete ───────────────────────────────────────────────
+  // ── Delete ────────────────────────────────────────────────
   const handleDelete = async () => {
     if (!deleteUser) return;
     try {
@@ -274,11 +407,11 @@ export default function AdminUsersPage() {
       await fetchUsers();
       setDeleteUser(null);
     } catch (err) {
-      console.error("Failed to delete user", err);
+      console.error(err);
     }
   };
 
-  // ── Toggle active ────────────────────────────────────────
+  // ── Toggle active ─────────────────────────────────────────
   const toggleActive = async (user: User) => {
     try {
       await fetch(`${API}/${user.id}`, {
@@ -296,7 +429,7 @@ export default function AdminUsersPage() {
       });
       await fetchUsers();
     } catch (err) {
-      console.error("Failed to toggle user status", err);
+      console.error(err);
     }
   };
 
@@ -320,54 +453,11 @@ export default function AdminUsersPage() {
         ? "bg-amber-50 text-amber-800 border-amber-200"
         : "bg-blue-50 text-blue-800 border-blue-200";
 
-  // ── Reusable segment + department fields ─────────────────
-  const SegmentDeptFields = ({
-    segment,
-    department,
-    onSegmentChange,
-    onDeptChange,
-  }: {
-    segment: string;
-    department: string;
-    onSegmentChange: (v: string) => void;
-    onDeptChange: (v: string) => void;
-  }) => (
-    <div className="grid grid-cols-2 gap-3">
-      <div className="space-y-1.5">
-        <Label className="text-xs font-medium text-slate-600">
-          Segment <span className="text-red-400">*</span>
-        </Label>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="outline"
-              className={`w-full justify-between text-sm font-normal ${!segment ? "text-slate-400" : ""}`}
-            >
-              {segment ? SEGMENT_LABELS[segment] : "Select segment"}
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-full">
-            {SEGMENT_OPTIONS.map((s) => (
-              <DropdownMenuItem key={s} onClick={() => onSegmentChange(s)}>
-                {SEGMENT_LABELS[s]}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-      <div className="space-y-1.5">
-        <Label className="text-xs font-medium text-slate-600">
-          Department{" "}
-          <span className="text-slate-400 font-normal">(optional)</span>
-        </Label>
-        <Input
-          placeholder="e.g. Finance"
-          value={department}
-          onChange={(e) => onDeptChange(e.target.value)}
-        />
-      </div>
-    </div>
-  );
+  const ROLE_CONFIG: Record<string, { icon: LucideIcon; label: string }> = {
+    SUPER_ADMIN: { icon: ShieldCheck, label: "SUPER ADMIN" },
+    ADMIN: { icon: ShieldCheck, label: "ADMIN" },
+    SERVICE: { icon: Settings, label: "SERVICE" },
+  };
 
   return (
     <div className="space-y-6 p-6">
@@ -424,6 +514,8 @@ export default function AdminUsersPage() {
             placeholder="Search by name, email or username..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            autoComplete="off"
+            type="search"
           />
         </div>
         <DropdownMenu>
@@ -533,29 +625,27 @@ export default function AdminUsersPage() {
                     <TableCell className="py-3.5 text-sm text-slate-500">
                       @{user.username}
                     </TableCell>
+
                     <TableCell className="py-3.5">
-                      <Badge
-                        variant="outline"
-                        className={`text-[10px] font-medium px-2 ${roleColor(user.role)}`}
-                      >
-                        {user.role === "ADMIN" ? (
-                          <>
-                            <ShieldCheck className="w-2.5 h-2.5 mr-1 inline" />
-                            ADMIN
-                          </>
-                        ) : user.role === "SERVICE" ? (
-                          <>
-                            <Settings className="w-2.5 h-2.5 mr-1 inline" />
-                            SERVICE
-                          </>
-                        ) : (
-                          <>
-                            <ShieldOff className="w-2.5 h-2.5 mr-1 inline" />
-                            AUTHORIZED
-                          </>
-                        )}
-                      </Badge>
+                      {(() => {
+                        const { icon: Icon, label } = ROLE_CONFIG[
+                          user.role
+                        ] ?? {
+                          icon: ShieldOff,
+                          label: "AUTHORIZED",
+                        };
+                        return (
+                          <Badge
+                            variant="outline"
+                            className={`text-[10px] font-medium px-2 ${roleColor(user.role)}`}
+                          >
+                            <Icon className="w-2.5 h-2.5 mr-1 inline" />
+                            {label}
+                          </Badge>
+                        );
+                      })()}
                     </TableCell>
+
                     <TableCell className="py-3.5">
                       {user.segment ? (
                         <div>
@@ -655,6 +745,7 @@ export default function AdminUsersPage() {
                   onChange={(e) =>
                     setCreateForm((p) => ({ ...p, name: e.target.value }))
                   }
+                  autoComplete="off"
                 />
               </div>
               <div className="space-y-1.5">
@@ -667,6 +758,7 @@ export default function AdminUsersPage() {
                   onChange={(e) =>
                     setCreateForm((p) => ({ ...p, username: e.target.value }))
                   }
+                  autoComplete="off"
                 />
               </div>
             </div>
@@ -681,6 +773,7 @@ export default function AdminUsersPage() {
                 onChange={(e) =>
                   setCreateForm((p) => ({ ...p, email: e.target.value }))
                 }
+                autoComplete="off"
               />
             </div>
             <div className="space-y-1.5">
@@ -694,12 +787,13 @@ export default function AdminUsersPage() {
                 onChange={(e) =>
                   setCreateForm((p) => ({ ...p, password: e.target.value }))
                 }
+                autoComplete="new-password"
               />
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs font-medium text-slate-600">Role</Label>
               <DropdownMenu>
-                <DropdownMenuTrigger asChild>
+                <DropdownMenuTrigger>
                   <Button
                     variant="outline"
                     className="w-full justify-between text-sm font-normal"
@@ -721,12 +815,14 @@ export default function AdminUsersPage() {
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
-            {/* ── Segment + Department ── */}
+            {/* Segment + department — department becomes a select once segment is chosen */}
             <SegmentDeptFields
               segment={createForm.segment}
               department={createForm.department}
+              departments={createDepts}
+              loadingDepts={createDeptsLoading}
               onSegmentChange={(v) =>
-                setCreateForm((p) => ({ ...p, segment: v }))
+                setCreateForm((p) => ({ ...p, segment: v, department: "" }))
               }
               onDeptChange={(v) =>
                 setCreateForm((p) => ({ ...p, department: v }))
@@ -801,6 +897,7 @@ export default function AdminUsersPage() {
                   onChange={(e) =>
                     setEditForm((p) => ({ ...p, name: e.target.value }))
                   }
+                  autoComplete="off"
                 />
               </div>
               <div className="space-y-1.5">
@@ -812,6 +909,7 @@ export default function AdminUsersPage() {
                   onChange={(e) =>
                     setEditForm((p) => ({ ...p, username: e.target.value }))
                   }
+                  autoComplete="off"
                 />
               </div>
             </div>
@@ -825,6 +923,7 @@ export default function AdminUsersPage() {
                 onChange={(e) =>
                   setEditForm((p) => ({ ...p, email: e.target.value }))
                 }
+                autoComplete="off"
               />
             </div>
             <div className="space-y-1.5">
@@ -839,12 +938,13 @@ export default function AdminUsersPage() {
                 onChange={(e) =>
                   setEditForm((p) => ({ ...p, password: e.target.value }))
                 }
+                autoComplete="new-password"
               />
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs font-medium text-slate-600">Role</Label>
               <DropdownMenu>
-                <DropdownMenuTrigger asChild>
+                <DropdownMenuTrigger>
                   <Button
                     variant="outline"
                     className="w-full justify-between text-sm font-normal"
@@ -866,12 +966,14 @@ export default function AdminUsersPage() {
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
-            {/* ── Segment + Department ── */}
+            {/* Segment + department — pre-loads existing user's departments on open */}
             <SegmentDeptFields
               segment={editForm.segment}
               department={editForm.department}
+              departments={editDepts}
+              loadingDepts={editDeptsLoading}
               onSegmentChange={(v) =>
-                setEditForm((p) => ({ ...p, segment: v }))
+                setEditForm((p) => ({ ...p, segment: v, department: "" }))
               }
               onDeptChange={(v) =>
                 setEditForm((p) => ({ ...p, department: v }))

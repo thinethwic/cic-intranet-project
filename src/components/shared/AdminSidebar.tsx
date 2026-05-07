@@ -29,16 +29,61 @@ import { getAdminUser, logout } from "@/lib/api/authHeaders"; // ← real user
 import logo from "../../assets/Logo.jpg";
 
 const navItems = [
-  { name: "Dashboard", icon: LayoutDashboard, path: "/admin" },
-  { name: "Documents", icon: FileText, path: "/admin/documents" },
-  { name: "Videos", icon: Video, path: "/admin/videos" },
-  { name: "News", icon: Newspaper, path: "/admin/news" },
-  { name: "Events", icon: Calendar, path: "/admin/events" },
-  { name: "Gallery", icon: Image, path: "/admin/gallery" },
-  { name: "Ticket", icon: Ticket, path: "/admin/ticket" },
-  { name: "Ticket Category", icon: Ticket, path: "/admin/categories" },
-  { name: "Management", icon: BriefcaseBusiness, path: "/admin/management" },
-  { name: "Users", icon: Users, path: "/admin/users" },
+  {
+    name: "Dashboard",
+    icon: LayoutDashboard,
+    path: "/admin",
+    roles: ["SUPER_ADMIN"],
+  },
+  {
+    name: "Documents",
+    icon: FileText,
+    path: "/admin/documents",
+    roles: ["SUPER_ADMIN"],
+  },
+  {
+    name: "Videos",
+    icon: Video,
+    path: "/admin/videos",
+    roles: ["SUPER_ADMIN"],
+  },
+  {
+    name: "News",
+    icon: Newspaper,
+    path: "/admin/news",
+    roles: ["SUPER_ADMIN"],
+  },
+  {
+    name: "Events",
+    icon: Calendar,
+    path: "/admin/events",
+    roles: ["SUPER_ADMIN"],
+  },
+  {
+    name: "Gallery",
+    icon: Image,
+    path: "/admin/gallery",
+    roles: ["SUPER_ADMIN"],
+  },
+  {
+    name: "Ticket",
+    icon: Ticket,
+    path: "/admin/ticket",
+    roles: ["SUPER_ADMIN", "ADMIN"],
+  },
+  {
+    name: "Ticket Category",
+    icon: Ticket,
+    path: "/admin/categories",
+    roles: ["SUPER_ADMIN"],
+  },
+  {
+    name: "Management",
+    icon: BriefcaseBusiness,
+    path: "/admin/management",
+    roles: ["SUPER_ADMIN"],
+  },
+  { name: "Users", icon: Users, path: "/admin/users", roles: ["SUPER_ADMIN"] },
 ];
 
 export default function AdminSidebar() {
@@ -65,6 +110,10 @@ export default function AdminSidebar() {
     logout(); // ✅ same logic, one source of truth
   };
 
+  const role = adminUser?.role ?? "";
+
+  const visibleNavItems = navItems.filter((item) => item.roles.includes(role));
+
   return (
     <Sidebar className="border-r-0 bg-slate-900 text-slate-100">
       <SidebarHeader className="px-5 py-5 border-b border-slate-700/60">
@@ -80,8 +129,9 @@ export default function AdminSidebar() {
             <p className="text-sm font-semibold text-black leading-none">
               CIC Intranet
             </p>
+
             <p className="text-[10px] text-slate-400 mt-0.5 leading-none">
-              Admin Console
+              {role === "SUPER_ADMIN" ? "Super Admin Console" : "Admin Console"}
             </p>
           </div>
         </div>
@@ -94,7 +144,7 @@ export default function AdminSidebar() {
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu className="space-y-0.5">
-              {navItems.map((item) => (
+              {visibleNavItems.map((item) => (
                 <SidebarMenuItem key={item.name}>
                   <SidebarMenuButton
                     isActive={isActive(item.path)}
