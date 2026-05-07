@@ -505,25 +505,28 @@ export default function AdminTicketsPage() {
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
-    return tickets.filter((ticket) => {
-      // ADMIN: always restrict to their segment only
-      if (isAdmin && adminSegment && ticket.segment !== adminSegment)
-        return false;
+    return tickets
+      .filter((ticket) => {
+        if (isAdmin && adminSegment && ticket.segment !== adminSegment)
+          return false;
 
-      return (
-        (ticket.title.toLowerCase().includes(q) ||
-          ticket.ticketNumber.toLowerCase().includes(q) ||
-          ticket.submittedBy.name.toLowerCase().includes(q) ||
-          (ticket.department ?? "").toLowerCase().includes(q)) &&
-        (statusFilter === "All" || ticket.status === statusFilter) &&
-        (categoryFilter === "All" || ticket.category === categoryFilter) &&
-        (priorityFilter === "All" || ticket.priority === priorityFilter) &&
-        // Segment filter only applies to SUPER_ADMIN
-        (!isAdmin
-          ? segmentFilter === "All" || ticket.segment === segmentFilter
-          : true)
-      );
-    });
+        return (
+          (ticket.title.toLowerCase().includes(q) ||
+            ticket.ticketNumber.toLowerCase().includes(q) ||
+            ticket.submittedBy.name.toLowerCase().includes(q) ||
+            (ticket.department ?? "").toLowerCase().includes(q)) &&
+          (statusFilter === "All" || ticket.status === statusFilter) &&
+          (categoryFilter === "All" || ticket.category === categoryFilter) &&
+          (priorityFilter === "All" || ticket.priority === priorityFilter) &&
+          (!isAdmin
+            ? segmentFilter === "All" || ticket.segment === segmentFilter
+            : true)
+        );
+      })
+      .sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      ); // ← newest first
   }, [
     tickets,
     search,
