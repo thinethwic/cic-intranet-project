@@ -47,6 +47,10 @@ import {
   type Department,
   type SegmentValue,
 } from "@/lib/api/departmentApi";
+import {
+  getAdminUsersPage,
+} from "@/lib/api/ticketApi";
+import { getUserFriendlyErrorMessage } from "@/lib/api/apiUtils";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
 const API = `${BASE_URL}/api/v1/users`;
@@ -62,6 +66,8 @@ interface User {
   department?: string;
   createdAt?: string;
 }
+
+const PAGE_SIZE_OPTIONS = [8, 12, 20];
 
 const ROLE_OPTIONS = ["SUPER_ADMIN", "ADMIN", "AUTHORIZED", "SERVICE"];
 const FILTER_ROLES = ["All", "SUPER_ADMIN", "ADMIN", "AUTHORIZED", "SERVICE"];
@@ -204,14 +210,17 @@ function SegmentDeptFields({
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function AdminUsersPage() {
-  const PAGE_SIZE = 8;
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("All");
   const [statusFilter, setStatusFilter] = useState("All");
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(8);
+  const [totalItems, setTotalItems] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
 
   const [showCreate, setShowCreate] = useState(false);
   const [editUser, setEditUser] = useState<User | null>(null);
@@ -269,20 +278,23 @@ export default function AdminUsersPage() {
   }, [editForm.segment]);
 
   useEffect(() => {
-    fetchUsers();
-  }, []);
+    fetchUsers(page, pageSize);
+  }, [page, pageSize]);
 
-  const fetchUsers = async () => {
+  const fetchUsers = async (pageNumber = page, currentPageSize = pageSize) => {
     try {
       setLoading(true);
-      const res = await fetch(`${API}?page=0&size=100`, {
-        headers: authHeaders(),
-      });
-      if (!res.ok) throw new Error("Failed to fetch users");
-      const data = await res.json();
-      setUsers(data.content ?? []);
+      setError("");
+      const data = await getAdminUsersPage(pageNumber - 1, currentPageSize);
+      setUsers((data.content ?? []) as User[]);
+      setTotalItems(data.totalElements ?? 0);
+      setTotalPages(Math.max(1, data.totalPages ?? 1));
     } catch (err) {
       console.error("Failed to fetch users", err);
+      setUsers([]);
+      setTotalItems(0);
+      setTotalPages(1);
+      setError(getUserFriendlyErrorMessage(err, "Unable to load users right now."));
     } finally {
       setLoading(false);
     }
@@ -303,10 +315,7 @@ export default function AdminUsersPage() {
 
   useEffect(() => {
     setPage(1);
-  }, [search, roleFilter, statusFilter, users.length]);
-
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  }, [search, roleFilter, statusFilter, pageSize]);
 
   const adminCount = users.filter((u) => u.role === "ADMIN").length;
   const activeCount = users.filter((u) => u.active).length;
@@ -593,6 +602,15 @@ export default function AdminUsersPage() {
                     Loading users...
                   </TableCell>
                 </TableRow>
+              ) : error ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={7}
+                    className="text-center py-14 text-slate-400 text-sm"
+                  >
+                    {error}
+                  </TableCell>
+                </TableRow>
               ) : filtered.length === 0 ? (
                 <TableRow>
                   <TableCell
@@ -604,7 +622,7 @@ export default function AdminUsersPage() {
                   </TableCell>
                 </TableRow>
               ) : (
-                paginated.map((user) => (
+                filtered.map((user) => (
                   <TableRow
                     key={user.id}
                     className="group border-b border-slate-100 hover:bg-slate-50/70"
@@ -710,10 +728,15 @@ export default function AdminUsersPage() {
       <AdminPagination
         page={page}
         totalPages={totalPages}
-        totalItems={filtered.length}
-        pageSize={PAGE_SIZE}
+        totalItems={totalItems}
+        pageSize={pageSize}
         itemLabel="users"
         onPageChange={setPage}
+        pageSizeOptions={PAGE_SIZE_OPTIONS}
+        onPageSizeChange={(nextSize) => {
+          setPage(1);
+          setPageSize(nextSize);
+        }}
       />
 
       {/* ── Create Dialog ── */}

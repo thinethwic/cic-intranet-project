@@ -8,15 +8,18 @@ import App from "./App";
 import "./index.css";
 import { ScrollToTop } from "./components/ScrollToTop";
 import ScrollToTopButton from "./components/shared/ScrollToTopButton";
+import AppErrorBoundary from "./components/AppErrorBoundary";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <BrowserRouter>
-      <ScrollToTopButton />
-      <ScrollToTop />
-      <TooltipProvider>
-        <App />
-      </TooltipProvider>
-    </BrowserRouter>
+    <AppErrorBoundary>
+      <BrowserRouter>
+        <ScrollToTopButton />
+        <ScrollToTop />
+        <TooltipProvider>
+          <App />
+        </TooltipProvider>
+      </BrowserRouter>
+    </AppErrorBoundary>
   </StrictMode>,
 );

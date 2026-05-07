@@ -2,6 +2,12 @@
 
 import type { News } from "@/types";
 import { apiFetch } from "./apiFetch";
+import {
+    buildApiError,
+    normalizePageResponse,
+    parseJsonSafely,
+    type PageResponse,
+} from "./apiUtils";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
 const API = `${BASE_URL}/api/v1`;
@@ -11,6 +17,16 @@ export const getAllNews = async (page = 0, size = 100): Promise<News[]> => {
     if (!res.ok) throw new Error("Failed to fetch news");
     const data = await res.json();
     return data?.content ?? [];
+};
+
+export const getNewsPage = async (
+    page = 0,
+    size = 8
+): Promise<PageResponse<News>> => {
+    const res = await apiFetch(`${API}/news?page=${page}&size=${size}`);
+    const data = await parseJsonSafely<unknown>(res);
+    if (!res.ok) throw buildApiError(res, data, "Failed to fetch news");
+    return normalizePageResponse<News>(data, page, size);
 };
 
 export const getNewsById = async (id: number): Promise<News> => {

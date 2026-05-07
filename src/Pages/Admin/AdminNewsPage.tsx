@@ -34,13 +34,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  getAllNews,
   createNews,
   updateNews,
   deleteNews,
   updateNewsImage,
+  getNewsPage,
 } from "@/lib/api/newsApi";
 import { getAdminUser } from "@/lib/api/authHeaders";
+import { getUserFriendlyErrorMessage } from "@/lib/api/apiUtils";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -62,6 +63,7 @@ const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
 const CATEGORIES = ["CIC_FEEDS", "CIC_VET_CARE", "CIC_POULTRY", "AISA_VET"];
 const CAT_FILTER = ["All", ...CATEGORIES];
 const HOT_FILTER = ["All news", "Hot only", "Standard only"];
+const PAGE_SIZE_OPTIONS = [8, 12, 24];
 
 const EMPTY_FORM = {
   title: "",
@@ -269,10 +271,10 @@ function NewsForm({
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
 export default function AdminNewsPage() {
-  const PAGE_SIZE = 8;
   const [news, setNews] = useState<News[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
   const [search, setSearch] = useState("");
   const [catFilter, setCatFilter] = useState("All");
   const [hotFilter, setHotFilter] = useState("All news");
@@ -280,6 +282,9 @@ export default function AdminNewsPage() {
   const [editItem, setEditItem] = useState<News | null>(null);
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(8);
+  const [totalItems, setTotalItems] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
 
   const [createForm, setCreateForm] = useState({ ...EMPTY_FORM });
   const [editForm, setEditForm] = useState({ ...EMPTY_FORM });
@@ -292,15 +297,23 @@ export default function AdminNewsPage() {
   const [editImagePreview, setEditImagePreview] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchNews();
-  }, []);
+    fetchNews(page, pageSize);
+  }, [page, pageSize]);
 
-  const fetchNews = async () => {
+  const fetchNews = async (pageNumber = page, currentPageSize = pageSize) => {
     try {
       setLoading(true);
-      setNews(await getAllNews());
+      setError("");
+      const data = await getNewsPage(pageNumber - 1, currentPageSize);
+      setNews((data.content ?? []) as News[]);
+      setTotalItems(data.totalElements ?? 0);
+      setTotalPages(Math.max(1, data.totalPages ?? 1));
     } catch (err) {
       console.error("Failed to fetch news", err);
+      setNews([]);
+      setTotalItems(0);
+      setTotalPages(1);
+      setError(getUserFriendlyErrorMessage(err, "Unable to load news right now."));
     } finally {
       setLoading(false);
     }
@@ -319,10 +332,7 @@ export default function AdminNewsPage() {
 
   useEffect(() => {
     setPage(1);
-  }, [search, catFilter, hotFilter, news.length]);
-
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  }, [search, catFilter, hotFilter, pageSize]);
   const hotCount = news.filter((n) => n.isHot).length;
   const catCount = new Set(news.map((n) => n.category)).size;
 
@@ -493,6 +503,10 @@ export default function AdminNewsPage() {
         <div className="text-center py-20 text-slate-400">
           <p className="text-sm">Loading news...</p>
         </div>
+      ) : error ? (
+        <div className="text-center py-20 text-slate-400">
+          <p className="text-sm">{error}</p>
+        </div>
       ) : filtered.length === 0 ? (
         <div className="text-center py-20 text-slate-400">
           <Search className="w-10 h-10 mx-auto mb-3 opacity-20" />
@@ -500,7 +514,7 @@ export default function AdminNewsPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-          {paginated.map((item) => {
+          {filtered.map((item) => {
             const daysLeft = hotDaysLeft(item.hotSince);
             return (
               <Card
@@ -586,10 +600,15 @@ export default function AdminNewsPage() {
       <AdminPagination
         page={page}
         totalPages={totalPages}
-        totalItems={filtered.length}
-        pageSize={PAGE_SIZE}
+        totalItems={totalItems}
+        pageSize={pageSize}
         itemLabel="articles"
         onPageChange={setPage}
+        pageSizeOptions={PAGE_SIZE_OPTIONS}
+        onPageSizeChange={(nextSize) => {
+          setPage(1);
+          setPageSize(nextSize);
+        }}
       />
 
       {/* ── Create Dialog ── */}

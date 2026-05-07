@@ -52,6 +52,7 @@ import {
   type SegmentValue,
   adminGetDepartmentsPaged,
 } from "@/lib/api/departmentApi";
+import { AdminPagination } from "./admin-components";
 
 // ── Shared config ─────────────────────────────────────────────────────────────
 
@@ -88,6 +89,8 @@ const EMPTY_DEPT_FORM = {
   code: "",
   segment: "" as SegmentValue | "",
 };
+const CATEGORY_PAGE_SIZE = 10;
+const DEPARTMENT_PAGE_SIZE = 10;
 
 // ── Reusable sub-components ───────────────────────────────────────────────────
 
@@ -404,6 +407,7 @@ function CategoriesTab() {
   const [categories, setCategories] = useState<TicketCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [segmentFilter, setSegmentFilter] = useState("ALL");
   const [statusFilter, setStatusFilter] = useState("ALL");
@@ -473,6 +477,19 @@ function CategoriesTab() {
       return matchSearch && matchSegment && matchStatus;
     });
   }, [categories, search, segmentFilter, statusFilter]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [search, segmentFilter, statusFilter, categories.length]);
+
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filtered.length / CATEGORY_PAGE_SIZE),
+  );
+  const paginated = filtered.slice(
+    (page - 1) * CATEGORY_PAGE_SIZE,
+    page * CATEGORY_PAGE_SIZE,
+  );
 
   const stats = [
     {
@@ -673,7 +690,7 @@ function CategoriesTab() {
                   </TableCell>
                 </TableRow>
               ) : (
-                filtered.map((cat) => (
+                paginated.map((cat) => (
                   <TableRow
                     key={cat.id}
                     className="group border-b border-slate-100 hover:bg-slate-50/70"
@@ -739,6 +756,15 @@ function CategoriesTab() {
           Showing {filtered.length} of {categories.length} categories
         </p>
       )}
+
+      <AdminPagination
+        page={page}
+        totalPages={totalPages}
+        totalItems={filtered.length}
+        pageSize={CATEGORY_PAGE_SIZE}
+        itemLabel="categories"
+        onPageChange={setPage}
+      />
 
       {/* Create Dialog */}
       <Dialog
@@ -857,6 +883,7 @@ function DepartmentsTab() {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [segmentFilter, setSegmentFilter] = useState("ALL");
   const [showCreate, setShowCreate] = useState(false);
@@ -893,6 +920,19 @@ function DepartmentsTab() {
       return matchSearch && matchSegment;
     });
   }, [departments, search, segmentFilter]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [search, segmentFilter, departments.length]);
+
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filtered.length / DEPARTMENT_PAGE_SIZE),
+  );
+  const paginated = filtered.slice(
+    (page - 1) * DEPARTMENT_PAGE_SIZE,
+    page * DEPARTMENT_PAGE_SIZE,
+  );
 
   const segmentCounts = useMemo(
     () =>
@@ -1080,7 +1120,7 @@ function DepartmentsTab() {
                   </TableCell>
                 </TableRow>
               ) : (
-                filtered.map((dept) => (
+                paginated.map((dept) => (
                   <TableRow
                     key={dept.id}
                     className="group border-b border-slate-100 hover:bg-slate-50/70"
@@ -1132,6 +1172,15 @@ function DepartmentsTab() {
           Showing {filtered.length} of {departments.length} departments
         </p>
       )}
+
+      <AdminPagination
+        page={page}
+        totalPages={totalPages}
+        totalItems={filtered.length}
+        pageSize={DEPARTMENT_PAGE_SIZE}
+        itemLabel="departments"
+        onPageChange={setPage}
+      />
 
       {/* Create Dialog */}
       <Dialog

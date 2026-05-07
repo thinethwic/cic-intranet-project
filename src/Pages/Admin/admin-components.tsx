@@ -303,6 +303,8 @@ export function AdminPagination({
   pageSize,
   itemLabel = "items",
   onPageChange,
+  pageSizeOptions,
+  onPageSizeChange,
 }: {
   page: number;
   totalPages: number;
@@ -310,6 +312,8 @@ export function AdminPagination({
   pageSize: number;
   itemLabel?: string;
   onPageChange: (page: number) => void;
+  pageSizeOptions?: number[];
+  onPageSizeChange?: (size: number) => void;
 }) {
   if (totalItems === 0) return null;
 
@@ -334,9 +338,27 @@ export function AdminPagination({
 
   return (
     <div className="flex flex-col gap-3 rounded-2xl border border-border/70 bg-card px-4 py-3 shadow-sm sm:flex-row sm:items-center sm:justify-between">
-      <p className="text-xs text-muted-foreground">
-        Showing {start}-{end} of {totalItems} {itemLabel}
-      </p>
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+        <p className="text-xs text-muted-foreground">
+          Showing {start}-{end} of {totalItems} {itemLabel}
+        </p>
+        {pageSizeOptions && onPageSizeChange && pageSizeOptions.length > 1 && (
+          <label className="flex items-center gap-2 text-xs text-muted-foreground">
+            <span>Rows</span>
+            <select
+              value={pageSize}
+              onChange={(event) => onPageSizeChange(Number(event.target.value))}
+              className="h-8 rounded-xl border border-border/70 bg-background px-2 text-xs text-foreground outline-none focus:ring-2 focus:ring-blue-200"
+            >
+              {pageSizeOptions.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+      </div>
 
       <div className="flex items-center gap-1 self-end sm:self-auto">
         <Button

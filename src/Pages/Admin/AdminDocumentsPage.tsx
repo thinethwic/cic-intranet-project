@@ -78,7 +78,7 @@ const CATEGORIES = [
   "LEGAL",
   "GENERAL",
 ];
-const ACCESS_OPTIONS = ["PUBLIC", "PRIVATE", "RESTRICTED"];
+const ACCESS_OPTIONS = ["PUBLIC", "PRIVATE"];
 
 function FilterDropdown({
   options,

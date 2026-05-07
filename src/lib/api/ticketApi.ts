@@ -1,6 +1,12 @@
 import type { Ticket, TicketStatus, TicketPriority } from "@/types";
 import { apiFetch } from "./apiFetch";
 import { authHeaders, getAdminUser } from "./authHeaders";
+import {
+    buildApiError,
+    normalizePageResponse,
+    parseJsonSafely,
+    type PageResponse,
+} from "./apiUtils";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
 
@@ -51,13 +57,25 @@ export interface AdminUser {
 }
 
 export const getAdminUsers = async (): Promise<AdminUser[]> => {
-    const res = await fetch(`${BASE_URL}/api/v1/users?page=0&size=100`, {
+    const res = await apiFetch(`${BASE_URL}/api/v1/users?page=0&size=100`, {
         headers: authHeaders(),
     });
     if (!res.ok) throw new Error("Failed to fetch admin users");
     const data = await res.json();
     // Only return active users so you don't assign to inactive accounts
     return (data.content ?? []).filter((u: AdminUser) => u.active);
+};
+
+export const getAdminUsersPage = async (
+    page = 0,
+    size = 8
+): Promise<PageResponse<AdminUser>> => {
+    const res = await apiFetch(`${BASE_URL}/api/v1/users?page=${page}&size=${size}`, {
+        headers: authHeaders(),
+    });
+    const data = await parseJsonSafely<unknown>(res);
+    if (!res.ok) throw buildApiError(res, data, "Failed to fetch users");
+    return normalizePageResponse<AdminUser>(data, page, size);
 };
 
 // ─── Employee endpoints ───────────────────────────────────────────────────────
@@ -140,10 +158,27 @@ export const getAllTickets = async (): Promise<Ticket[]> => {
         ? `${BASE_URL}/api/admin/tickets/my-segment?page=0&size=100`
         : `${BASE_URL}/api/admin/tickets?page=0&size=100`;
 
-    const res = await fetch(url, { headers: authHeaders() });
+    const res = await apiFetch(url, { headers: authHeaders() });
     if (!res.ok) throw new Error("Failed to fetch tickets");
     const data = await res.json();
     return data.content ?? [];
+};
+
+export const getTicketsPage = async (
+    page = 0,
+    size = 10
+): Promise<PageResponse<Ticket>> => {
+    const user = getAdminUser();
+    const isAdmin = user?.role === "ADMIN";
+
+    const url = isAdmin
+        ? `${BASE_URL}/api/admin/tickets/my-segment?page=${page}&size=${size}`
+        : `${BASE_URL}/api/admin/tickets?page=${page}&size=${size}`;
+
+    const res = await apiFetch(url, { headers: authHeaders() });
+    const data = await parseJsonSafely<unknown>(res);
+    if (!res.ok) throw buildApiError(res, data, "Failed to fetch tickets");
+    return normalizePageResponse<Ticket>(data, page, size);
 };
 
 export const getTicketsByStatus = async (
@@ -274,7 +309,7 @@ export async function getCategories(
     const params = new URLSearchParams({ segment });
     if (department) params.set("department", department);
 
-    const res = await fetch(
+    const res = await apiFetch(
         `${BASE_URL}/api/v1/public/ticket-categories?${params}`,
         { headers: authHeaders() }
     );
@@ -284,7 +319,7 @@ export async function getCategories(
 
 // For admin — all categories
 export async function adminGetCategories(): Promise<TicketCategory[]> {
-    const res = await fetch(`${BASE_URL}/api/v1/admin/ticket-categories`, {
+    const res = await apiFetch(`${BASE_URL}/api/v1/admin/ticket-categories`, {
         headers: authHeaders(),
     });
     if (!res.ok) throw new Error("Failed to fetch categories");
@@ -294,9 +329,9 @@ export async function adminGetCategories(): Promise<TicketCategory[]> {
 export async function adminCreateCategory(
     data: Omit<TicketCategory, "id" | "active">
 ): Promise<TicketCategory> {
-    const res = await fetch(`${BASE_URL}/api/v1/admin/ticket-categories`, {
+    const res = await apiFetch(`${BASE_URL}/api/v1/admin/ticket-categories`, {
         method: "POST",
-        headers: authHeaders(),
+        headers: { ...authHeaders(), "Content-Type": "application/json" },
         body: JSON.stringify(data),
     });
     if (!res.ok) throw new Error("Failed to create category");
@@ -307,9 +342,9 @@ export async function adminUpdateCategory(
     id: number,
     data: Partial<TicketCategory>
 ): Promise<TicketCategory> {
-    const res = await fetch(`${BASE_URL}/api/v1/admin/ticket-categories/${id}`, {
+    const res = await apiFetch(`${BASE_URL}/api/v1/admin/ticket-categories/${id}`, {
         method: "PUT",
-        headers: authHeaders(),
+        headers: { ...authHeaders(), "Content-Type": "application/json" },
         body: JSON.stringify(data),
     });
     if (!res.ok) throw new Error("Failed to update category");
@@ -317,7 +352,7 @@ export async function adminUpdateCategory(
 }
 
 export async function adminDeleteCategory(id: number): Promise<void> {
-    const res = await fetch(`${BASE_URL}/api/v1/admin/ticket-categories/${id}`, {
+    const res = await apiFetch(`${BASE_URL}/api/v1/admin/ticket-categories/${id}`, {
         method: "DELETE",
         headers: authHeaders(),
     });
