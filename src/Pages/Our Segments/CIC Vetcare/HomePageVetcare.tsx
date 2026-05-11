@@ -118,7 +118,11 @@ export default function HomePageAsiavet() {
       const data = await loginAuthorized(username, password);
 
       // ✅ Only AUTHORIZED or ADMIN role can access private docs
-      if (data.role !== "AUTHORIZED" && data.role !== "ADMIN") {
+      if (
+        data.role !== "AUTHORIZED" &&
+        data.role !== "ADMIN" &&
+        data.role !== "SUPER_ADMIN"
+      ) {
         setAuthError("You are not authorized to access private documents");
         return;
       }

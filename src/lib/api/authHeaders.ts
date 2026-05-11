@@ -28,5 +28,5 @@ export const getAdminUser = (): {
 export const logout = () => {
   localStorage.removeItem("admin_token");
   localStorage.removeItem("admin_user");
-  window.location.replace("/admin/login");
+  window.location.replace("/");
 };
