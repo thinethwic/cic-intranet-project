@@ -54,13 +54,13 @@ export default function HotNewsCard({
         )}
 
         <h3
-          className="mb-2.5 line-clamp-2 text-[17px] font-bold leading-snug text-blue-900"
+          className="mb-2.5 line-clamp-2 text-[17px] font-bold  text-blue-900"
           onClick={handleClick}
         >
           {title}
         </h3>
 
-        <p className="mb-4 flex-1 line-clamp-3 text-sm leading-relaxed text-slate-500">
+        <p className="mb-4 flex-1 line-clamp-3 text-sm  text-slate-500">
           {description}
         </p>
 
@@ -71,7 +71,7 @@ export default function HotNewsCard({
         <div className="flex items-center justify-between">
           <button
             onClick={handleClick}
-            className="rounded text-[11px] font-medium uppercase tracking-widest bg-blue-900 text-[#ffffff] px-4 py-2 transition-colors hover:bg-[#0C447C]"
+            className="rounded text-[11px] font-medium uppercase bg-blue-900 text-[#ffffff] px-4 py-2 transition-colors hover:bg-[#0C447C]"
           >
             Learn More
           </button>

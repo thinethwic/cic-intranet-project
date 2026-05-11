@@ -291,6 +291,7 @@ function HomePage() {
           <WelcomeCarousel people={welcomePeople} />
         )}
       </section>
+
       <section className="max-w-7xl mx-auto px-2 py-4">
         <h2 className="text-4xl font-bold text-blue-900 mb-6">Birthdays</h2>
 

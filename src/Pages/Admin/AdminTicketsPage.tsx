@@ -15,7 +15,6 @@ import {
   Send,
   ShieldCheck,
   TicketIcon,
-  Trash2,
   UserCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -50,12 +49,12 @@ import {
 import type { Ticket, TicketPriority, TicketStatus } from "@/types";
 import {
   adminAddComment,
-  adminDeleteTicket,
   adminGetComments,
   adminUpdateTicket,
   getAllTickets,
   getAdminUsers,
   type Comment,
+  getCategories,
 } from "@/lib/api/ticketApi";
 import type { AdminUser } from "@/lib/api/ticketApi";
 import { getAdminUser } from "@/lib/api/authHeaders";
@@ -86,8 +85,8 @@ const STATUS_CONFIG: Record<
     className: "bg-emerald-50 text-emerald-700 border-emerald-200",
     pill: "bg-emerald-600 text-white border-emerald-600",
   },
-  CLOSED: {
-    label: "Closed",
+  UNRESOLVED: {
+    label: "Unresolved",
     icon: AlertCircle,
     className: "bg-slate-100 text-slate-600 border-slate-200",
     pill: "bg-slate-500 text-white border-slate-500",
@@ -131,16 +130,8 @@ const STATUS_OPTIONS: TicketStatus[] = [
   "OPEN",
   "IN_PROGRESS",
   "RESOLVED",
-  "CLOSED",
+  "UNRESOLVED",
 ];
-
-const CATEGORY_ICONS: Record<string, string> = {
-  IT: "IT",
-  HR: "HR",
-  FINANCE: "FN",
-  FACILITIES: "FC",
-  OTHER: "OT",
-};
 
 const EMPTY_EDIT_FORM = {
   title: "",
@@ -250,6 +241,8 @@ const fmtDate = (value: string) =>
     day: "numeric",
     month: "short",
     year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
   });
 
 const fmtDateTime = (value: string) =>
@@ -275,7 +268,6 @@ export default function AdminTicketsPage() {
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
-  const [categoryFilter, setCategoryFilter] = useState("All");
   const [priorityFilter, setPriorityFilter] = useState("All");
   const [segmentFilter, setSegmentFilter] = useState("All");
 
@@ -286,11 +278,54 @@ export default function AdminTicketsPage() {
 
   const [editTicket, setEditTicket] = useState<Ticket | null>(null);
   const [editForm, setEditForm] = useState({ ...EMPTY_EDIT_FORM });
-  const [deleteTicket, setDeleteTicket] = useState<Ticket | null>(null);
+  const [editCategories, setEditCategories] = useState<string[]>([]);
 
   const [comment, setComment] = useState("");
   const [sendingComment, setSendingComment] = useState(false);
-  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [highlightedTicketId, setHighlightedTicketId] = useState<number | null>(
+    null,
+  );
+  const [notifications, setNotifications] = useState<NotificationItem[]>(() => {
+    try {
+      const stored = localStorage.getItem("helpdesk_notifications");
+      if (!stored) return [];
+      const parsed: NotificationItem[] = JSON.parse(stored);
+      // ✅ 5 minutes filter — purana notifications remove karanna
+      const fiveMinutesAgo = Date.now() - 5 * 60 * 1000;
+      return parsed.filter(
+        (n) => new Date(n.createdAt).getTime() > fiveMinutesAgo,
+      );
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        "helpdesk_notifications",
+        JSON.stringify(notifications),
+      );
+    } catch {
+      // silent
+    }
+  }, [notifications]);
+
+  const getConversationOwnerId = (entries: Comment[]): number | null => {
+    if (entries.length === 0) return null;
+    const first = entries[0];
+    // Only lock if the first commenter is an admin/super_admin role
+    const role = first.commentedBy.role;
+    if (role === "ADMIN" || role === "SUPER_ADMIN") {
+      return first.commentedBy.id;
+    }
+    return null; // first message is from employee — conversation is open
+  };
+
+  const conversationOwnerId = getConversationOwnerId(comments);
+  const isConversationLocked =
+    conversationOwnerId !== null &&
+    String(conversationOwnerId) !== String(activeUserId);
 
   const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
   const [page, setPage] = useState(1);
@@ -301,9 +336,10 @@ export default function AdminTicketsPage() {
   const commentsContainerRef = useRef<HTMLDivElement>(null);
   const shouldScrollRef = useRef(false);
   const selectedTicketRef = useRef<Ticket | null>(null);
-  const lastUpdatedAtRef = useRef<Record<number, string>>({});
+  const knownTicketIdsRef = useRef<Set<number>>(new Set());
   const latestCommentIdRef = useRef<Record<number, number | null>>({});
   const isSeededRef = useRef(false);
+  const highlightedRowRef = useRef<HTMLTableRowElement>(null);
 
   const [pageAlert, setPageAlert] = useState<{
     ticketNumber: string;
@@ -360,56 +396,40 @@ export default function AdminTicketsPage() {
   useEffect(() => {
     const interval = setInterval(async () => {
       if (!isSeededRef.current) return;
+
       try {
         const fresh = await getAllTickets();
+        setTickets(fresh);
+
         for (const ticket of fresh) {
-          const lastSeen = lastUpdatedAtRef.current[ticket.id];
-          if (lastSeen === undefined) {
-            lastUpdatedAtRef.current[ticket.id] = ticket.updatedAt;
-          } else if (lastSeen !== ticket.updatedAt) {
-            if (selectedTicketRef.current?.id === ticket.id) {
-              lastUpdatedAtRef.current[ticket.id] = ticket.updatedAt;
-              continue;
-            }
+          if (!knownTicketIdsRef.current.has(ticket.id)) {
+            knownTicketIdsRef.current.add(ticket.id);
 
-            const commentData = await adminGetComments(ticket.id);
-            const latestComment = getLatestCommentSnapshot(commentData);
-            const previousCommentId =
-              latestCommentIdRef.current[ticket.id] ?? null;
+            appendNotification({
+              id: `ticket-new-${ticket.id}`,
+              ticketId: ticket.id,
+              ticketNumber: ticket.ticketNumber,
+              title: ticket.title,
+              description: `New ticket submitted by ${ticket.submittedBy.name}${
+                ticket.department ? ` · ${ticket.department}` : ""
+              }`,
+              createdAt: ticket.createdAt,
+            });
 
-            if (latestComment) {
-              latestCommentIdRef.current[ticket.id] = latestComment.id;
-            }
-
-            if (
-              latestComment &&
-              latestComment.id !== previousCommentId &&
-              latestComment.authorId !== activeUserId
-            ) {
-              appendNotification({
-                id: `ticket-${ticket.id}-comment-${latestComment.id}`,
-                ticketId: ticket.id,
-                ticketNumber: ticket.ticketNumber,
-                title: ticket.title,
-                description: "New message received on this ticket.",
-                createdAt: ticket.updatedAt,
-              });
-              setPageAlert({
-                ticketNumber: ticket.ticketNumber,
-                title: ticket.title,
-              });
-            }
-
-            lastUpdatedAtRef.current[ticket.id] = ticket.updatedAt;
+            setPageAlert({
+              ticketNumber: ticket.ticketNumber,
+              title: ticket.title,
+            });
           }
         }
-        setTickets(fresh);
       } catch {
         // silent
       }
     }, 10000);
+
     return () => clearInterval(interval);
-  }, [activeUserId]);
+  }, []);
+
   // ── Data fetchers ─────────────────────────────────────────────────────────
 
   const fetchTickets = async () => {
@@ -418,9 +438,21 @@ export default function AdminTicketsPage() {
       setError("");
       const data = await getAllTickets();
       setTickets(data);
-      data.forEach((t) => {
-        lastUpdatedAtRef.current[t.id] = t.updatedAt;
-      });
+      knownTicketIdsRef.current = new Set(data.map((t) => t.id));
+      isSeededRef.current = true; // this line already exists
+
+      await Promise.all(
+        data.map(async (t) => {
+          try {
+            const commentData = await adminGetComments(t.id);
+            const snapshot = getLatestCommentSnapshot(commentData);
+            latestCommentIdRef.current[t.id] = snapshot?.id ?? null;
+          } catch {
+            latestCommentIdRef.current[t.id] = null;
+          }
+        }),
+      );
+
       isSeededRef.current = true;
     } catch (err) {
       console.error("Failed to fetch tickets", err);
@@ -516,7 +548,6 @@ export default function AdminTicketsPage() {
             ticket.submittedBy.name.toLowerCase().includes(q) ||
             (ticket.department ?? "").toLowerCase().includes(q)) &&
           (statusFilter === "All" || ticket.status === statusFilter) &&
-          (categoryFilter === "All" || ticket.category === categoryFilter) &&
           (priorityFilter === "All" || ticket.priority === priorityFilter) &&
           (!isAdmin
             ? segmentFilter === "All" || ticket.segment === segmentFilter
@@ -531,7 +562,6 @@ export default function AdminTicketsPage() {
     tickets,
     search,
     statusFilter,
-    categoryFilter,
     priorityFilter,
     segmentFilter,
     isAdmin,
@@ -540,14 +570,7 @@ export default function AdminTicketsPage() {
 
   useEffect(() => {
     setPage(1);
-  }, [
-    search,
-    statusFilter,
-    categoryFilter,
-    priorityFilter,
-    segmentFilter,
-    pageSize,
-  ]);
+  }, [search, statusFilter, priorityFilter, segmentFilter, pageSize]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const paginatedTickets = filtered.slice(
@@ -598,11 +621,6 @@ export default function AdminTicketsPage() {
     setComment("");
     setPageAlert(null);
     setNewMessageAlert(false);
-    setNotifications((prev) =>
-      prev.map((item) =>
-        item.ticketId === ticket.id ? { ...item, unread: false } : item,
-      ),
-    );
     shouldScrollRef.current = true;
     fetchComments(ticket.id, true);
   };
@@ -615,6 +633,7 @@ export default function AdminTicketsPage() {
   };
 
   const openEdit = (ticket: Ticket) => {
+    if (ticket.status === "RESOLVED" || ticket.status === "UNRESOLVED") return;
     setEditTicket(ticket);
     setEditForm({
       title: ticket.title,
@@ -625,8 +644,12 @@ export default function AdminTicketsPage() {
       department: ticket.department ?? "",
       assignedToId: ticket.assignedTo?.id ?? null,
     });
-  };
 
+    setEditCategories([]); // reset while loading
+    getCategories(ticket.segment, ticket.department ?? undefined)
+      .then((data) => setEditCategories(data.map((c) => c.name)))
+      .catch(() => setEditCategories(CATEGORY_OPTIONS));
+  };
   const handleSaveEdit = async () => {
     if (!editTicket || !editForm.title.trim() || !editForm.description.trim())
       return;
@@ -640,21 +663,6 @@ export default function AdminTicketsPage() {
       setEditTicket(null);
     } catch (err) {
       console.error("Failed to update ticket", err);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleDelete = async () => {
-    if (!deleteTicket) return;
-    try {
-      setSaving(true);
-      await adminDeleteTicket(deleteTicket.id);
-      setTickets((prev) => prev.filter((t) => t.id !== deleteTicket.id));
-      if (selectedTicket?.id === deleteTicket.id) closeDetails();
-      setDeleteTicket(null);
-    } catch (err) {
-      console.error("Failed to delete ticket", err);
     } finally {
       setSaving(false);
     }
@@ -795,10 +803,23 @@ export default function AdminTicketsPage() {
                     type="button"
                     onClick={() => {
                       markNotificationRead(notification.id);
-                      const ticket = tickets.find(
-                        (item) => item.id === notification.ticketId,
-                      );
-                      if (ticket) openDetails(ticket);
+                      if (notification.id.startsWith("ticket-new-")) {
+                        // New ticket — highlight the row, don't open dialog
+                        setHighlightedTicketId(notification.ticketId);
+                        setTimeout(() => {
+                          highlightedRowRef.current?.scrollIntoView({
+                            behavior: "smooth",
+                            block: "center",
+                          });
+                        }, 100);
+                        setTimeout(() => setHighlightedTicketId(null), 3000);
+                      } else {
+                        // Comment notification — open dialog as before
+                        const ticket = tickets.find(
+                          (item) => item.id === notification.ticketId,
+                        );
+                        if (ticket) openDetails(ticket);
+                      }
                     }}
                     className="flex w-full items-start gap-3 border-b border-slate-100 px-4 py-3 text-left hover:bg-slate-50"
                   >
@@ -847,7 +868,16 @@ export default function AdminTicketsPage() {
                   const ticket = tickets.find(
                     (t) => t.ticketNumber === pageAlert.ticketNumber,
                   );
-                  if (ticket) openDetails(ticket);
+                  if (ticket) {
+                    setHighlightedTicketId(ticket.id);
+                    setTimeout(() => {
+                      highlightedRowRef.current?.scrollIntoView({
+                        behavior: "smooth",
+                        block: "center",
+                      });
+                    }, 100);
+                    setTimeout(() => setHighlightedTicketId(null), 3000);
+                  }
                   setPageAlert(null);
                 }}
                 className="text-xs font-medium text-blue-700 underline hover:text-blue-900"
@@ -887,11 +917,6 @@ export default function AdminTicketsPage() {
           options={["All", ...STATUS_OPTIONS]}
           value={statusFilter}
           onChange={setStatusFilter}
-        />
-        <FilterDropdown
-          options={["All", ...CATEGORY_OPTIONS]}
-          value={categoryFilter}
-          onChange={setCategoryFilter}
         />
         <FilterDropdown
           options={["All", ...PRIORITY_OPTIONS]}
@@ -1014,7 +1039,16 @@ export default function AdminTicketsPage() {
                   return (
                     <TableRow
                       key={ticket.id}
-                      className="group border-b border-slate-100 hover:bg-slate-50/70"
+                      ref={
+                        ticket.id === highlightedTicketId
+                          ? highlightedRowRef
+                          : null
+                      }
+                      className={`group border-b border-slate-100 transition-colors duration-300 hover:bg-slate-50/70 ${
+                        ticket.id === highlightedTicketId
+                          ? "bg-blue-50 outline outline-2 outline-blue-300"
+                          : ""
+                      }`}
                     >
                       <TableCell className="pl-5 py-3.5">
                         <div className="min-w-0">
@@ -1050,9 +1084,6 @@ export default function AdminTicketsPage() {
                       </TableCell>
                       <TableCell className="py-3.5">
                         <span className="inline-flex items-center gap-2 text-xs text-slate-600">
-                          <span className="flex h-6 w-6 items-center justify-center rounded-md bg-slate-100 text-[10px] font-semibold text-slate-500">
-                            {CATEGORY_ICONS[ticket.category]}
-                          </span>
                           {ticket.category}
                         </span>
                       </TableCell>
@@ -1105,20 +1136,20 @@ export default function AdminTicketsPage() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-7 w-7 hover:bg-amber-50 hover:text-amber-600"
+                            className="h-7 w-7 hover:bg-amber-50 hover:text-amber-600 disabled:opacity-30 disabled:cursor-not-allowed"
                             onClick={() => openEdit(ticket)}
-                            title="Edit ticket"
+                            title={
+                              ticket.status === "RESOLVED" ||
+                              ticket.status === "UNRESOLVED"
+                                ? "Cannot edit a resolved or unresolved ticket"
+                                : "Edit ticket"
+                            }
+                            disabled={
+                              ticket.status === "RESOLVED" ||
+                              ticket.status === "UNRESOLVED"
+                            }
                           >
                             <Edit3 className="h-3.5 w-3.5" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7 hover:bg-red-50 hover:text-red-600"
-                            onClick={() => setDeleteTicket(ticket)}
-                            title="Delete ticket"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
                           </Button>
                         </div>
                       </TableCell>
@@ -1166,6 +1197,10 @@ export default function AdminTicketsPage() {
               const seg = selectedTicket.segment
                 ? SEGMENT_CONFIG[selectedTicket.segment]
                 : null;
+
+              const isTicketClosed =
+                selectedTicket.status === "RESOLVED" ||
+                selectedTicket.status === "UNRESOLVED";
               return (
                 <>
                   <DialogHeader className="shrink-0 border-b border-slate-100 px-6 py-4">
@@ -1260,11 +1295,13 @@ export default function AdminTicketsPage() {
                               onClick={() =>
                                 handleStatusUpdate(selectedTicket.id, value)
                               }
-                              disabled={active}
+                              disabled={active || isTicketClosed}
                               className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-all disabled:cursor-not-allowed ${
                                 active
                                   ? config.pill
-                                  : "border-slate-200 bg-white text-slate-500 hover:border-blue-300 hover:text-blue-600"
+                                  : isTicketClosed
+                                    ? "border-slate-100 bg-slate-50 text-slate-300 cursor-not-allowed"
+                                    : "border-slate-200 bg-white text-slate-500 hover:border-blue-300 hover:text-blue-600"
                               }`}
                             >
                               {value === "IN_PROGRESS" ? "In Progress" : value}
@@ -1280,107 +1317,140 @@ export default function AdminTicketsPage() {
                           <Label className="text-xs font-semibold uppercase tracking-wide text-slate-400">
                             Conversation
                           </Label>
-                          <span className="flex items-center gap-1.5 text-xs text-emerald-500 font-medium">
-                            <span className="relative flex h-2 w-2">
-                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                              <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+                          {!isConversationLocked && (
+                            <span className="flex items-center gap-1.5 text-xs text-emerald-500 font-medium">
+                              <span className="relative flex h-2 w-2">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                                <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+                              </span>
+                              Live
                             </span>
-                            Live
-                          </span>
+                          )}
                         </div>
-                        <span className="text-xs text-slate-400">
-                          {comments.length} comment
-                          {comments.length === 1 ? "" : "s"}
-                        </span>
+                        {!isConversationLocked && (
+                          <span className="text-xs text-slate-400">
+                            {comments.length} comment
+                            {comments.length === 1 ? "" : "s"}
+                          </span>
+                        )}
                       </div>
 
-                      {newMessageAlert && (
-                        <Alert className="border-blue-200 bg-blue-50">
-                          <Bell className="h-4 w-4 text-blue-600" />
-                          <AlertDescription className="flex items-center justify-between">
-                            <span className="text-sm font-medium text-blue-800">
-                              New reply received
-                            </span>
-                            <button
-                              onClick={() => setNewMessageAlert(false)}
-                              className="ml-4 text-xs text-blue-500 underline hover:text-blue-700"
-                            >
-                              Dismiss
-                            </button>
-                          </AlertDescription>
-                        </Alert>
-                      )}
-
-                      {commentsLoading ? (
-                        <div className="rounded-2xl border border-slate-200 bg-white px-4 py-10 text-center text-sm text-slate-400">
-                          Loading comments...
-                        </div>
-                      ) : comments.length === 0 ? (
-                        <div className="rounded-2xl border border-dashed border-slate-200 bg-white px-4 py-10 text-center text-sm text-slate-400">
-                          No comments yet
+                      {isConversationLocked ? (
+                        <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-10 text-center">
+                          <ShieldCheck className="mx-auto mb-2 h-8 w-8 text-slate-300" />
+                          <p className="text-sm font-medium text-slate-500">
+                            Conversation locked
+                          </p>
+                          <p className="mt-1 text-xs text-slate-400">
+                            This conversation was started by another admin and
+                            is private.
+                          </p>
                         </div>
                       ) : (
-                        <div className="space-y-3">
-                          {comments.map((entry) => {
-                            const appearance = getCommentAppearance(entry);
-                            return (
-                              <div
-                                key={entry.id}
-                                className={`flex ${appearance.align}`}
-                              >
-                                <div
-                                  className={`max-w-[85%] rounded-[20px] border px-4 py-3 text-sm shadow-sm ${appearance.bubble}`}
+                        <>
+                          {newMessageAlert && (
+                            <Alert className="border-blue-200 bg-blue-50">
+                              <Bell className="h-4 w-4 text-blue-600" />
+                              <AlertDescription className="flex items-center justify-between">
+                                <span className="text-sm font-medium text-blue-800">
+                                  New reply received
+                                </span>
+                                <button
+                                  onClick={() => setNewMessageAlert(false)}
+                                  className="ml-4 text-xs text-blue-500 underline hover:text-blue-700"
                                 >
-                                  <div className="mb-1.5 flex items-center gap-2">
-                                    <span
-                                      className={`text-xs font-semibold ${appearance.name}`}
+                                  Dismiss
+                                </button>
+                              </AlertDescription>
+                            </Alert>
+                          )}
+
+                          {commentsLoading ? (
+                            <div className="rounded-2xl border border-slate-200 bg-white px-4 py-10 text-center text-sm text-slate-400">
+                              Loading comments...
+                            </div>
+                          ) : comments.length === 0 ? (
+                            <div className="rounded-2xl border border-dashed border-slate-200 bg-white px-4 py-10 text-center text-sm text-slate-400">
+                              No comments yet
+                            </div>
+                          ) : (
+                            <div className="space-y-3">
+                              {comments.map((entry) => {
+                                const appearance = getCommentAppearance(entry);
+                                return (
+                                  <div
+                                    key={entry.id}
+                                    className={`flex ${appearance.align}`}
+                                  >
+                                    <div
+                                      className={`max-w-[85%] rounded-[20px] border px-4 py-3 text-sm shadow-sm ${appearance.bubble}`}
                                     >
-                                      {entry.commentedBy.name}
-                                    </span>
-                                    <span
-                                      className={`rounded-full px-2 py-0.5 text-[10px] ${appearance.badge}`}
-                                    >
-                                      {appearance.badgeLabel}
-                                    </span>
-                                    <span className="ml-auto inline-flex items-center gap-1 text-[11px] text-slate-400">
-                                      <Clock3 className="h-3 w-3" />
-                                      {fmtDateTime(entry.createdAt)}
-                                    </span>
+                                      <div className="mb-1.5 flex items-center gap-2">
+                                        <span
+                                          className={`text-xs font-semibold ${appearance.name}`}
+                                        >
+                                          {entry.commentedBy.name}
+                                        </span>
+                                        <span
+                                          className={`rounded-full px-2 py-0.5 text-[10px] ${appearance.badge}`}
+                                        >
+                                          {appearance.badgeLabel}
+                                        </span>
+                                        <span className="ml-auto inline-flex items-center gap-1 text-[11px] text-slate-400">
+                                          <Clock3 className="h-3 w-3" />
+                                          {fmtDateTime(entry.createdAt)}
+                                        </span>
+                                      </div>
+                                      <p className="whitespace-pre-wrap break-words leading-relaxed text-current">
+                                        {entry.message}
+                                      </p>
+                                    </div>
                                   </div>
-                                  <p className="whitespace-pre-wrap break-words leading-relaxed text-current">
-                                    {entry.message}
-                                  </p>
-                                </div>
-                              </div>
-                            );
-                          })}
-                          <div ref={commentsEndRef} />
-                        </div>
+                                );
+                              })}
+                              <div ref={commentsEndRef} />
+                            </div>
+                          )}
+                        </>
                       )}
                     </div>
                   </div>
 
-                  <div className="shrink-0 border-t border-slate-100 px-6 py-4">
-                    <div className="flex gap-2">
-                      <Input
-                        placeholder="Reply to this ticket..."
-                        value={comment}
-                        onChange={(e) => setComment(e.target.value)}
-                        onKeyDown={(e) =>
-                          e.key === "Enter" && !e.shiftKey && handleAddComment()
-                        }
-                        className="rounded-2xl"
-                      />
-                      <Button
-                        onClick={handleAddComment}
-                        disabled={!comment.trim() || sendingComment}
-                        className="shrink-0 gap-1.5 rounded-2xl bg-blue-600 text-white hover:bg-blue-700"
-                      >
-                        <Send className="h-3.5 w-3.5" />
-                        {sendingComment ? "Sending..." : "Send"}
-                      </Button>
+                  {!isConversationLocked && (
+                    <div className="shrink-0 border-t border-slate-100 px-6 py-4">
+                      {isTicketClosed ? (
+                        <div className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                          <ShieldCheck className="h-4 w-4 shrink-0 text-slate-300" />
+                          <p className="text-sm text-slate-400">
+                            This ticket is {selectedTicket.status.toLowerCase()}{" "}
+                            and no longer accepts replies.
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="flex gap-2">
+                          <Input
+                            placeholder="Reply to this ticket..."
+                            value={comment}
+                            onChange={(e) => setComment(e.target.value)}
+                            onKeyDown={(e) =>
+                              e.key === "Enter" &&
+                              !e.shiftKey &&
+                              handleAddComment()
+                            }
+                            className="rounded-2xl"
+                          />
+                          <Button
+                            onClick={handleAddComment}
+                            disabled={!comment.trim() || sendingComment}
+                            className="shrink-0 gap-1.5 rounded-2xl bg-blue-600 text-white hover:bg-blue-700"
+                          >
+                            <Send className="h-3.5 w-3.5" />
+                            {sendingComment ? "Sending..." : "Send"}
+                          </Button>
+                        </div>
+                      )}
                     </div>
-                  </div>
+                  )}
                 </>
               );
             })()}
@@ -1455,7 +1525,11 @@ export default function AdminTicketsPage() {
                   Category
                 </Label>
                 <FilterDropdown
-                  options={CATEGORY_OPTIONS}
+                  options={
+                    editCategories.length > 0
+                      ? editCategories
+                      : CATEGORY_OPTIONS
+                  }
                   value={editForm.category}
                   onChange={(value) =>
                     setEditForm((prev) => ({ ...prev, category: value }))
@@ -1544,38 +1618,6 @@ export default function AdminTicketsPage() {
               className="bg-blue-600 text-white hover:bg-blue-700"
             >
               {saving ? "Saving..." : "Save changes"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* ── Delete Confirm Dialog ── */}
-      <Dialog
-        open={!!deleteTicket}
-        onOpenChange={(open) => {
-          if (!open) setDeleteTicket(null);
-        }}
-      >
-        <DialogContent className="sm:max-w-sm">
-          <DialogHeader>
-            <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-red-50">
-              <Trash2 className="h-5 w-5 text-red-600" />
-            </div>
-            <DialogTitle>Delete ticket?</DialogTitle>
-            <DialogDescription>
-              "{deleteTicket?.title}" will be permanently removed.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteTicket(null)}>
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={handleDelete}
-              disabled={saving}
-            >
-              {saving ? "Deleting..." : "Delete"}
             </Button>
           </DialogFooter>
         </DialogContent>

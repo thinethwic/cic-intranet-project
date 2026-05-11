@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useMembers } from "@/hooks/useMembers"; // 👈 import the hook
+import { roleLabels } from "@/utils/segmentMapper";
 
 function getInitials(firstName?: string, lastName?: string) {
   const f = firstName?.[0] ?? "";
@@ -15,12 +16,6 @@ export default function OurPeopleCard() {
   const { members, loading, error } = useMembers(); // 👈 replace all the fetch logic
   const [index, setIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
-
-  const roleLabels: Record<string, string> = {
-    TOP_MANAGEMENT: "Top Management",
-    STAFF: "Staff",
-    ADMIN: "General Maneger",
-  };
 
   useEffect(() => {
     if (!isPaused) return;

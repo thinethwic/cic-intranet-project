@@ -7,6 +7,7 @@ import {
   Save,
   Trash2,
   Users,
+  Crown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CardContent } from "@/components/ui/card";
@@ -40,9 +41,31 @@ import {
   updateMember,
   deleteMember,
 } from "@/lib/api/memberApi";
-import { getAdminUser } from "@/lib/api/authHeaders"; // ← adjust to your actual auth hook
+import { getAdminUser } from "@/lib/api/authHeaders";
 
-const ROLE_OPTIONS = ["All", "ADMIN", "TOP_MANAGEMENT", "STAFF", "MEMBER"];
+import { Check, ChevronDown } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { roleLabels } from "@/utils/segmentMapper";
+
+const ROLE_OPTIONS = [
+  "All",
+  "TOP_MANAGEMENT",
+  "POLICY_MANAGER",
+  "PREMIER_MANAGER",
+  "SENIOR_MANAGER",
+  "MANAGER_LEVEL_1",
+  "MANAGER_LEVEL_2",
+  "JUNIOR_MANAGER",
+  "SENIOR_EXECUTIVE",
+  "EXECUTIVE",
+  "JUNIOR_EXECUTIVE",
+];
+const TOP_MANAGEMENT_ROLE = "TOP_MANAGEMENT";
 const CEO_MESSAGE_STORAGE_KEY = "admin-ceo-message";
 
 function getStoredCEOMessage() {
@@ -65,6 +88,46 @@ const EMPTY_FORM = {
   joinedDate: "",
 };
 
+function FilterDropdown({
+  options,
+  value,
+  onChange,
+  className,
+}: {
+  options: string[];
+  value: string;
+  onChange: (v: string) => void;
+  className?: string;
+}) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger>
+        <Button
+          variant="outline"
+          className={`h-9 gap-2 text-sm font-normal justify-between ${
+            value !== "All" ? "border-blue-500 text-blue-600" : ""
+          } ${className ?? ""}`}
+        >
+          <span>{value}</span>
+          <ChevronDown className="w-3.5 h-3.5 opacity-50" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="min-w-[200px]">
+        {options.map((opt) => (
+          <DropdownMenuItem
+            key={opt}
+            onClick={() => onChange(opt)}
+            className="flex items-center justify-between text-sm cursor-pointer"
+          >
+            {opt}
+            {value === opt && <Check className="w-3.5 h-3.5 text-blue-600" />}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
 export default function AdminManagementPage() {
   const PAGE_SIZE = 8;
   const adminUser = getAdminUser();
@@ -75,6 +138,12 @@ export default function AdminManagementPage() {
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("All");
+
+  // Top Management pagination
+  const [topPage, setTopPage] = useState(1);
+  // Other Members pagination
+  const [memberPage, setMemberPage] = useState(1);
+
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Member | null>(null);
   const [deleteItem, setDeleteItem] = useState<Member | null>(null);
@@ -82,7 +151,6 @@ export default function AdminManagementPage() {
   const [ceoForm, setCeoForm] = useState<CEOMessageConfig>(getStoredCEOMessage);
   const [ceoSaved, setCeoSaved] = useState(false);
   const [formError, setFormError] = useState("");
-  const [page, setPage] = useState(1);
 
   useEffect(() => {
     fetchMembers();
@@ -100,25 +168,60 @@ export default function AdminManagementPage() {
     }
   };
 
-  const filtered = items.filter((m) => {
+  // Split into Top Management vs everyone else, then apply search/role filter
+  const topManagementAll = items.filter((m) => m.role === TOP_MANAGEMENT_ROLE);
+
+  const otherMembersAll = items.filter((m) => m.role !== TOP_MANAGEMENT_ROLE);
+
+  // For top management table, only apply search (role is fixed to TOP_MANAGEMENT)
+  const filteredTopManagement = topManagementAll.filter((m) => {
     const query = search.toLowerCase();
     const fullName = `${m.firstName} ${m.lastName}`.toLowerCase();
-    return (
-      (fullName.includes(query) || m.role.toLowerCase().includes(query)) &&
-      (roleFilter === "All" || m.role === roleFilter)
-    );
+    return fullName.includes(query) || m.role.toLowerCase().includes(query);
   });
 
+  // For other members table, apply both search and role filter (excluding TOP_MANAGEMENT)
+  const filteredOtherMembers = otherMembersAll.filter((m) => {
+    const query = search.toLowerCase();
+    const fullName = `${m.firstName} ${m.lastName}`.toLowerCase();
+    const matchesSearch =
+      fullName.includes(query) || m.role.toLowerCase().includes(query);
+    const matchesRole =
+      roleFilter === "All" ||
+      (roleFilter !== TOP_MANAGEMENT_ROLE && m.role === roleFilter);
+    return matchesSearch && matchesRole;
+  });
+
+  // Reset pages when filters change
   useEffect(() => {
-    setPage(1);
+    setTopPage(1);
+    setMemberPage(1);
   }, [search, roleFilter, items.length]);
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const topTotalPages = Math.max(
+    1,
+    Math.ceil(filteredTopManagement.length / PAGE_SIZE),
+  );
+  const paginatedTop = filteredTopManagement.slice(
+    (topPage - 1) * PAGE_SIZE,
+    topPage * PAGE_SIZE,
+  );
 
-  const openCreate = () => {
+  const memberTotalPages = Math.max(
+    1,
+    Math.ceil(filteredOtherMembers.length / PAGE_SIZE),
+  );
+  const paginatedMembers = filteredOtherMembers.slice(
+    (memberPage - 1) * PAGE_SIZE,
+    memberPage * PAGE_SIZE,
+  );
+
+  const openCreate = (defaultRole?: string) => {
     setEditing(null);
-    setForm({ ...EMPTY_FORM });
+    setForm({
+      ...EMPTY_FORM,
+      role: defaultRole ?? "EXECUTIVE",
+    });
     setFormError("");
     setDialogOpen(true);
   };
@@ -166,7 +269,7 @@ export default function AdminManagementPage() {
         phoneNo: form.phoneNo || undefined,
         dob: form.dob || undefined,
         joinedDate: form.joinedDate || undefined,
-        user: loggedUserId ?? undefined, // ✅ "user" not "userId" — matches MemberDTO
+        user: loggedUserId ?? undefined,
       };
 
       if (editing) {
@@ -233,13 +336,74 @@ export default function AdminManagementPage() {
     setCeoSaved(true);
   };
 
+  // Shared columns renderer
+  const memberColumns = [
+    {
+      key: "name",
+      header: "Name",
+      cell: (m: Member) => (
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-violet-50 text-sm font-semibold text-violet-700">
+            {m.firstName[0]}
+            {m.lastName[0]}
+          </div>
+          <div>
+            <p className="font-medium">
+              {m.firstName} {m.lastName}
+            </p>
+            <p className="text-xs text-muted-foreground">{m.email}</p>
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: "role",
+      header: "Role",
+      cell: (m: Member) => roleLabels[m.role] ?? m.role,
+    },
+    { key: "title", header: "Title", cell: (m: Member) => m.title ?? "—" },
+    { key: "phone", header: "Phone", cell: (m: Member) => m.phoneNo ?? "—" },
+    {
+      key: "joined",
+      header: "Joined",
+      cell: (m: Member) =>
+        m.joinedDate
+          ? new Date(m.joinedDate).toLocaleDateString("en-GB", {
+              day: "numeric",
+              month: "short",
+              year: "numeric",
+            })
+          : "—",
+    },
+    {
+      key: "actions",
+      header: "",
+      className: "text-right",
+      cell: (m: Member) => (
+        <div className="flex justify-end">
+          <ActionDropdown
+            actions={[
+              { label: "Edit", icon: Pencil, onClick: () => openEdit(m) },
+              {
+                label: "Delete",
+                icon: Trash2,
+                onClick: () => setDeleteItem(m),
+                destructive: true,
+              },
+            ]}
+          />
+        </div>
+      ),
+    },
+  ];
+
   return (
     <div className="space-y-6 p-6">
       <AdminSectionHeader
         title="Management"
         description="Maintain leadership and management profiles shown across the intranet."
         action={
-          <Button onClick={openCreate} className="gap-2 rounded-2xl">
+          <Button onClick={() => openCreate()} className="gap-2 rounded-2xl">
             <Plus className="h-4 w-4" /> Add Member
           </Button>
         }
@@ -254,10 +418,10 @@ export default function AdminManagementPage() {
           tone="violet"
         />
         <StatCard
-          title="Roles"
-          value={loading ? "..." : new Set(items.map((m) => m.role)).size}
-          icon={Users}
-          tone="blue"
+          title="Top Management"
+          value={loading ? "..." : topManagementAll.length}
+          icon={Crown}
+          tone="amber"
         />
         <StatCard
           title="With Accounts"
@@ -267,7 +431,7 @@ export default function AdminManagementPage() {
         />
       </div>
 
-      {/* CEO Message — unchanged */}
+      {/* CEO Message */}
       <AdminCard>
         <CardContent className="space-y-6 p-6">
           <div className="flex flex-wrap items-start justify-between gap-4">
@@ -397,92 +561,116 @@ export default function AdminManagementPage() {
         </CardContent>
       </AdminCard>
 
-      {/* Filters */}
+      {/* Search & Filters */}
       <div className="flex flex-wrap items-center gap-4">
         <AdminSearchInput
           value={search}
           onChange={setSearch}
           placeholder="Search management..."
         />
-        <FilterPillGroup
-          options={ROLE_OPTIONS}
-          value={roleFilter}
-          onChange={setRoleFilter}
+        <FilterDropdown
+          options={ROLE_OPTIONS.filter((o) => o !== "TOP_MANAGEMENT").map(
+            (o) => (o === "All" ? "All" : (roleLabels[o] ?? o)),
+          )}
+          value={
+            roleFilter === "TOP_MANAGEMENT" || roleFilter === "All"
+              ? "All"
+              : (roleLabels[roleFilter] ?? roleFilter)
+          }
+          onChange={(label) => {
+            if (label === "All") {
+              setRoleFilter("All");
+            } else {
+              // reverse map label back to the raw role key
+              const key =
+                Object.entries(roleLabels).find(([, v]) => v === label)?.[0] ??
+                label;
+              setRoleFilter(key);
+            }
+          }}
+          className="min-w-[180px]"
         />
       </div>
 
-      {/* Table — unchanged */}
-      <DataTable
-        data={paginated}
-        getRowKey={(m) => m.id}
-        emptyLabel={
-          loading ? "Loading members..." : "No management profiles found"
-        }
-        columns={[
-          {
-            key: "name",
-            header: "Name",
-            cell: (m) => (
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-violet-50 text-sm font-semibold text-violet-700">
-                  {m.firstName[0]}
-                  {m.lastName[0]}
-                </div>
-                <div>
-                  <p className="font-medium">
-                    {m.firstName} {m.lastName}
-                  </p>
-                  <p className="text-xs text-muted-foreground">{m.email}</p>
-                </div>
-              </div>
-            ),
-          },
-          { key: "role", header: "Role", cell: (m) => m.role },
-          { key: "title", header: "Title", cell: (m) => m.title ?? "—" },
-          { key: "phone", header: "Phone", cell: (m) => m.phoneNo ?? "—" },
-          {
-            key: "joined",
-            header: "Joined",
-            cell: (m) =>
-              m.joinedDate
-                ? new Date(m.joinedDate).toLocaleDateString("en-GB", {
-                    day: "numeric",
-                    month: "short",
-                    year: "numeric",
-                  })
-                : "—",
-          },
-          {
-            key: "actions",
-            header: "",
-            className: "text-right",
-            cell: (m) => (
-              <div className="flex justify-end">
-                <ActionDropdown
-                  actions={[
-                    { label: "Edit", icon: Pencil, onClick: () => openEdit(m) },
-                    {
-                      label: "Delete",
-                      icon: Trash2,
-                      onClick: () => setDeleteItem(m),
-                      destructive: true,
-                    },
-                  ]}
-                />
-              </div>
-            ),
-          },
-        ]}
-      />
+      {/* ── Top Management Table ── */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Crown className="h-5 w-5 text-amber-500" />
+            <h2 className="text-base font-semibold">Top Management</h2>
+            <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">
+              {topManagementAll.length}
+            </span>
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => openCreate(TOP_MANAGEMENT_ROLE)}
+            className="gap-2 rounded-2xl"
+          >
+            <Plus className="h-4 w-4" /> Add Top Management
+          </Button>
+        </div>
 
-      <AdminPagination
-        page={page}
-        totalPages={totalPages}
-        totalItems={filtered.length}
-        pageSize={PAGE_SIZE}
-        itemLabel="profiles"
-        onPageChange={setPage}
-      />
+        <DataTable
+          data={paginatedTop}
+          getRowKey={(m) => m.id}
+          emptyLabel={
+            loading
+              ? "Loading top management..."
+              : "No top management profiles found"
+          }
+          columns={memberColumns}
+        />
+
+        <AdminPagination
+          page={topPage}
+          totalPages={topTotalPages}
+          totalItems={filteredTopManagement.length}
+          pageSize={PAGE_SIZE}
+          itemLabel="top management profiles"
+          onPageChange={setTopPage}
+        />
+      </div>
+
+      {/* ── Other Members Table ── */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Users className="h-5 w-5 text-violet-500" />
+            <h2 className="text-base font-semibold">Members</h2>
+            <span className="rounded-full bg-violet-100 px-2 py-0.5 text-xs font-medium text-violet-700">
+              {otherMembersAll.length}
+            </span>
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => openCreate()}
+            className="gap-2 rounded-2xl"
+          >
+            <Plus className="h-4 w-4" /> Add Member
+          </Button>
+        </div>
+
+        <DataTable
+          data={paginatedMembers}
+          getRowKey={(m) => m.id}
+          emptyLabel={
+            loading ? "Loading members..." : "No management profiles found"
+          }
+          columns={memberColumns}
+        />
+
+        <AdminPagination
+          page={memberPage}
+          totalPages={memberTotalPages}
+          totalItems={filteredOtherMembers.length}
+          pageSize={PAGE_SIZE}
+          itemLabel="profiles"
+          onPageChange={setMemberPage}
+        />
+      </div>
 
       {/* Create / Edit Dialog */}
       <Dialog

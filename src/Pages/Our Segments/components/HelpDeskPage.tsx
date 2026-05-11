@@ -55,6 +55,8 @@ import { mapPathToSegment } from "@/utils/segmentMapper";
 import { getAdminUser, logout } from "@/lib/api/authHeaders";
 import { decryptSegment } from "@/utils/segmentEncryption";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import logo from "@/assets/Logo.jpg";
+import { AdminPagination } from "@/Pages/Admin/admin-components";
 
 const PRIORITIES: TicketPriority[] = ["LOW", "MEDIUM", "HIGH", "CRITICAL"];
 
@@ -74,8 +76,8 @@ const STATUS_CONFIG = {
     icon: CheckCircle2,
     class: "bg-emerald-50 text-emerald-600 border-emerald-200",
   },
-  CLOSED: {
-    label: "Closed",
+  UNRESOLVED: {
+    label: "Unresolved",
     icon: AlertCircle,
     class: "bg-slate-100 text-slate-500 border-slate-200",
   },
@@ -107,7 +109,7 @@ const SEGMENT_CONFIG: Record<string, { label: string; class: string }> = {
   },
 };
 
-// ── Dynamic category icon helper (replaces hardcoded CATEGORY_ICONS) ─────────
+// ── Dynamic category icon helper ──────────────────────────────────────────────
 const getCategoryIcon = (category: string) => {
   const map: Record<string, typeof Laptop> = {
     IT: Laptop,
@@ -127,9 +129,11 @@ const fmtDate = (d: string) => {
   const date = new Date(d);
   const now = new Date();
   const diff = now.getTime() - date.getTime();
+  const minutes = Math.floor(diff / 60000);
   const hours = Math.floor(diff / 3600000);
   const days = Math.floor(diff / 86400000);
-  if (hours < 1) return "Just now";
+  if (minutes < 5) return "Just now";
+  if (minutes < 60) return `${minutes}min ago`;
   if (hours < 24) return `${hours}h ago`;
   if (days < 7) return `${days}d ago`;
   return date.toLocaleDateString("en-GB", {
@@ -151,7 +155,6 @@ interface NotificationItem {
 
 const getLatestCommentSnapshot = (entries: Comment[]) => {
   if (entries.length === 0) return null;
-
   const latest = entries[entries.length - 1];
   return {
     id: latest.id,
@@ -160,6 +163,9 @@ const getLatestCommentSnapshot = (entries: Comment[]) => {
 };
 
 export default function HelpDeskPage() {
+  const TICKET_PAGE_SIZE = 8;
+  const [page, setPage] = useState(1);
+
   const { pathname } = useLocation();
   const currentUser = useCurrentUser();
   const [searchParams] = useSearchParams();
@@ -191,13 +197,40 @@ export default function HelpDeskPage() {
   const [comments, setComments] = useState<Comment[]>([]);
   const [commentsLoading, setCommentsLoading] = useState(false);
   const [newMessageAlert, setNewMessageAlert] = useState(false);
-  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [notifications, setNotifications] = useState<NotificationItem[]>(() => {
+    try {
+      const stored = localStorage.getItem("helpdesk_notifications");
+      if (!stored) return [];
+      const parsed: NotificationItem[] = JSON.parse(stored);
+      const fiveMinutesAgo = Date.now() - 5 * 60 * 1000;
+      return parsed.filter(
+        (n) => new Date(n.createdAt).getTime() > fiveMinutesAgo,
+      );
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        "helpdesk_notifications",
+        JSON.stringify(notifications),
+      );
+    } catch {
+      // silent
+    }
+  }, [notifications]);
 
   const currentViewer = getAdminUser();
   const activeUserId = currentUser?.userId ?? currentViewer?.userId ?? null;
-  const unreadNotificationCount = notifications.filter(
-    (item) => item.unread,
-  ).length;
+
+  const hasAdminReply = comments.some(
+    (c) => String(c.commentedBy.id) !== String(activeUserId),
+  );
+  const unreadNotificationCount = loading
+    ? 0
+    : notifications.filter((item) => item.unread).length;
 
   const appendNotification = (
     notification: Omit<NotificationItem, "unread">,
@@ -206,7 +239,6 @@ export default function HelpDeskPage() {
       if (prev.some((item) => item.id === notification.id)) {
         return prev;
       }
-
       return [{ ...notification, unread: true }, ...prev].slice(0, 10);
     });
   };
@@ -223,7 +255,7 @@ export default function HelpDeskPage() {
     );
   };
 
-  // ── Form — function so it always reads latest state ───────────────────────
+  // ── Form ──────────────────────────────────────────────────────────────────
   const makeEmptyForm = () => ({
     title: "",
     description: "",
@@ -246,13 +278,11 @@ export default function HelpDeskPage() {
 
   // ── Effects ───────────────────────────────────────────────────────────────
 
-  // Fetch categories based on segment + department
   useEffect(() => {
     if (!currentSegment) return;
     getCategories(currentSegment, currentUser?.department)
       .then((data) => {
         setCategories(data);
-        // Pre-select first category once loaded
         setForm((prev) => ({
           ...prev,
           category: prev.category || data[0]?.name || "",
@@ -261,7 +291,6 @@ export default function HelpDeskPage() {
       .catch(console.error);
   }, [currentSegment, currentUser?.department]);
 
-  // Fetch tickets on mount
   useEffect(() => {
     fetchMyTickets();
   }, []);
@@ -270,13 +299,11 @@ export default function HelpDeskPage() {
     selectedTicketRef.current = selectedTicket;
   }, [selectedTicket]);
 
-  // Sync segment filter + form segment when URL changes
   useEffect(() => {
     setSegmentFilter(currentSegment ?? "All");
     setForm((prev) => ({ ...prev, segment: currentSegment ?? "" }));
   }, [currentSegment]);
 
-  // Poll comments while ticket dialog is open
   useEffect(() => {
     if (!selectedTicket) return;
     const interval = setInterval(() => {
@@ -285,28 +312,16 @@ export default function HelpDeskPage() {
     return () => clearInterval(interval);
   }, [selectedTicket?.id]);
 
-  // Replace your existing page-level polling useEffect with this:
   useEffect(() => {
     const interval = setInterval(async () => {
       if (!isSeededRef.current) return;
 
       try {
         const fresh = await getMyTickets();
+        setTickets(fresh);
+
         for (const ticket of fresh) {
-          const lastSeen = lastUpdatedAtRef.current[ticket.id];
-          if (lastSeen === undefined) {
-            lastUpdatedAtRef.current[ticket.id] = ticket.updatedAt;
-            continue;
-          }
-
-          if (lastSeen !== ticket.updatedAt) {
-            // Skip if this ticket's dialog is currently open (handled by fetchComments)
-            if (selectedTicketRef.current?.id === ticket.id) {
-              lastUpdatedAtRef.current[ticket.id] = ticket.updatedAt;
-              continue;
-            }
-
-            // Fetch comments to check if there's a new one from someone else
+          try {
             const commentData = await getComments(ticket.id);
             const latestComment = getLatestCommentSnapshot(commentData);
             const previousCommentId =
@@ -319,7 +334,8 @@ export default function HelpDeskPage() {
             if (
               latestComment &&
               latestComment.id !== previousCommentId &&
-              latestComment.authorId !== activeUserId // ← only notify for others' messages
+              previousCommentId !== null &&
+              latestComment.authorId !== activeUserId
             ) {
               appendNotification({
                 id: `ticket-${ticket.id}-comment-${latestComment.id}`,
@@ -327,15 +343,13 @@ export default function HelpDeskPage() {
                 ticketNumber: ticket.ticketNumber,
                 title: ticket.title,
                 description: "New message received on this ticket.",
-                createdAt: ticket.updatedAt,
+                createdAt: new Date().toISOString(),
               });
             }
-
-            lastUpdatedAtRef.current[ticket.id] = ticket.updatedAt;
+          } catch {
+            // silent
           }
         }
-
-        setTickets(fresh);
       } catch (err) {
         console.error(err);
       }
@@ -351,9 +365,24 @@ export default function HelpDeskPage() {
       setLoading(true);
       const data = await getMyTickets();
       setTickets(data);
+
       data.forEach((ticket) => {
         lastUpdatedAtRef.current[ticket.id] = ticket.updatedAt;
       });
+
+      await Promise.all(
+        data.map(async (ticket) => {
+          if (latestCommentIdRef.current[ticket.id] !== undefined) return;
+          try {
+            const commentData = await getComments(ticket.id);
+            const snapshot = getLatestCommentSnapshot(commentData);
+            latestCommentIdRef.current[ticket.id] = snapshot?.id ?? null;
+          } catch {
+            latestCommentIdRef.current[ticket.id] = null;
+          }
+        }),
+      );
+
       isSeededRef.current = true;
     } catch (err) {
       console.error(err);
@@ -375,16 +404,7 @@ export default function HelpDeskPage() {
       latestCommentIdRef.current[ticketId] = latestComment?.id ?? null;
 
       setComments((prev) => {
-        if (
-          prev.length === data.length &&
-          prev.every(
-            (c, i) => c.id === data[i].id && c.message === data[i].message,
-          )
-        ) {
-          return prev;
-        }
-
-        if (!isInitial && prev.length > 0) {
+        if (!isInitial) {
           const prevIds = new Set(prev.map((c) => c.id));
           const newFromOther = data.filter(
             (c) => !prevIds.has(c.id) && c.commentedBy.id !== activeUserId,
@@ -402,10 +422,9 @@ export default function HelpDeskPage() {
                 createdAt: entry.createdAt,
               });
             });
-            setTimeout(() => setNewMessageAlert(true), 0);
+            setNewMessageAlert(true);
           }
         }
-
         return data;
       });
 
@@ -459,11 +478,6 @@ export default function HelpDeskPage() {
   const openTicket = (ticket: Ticket) => {
     setSelectedTicket(ticket);
     setNewMessageAlert(false);
-    setNotifications((prev) =>
-      prev.map((item) =>
-        item.ticketId === ticket.id ? { ...item, unread: false } : item,
-      ),
-    );
     shouldScrollRef.current = true;
     fetchComments(ticket.id, true);
   };
@@ -531,12 +545,24 @@ export default function HelpDeskPage() {
           t.ticketNumber.toLowerCase().includes(q)) &&
         (statusFilter === "All" || t.status === statusFilter) &&
         (segmentFilter === "All" || t.segment === segmentFilter) &&
-        (categoryFilter === "All" || t.category === categoryFilter) // ← add this
+        (categoryFilter === "All" || t.category === categoryFilter)
       );
     });
   }, [tickets, search, statusFilter, segmentFilter, categoryFilter]);
 
-  const statusTabs = ["All", "OPEN", "IN_PROGRESS", "RESOLVED", "CLOSED"];
+  // ✅ These must come AFTER filtered is declared
+  const totalPages = Math.max(1, Math.ceil(filtered.length / TICKET_PAGE_SIZE));
+  const paginated = filtered.slice(
+    (page - 1) * TICKET_PAGE_SIZE,
+    page * TICKET_PAGE_SIZE,
+  );
+
+  // Reset page when filters change
+  useEffect(() => {
+    setPage(1);
+  }, [search, statusFilter, segmentFilter, categoryFilter]);
+
+  const statusTabs = ["All", "OPEN", "IN_PROGRESS", "RESOLVED", "UNRESOLVED"];
 
   const currentSegmentLabel = currentSegment
     ? (SEGMENT_CONFIG[currentSegment]?.label ?? currentSegment)
@@ -584,7 +610,12 @@ export default function HelpDeskPage() {
       {/* ── Hero ── */}
       <section className="max-w-7xl mx-auto px-4 py-6 md:py-8">
         <div className="rounded-[28px] border border-slate-200 bg-[linear-gradient(135deg,#f8fbff_0%,#eef5ff_45%,#ffffff_100%)] p-6 shadow-sm md:p-8">
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+          <img
+            src={logo}
+            alt="CIC Livestock Solutions"
+            className="h-14 w-auto object-contain"
+          />
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between mt-8">
             <div className="max-w-3xl">
               <div className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
                 <Headset className="h-3.5 w-3.5" />
@@ -625,87 +656,96 @@ export default function HelpDeskPage() {
                     </span>
                   </div>
                 )}
+                {currentUser && (
+                  <div className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600">
+                    Department:{" "}
+                    <span className="font-semibold text-slate-900">
+                      {currentUser.department}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
             <div className="grid gap-3 sm:min-w-72">
-              <DropdownMenu>
-                <DropdownMenuTrigger>
-                  <Button
-                    variant="outline"
-                    className="relative h-11 rounded-2xl border-slate-200 bg-white px-4 text-slate-600 hover:border-blue-200 hover:text-blue-700"
-                  >
-                    <Bell className="mr-2 h-4 w-4" />
-                    Notifications
-                    {unreadNotificationCount > 0 && (
-                      <span className="absolute right-3 top-3 h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-white" />
-                    )}
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-80 p-0">
-                  <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-                    <div>
-                      <p className="text-sm font-medium text-slate-900">
-                        Notifications
-                      </p>
-                      <p className="text-xs text-slate-400">
-                        {unreadNotificationCount} unread
-                      </p>
-                    </div>
-                    {notifications.length > 0 && (
-                      <button
-                        type="button"
-                        onClick={markAllNotificationsRead}
-                        className="text-xs text-blue-600 hover:text-blue-800"
-                      >
-                        Mark all read
-                      </button>
-                    )}
-                  </div>
-                  <div className="max-h-80 overflow-y-auto">
-                    {notifications.length === 0 ? (
-                      <div className="px-4 py-6 text-sm text-slate-400">
-                        No notifications yet
+              <div className="flex justify-end">
+                <DropdownMenu>
+                  <DropdownMenuTrigger>
+                    <Button
+                      variant="outline"
+                      className="relative h-11 rounded-2xl border-slate-200 bg-white px-4 text-slate-600 hover:border-blue-200 hover:text-blue-700"
+                    >
+                      <Bell className="h-2 w-2 justify-center" />
+                      {unreadNotificationCount > 0 && (
+                        <span className="absolute right-1 top-3 h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-white" />
+                      )}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-80 p-0">
+                    <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+                      <div>
+                        <p className="text-sm font-medium text-slate-900">
+                          Notifications
+                        </p>
+                        <p className="text-xs text-slate-400">
+                          {unreadNotificationCount} unread
+                        </p>
                       </div>
-                    ) : (
-                      notifications.map((notification) => (
+                      {notifications.length > 0 && (
                         <button
-                          key={notification.id}
                           type="button"
-                          onClick={() => {
-                            markNotificationRead(notification.id);
-                            const ticket = tickets.find(
-                              (item) => item.id === notification.ticketId,
-                            );
-                            if (ticket) openTicket(ticket);
-                          }}
-                          className="flex w-full items-start gap-3 border-b border-slate-100 px-4 py-3 text-left hover:bg-slate-50"
+                          onClick={markAllNotificationsRead}
+                          className="text-xs text-blue-600 hover:text-blue-800"
                         >
-                          <div className="relative mt-1">
-                            <Bell className="h-4 w-4 text-slate-400" />
-                            {notification.unread && (
-                              <span className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full bg-red-500" />
-                            )}
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <p className="truncate text-sm font-medium text-slate-900">
-                              {notification.ticketNumber}
-                            </p>
-                            <p className="truncate text-xs text-slate-500">
-                              {notification.title}
-                            </p>
-                            <p className="mt-1 line-clamp-2 text-xs text-slate-400">
-                              {notification.description}
-                            </p>
-                            <p className="mt-1 text-[11px] text-slate-400">
-                              {fmtDate(notification.createdAt)}
-                            </p>
-                          </div>
+                          Mark all read
                         </button>
-                      ))
-                    )}
-                  </div>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                      )}
+                    </div>
+                    <div className="max-h-80 overflow-y-auto">
+                      {notifications.length === 0 ? (
+                        <div className="px-4 py-6 text-sm text-slate-400">
+                          No notifications yet
+                        </div>
+                      ) : (
+                        notifications.map((notification) => (
+                          <button
+                            key={notification.id}
+                            type="button"
+                            onClick={() => {
+                              markNotificationRead(notification.id);
+                              const ticket = tickets.find(
+                                (item) => item.id === notification.ticketId,
+                              );
+                              if (ticket) openTicket(ticket);
+                            }}
+                            className="flex w-full items-start gap-3 border-b border-slate-100 px-4 py-3 text-left hover:bg-slate-50"
+                          >
+                            <div className="relative mt-1">
+                              <Bell className="h-4 w-4 text-slate-400" />
+                              {notification.unread && (
+                                <span className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full bg-red-500" />
+                              )}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-sm font-medium text-slate-900">
+                                {notification.ticketNumber}
+                              </p>
+                              <p className="truncate text-xs text-slate-500">
+                                {notification.title}
+                              </p>
+                              <p className="mt-1 line-clamp-2 text-xs text-slate-400">
+                                {notification.description}
+                              </p>
+                              <p className="mt-1 text-[11px] text-slate-400">
+                                {fmtDate(notification.createdAt)}
+                              </p>
+                            </div>
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
               <Button
                 onClick={() => {
                   setForm(makeEmptyForm());
@@ -849,7 +889,6 @@ export default function HelpDeskPage() {
               </div>
             </CardContent>
           </Card>
-
           <div className="space-y-4">
             <div className="flex items-center justify-between gap-4">
               <div>
@@ -897,16 +936,15 @@ export default function HelpDeskPage() {
               </Card>
             ) : (
               <div className="space-y-4">
-                {filtered.map((ticket) => {
+                {paginated.map((ticket) => {
                   const status = STATUS_CONFIG[ticket.status];
                   const priority = PRIORITY_CONFIG[ticket.priority];
                   const segment = SEGMENT_CONFIG[ticket.segment];
                   const StatusIcon = status.icon;
-                  const CategoryIcon = getCategoryIcon(ticket.category); // ← dynamic
+                  const CategoryIcon = getCategoryIcon(ticket.category);
                   return (
                     <Card
                       key={ticket.id}
-                      onClick={() => openTicket(ticket)}
                       className="group cursor-pointer border border-slate-200 bg-white shadow-sm transition-all hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md"
                     >
                       <CardContent className="p-5">
@@ -964,9 +1002,12 @@ export default function HelpDeskPage() {
                               <Clock className="h-3.5 w-3.5" />
                               {fmtDate(ticket.createdAt)}
                             </div>
-                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-400 transition-colors group-hover:bg-blue-50 group-hover:text-blue-600">
+                            <button
+                              onClick={() => openTicket(ticket)}
+                              className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-400 transition-colors hover:bg-blue-50 hover:text-blue-600"
+                            >
                               <ChevronRight className="h-4 w-4" />
-                            </div>
+                            </button>
                           </div>
                         </div>
                       </CardContent>
@@ -975,7 +1016,17 @@ export default function HelpDeskPage() {
                 })}
               </div>
             )}
-          </div>
+
+            <AdminPagination
+              page={page}
+              totalPages={totalPages}
+              totalItems={filtered.length}
+              pageSize={TICKET_PAGE_SIZE}
+              itemLabel="tickets"
+              onPageChange={setPage}
+            />
+          </div>{" "}
+          {/* closes the right column space-y-4 div */}
         </div>
       </section>
 
@@ -1143,6 +1194,15 @@ export default function HelpDeskPage() {
         open={!!selectedTicket}
         onOpenChange={(open) => {
           if (!open) {
+            if (selectedTicket) {
+              setNotifications((prev) =>
+                prev.map((item) =>
+                  item.ticketId === selectedTicket.id
+                    ? { ...item, unread: false }
+                    : item,
+                ),
+              );
+            }
             setSelectedTicket(null);
             setComments([]);
             setComment("");
@@ -1156,9 +1216,16 @@ export default function HelpDeskPage() {
               const status = STATUS_CONFIG[selectedTicket.status];
               const segment = SEGMENT_CONFIG[selectedTicket.segment];
               const StatusIcon = status.icon;
-              const CategoryIcon = getCategoryIcon(selectedTicket.category); // ← dynamic
+              const CategoryIcon = getCategoryIcon(selectedTicket.category);
+
+              // ✅ Lock check — based on saved status
+              const isTicketClosed =
+                selectedTicket.status === "RESOLVED" ||
+                selectedTicket.status === "UNRESOLVED";
+
               return (
                 <>
+                  {/* ── Dialog Header ── */}
                   <DialogHeader className="shrink-0 border-b border-slate-100 bg-linear-to-r from-slate-950 via-blue-950 to-blue-900 px-6 py-5 text-white">
                     <div className="flex items-start gap-4">
                       <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/10 ring-1 ring-white/15">
@@ -1226,11 +1293,13 @@ export default function HelpDeskPage() {
                     </div>
                   </DialogHeader>
 
+                  {/* ── Scrollable body ── */}
                   <div
                     ref={commentsContainerRef}
                     style={{ flex: 1, overflowY: "auto", minHeight: 0 }}
                     className="space-y-4 bg-slate-50/80 px-6 py-5"
                   >
+                    {/* Description */}
                     <Card className="border border-slate-200/80 bg-white shadow-sm">
                       <CardContent className="p-4">
                         <p className="mb-2 text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
@@ -1242,19 +1311,23 @@ export default function HelpDeskPage() {
                       </CardContent>
                     </Card>
 
+                    {/* Conversation */}
                     <div className="space-y-3">
                       <div className="flex items-center justify-between gap-3">
                         <div className="flex items-center gap-2">
                           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
                             Conversation
                           </p>
-                          <span className="flex items-center gap-1.5 text-xs text-emerald-500 font-medium">
-                            <span className="relative flex h-2 w-2">
-                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                              <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+                          {/* ✅ Hide Live indicator when ticket is closed */}
+                          {!isTicketClosed && (
+                            <span className="flex items-center gap-1.5 text-xs text-emerald-500 font-medium">
+                              <span className="relative flex h-2 w-2">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                                <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+                              </span>
+                              Live
                             </span>
-                            Live
-                          </span>
+                          )}
                         </div>
                         <span className="text-xs text-slate-400">
                           {comments.length} comment
@@ -1327,30 +1400,50 @@ export default function HelpDeskPage() {
                     </div>
                   </div>
 
-                  {selectedTicket.status !== "CLOSED" && (
+                  {/* ── Reply footer ── */}
+                  {isTicketClosed ? (
+                    // ✅ Ticket is RESOLVED or UNRESOLVED — show locked message
                     <div className="shrink-0 border-t border-slate-100 bg-white px-4 py-4 sm:px-6">
-                      <div className="rounded-[24px] border border-slate-200 bg-slate-50/80 p-2">
-                        <div className="flex flex-col gap-2 sm:flex-row">
-                          <Input
-                            placeholder="Type your message..."
-                            value={comment}
-                            onChange={(e) => setComment(e.target.value)}
-                            onKeyDown={(e) =>
-                              e.key === "Enter" &&
-                              !e.shiftKey &&
-                              handleAddComment()
-                            }
-                            className="h-11 flex-1 rounded-2xl border-0 bg-white shadow-none"
-                          />
-                          <Button
-                            onClick={handleAddComment}
-                            disabled={!comment.trim()}
-                            className="h-11 rounded-2xl bg-blue-900 px-5 text-white hover:bg-blue-800 sm:shrink-0"
-                          >
-                            Send
-                          </Button>
-                        </div>
+                      <div className="flex items-center gap-2 rounded-[24px] border border-slate-200 bg-slate-50 px-4 py-3">
+                        <ShieldCheck className="h-4 w-4 shrink-0 text-slate-300" />
+                        <p className="text-sm text-slate-400">
+                          This ticket is {selectedTicket.status.toLowerCase()}{" "}
+                          and no longer accepts replies.
+                        </p>
                       </div>
+                    </div>
+                  ) : (
+                    // ✅ Ticket is OPEN or IN_PROGRESS — show reply box
+                    <div className="shrink-0 border-t border-slate-100 bg-white px-4 py-4 sm:px-6">
+                      {!commentsLoading && !hasAdminReply ? (
+                        <div className="flex items-center justify-center gap-2 rounded-[24px] border border-dashed border-slate-200 bg-slate-50 py-3 text-xs text-slate-400">
+                          <Bell className="h-3.5 w-3.5" />
+                          Waiting for admin to reply before you can respond
+                        </div>
+                      ) : (
+                        <div className="rounded-[24px] border border-slate-200 bg-slate-50/80 p-2">
+                          <div className="flex flex-col gap-2 sm:flex-row">
+                            <Input
+                              placeholder="Type your message..."
+                              value={comment}
+                              onChange={(e) => setComment(e.target.value)}
+                              onKeyDown={(e) =>
+                                e.key === "Enter" &&
+                                !e.shiftKey &&
+                                handleAddComment()
+                              }
+                              className="h-11 flex-1 rounded-2xl border-0 bg-white shadow-none"
+                            />
+                            <Button
+                              onClick={handleAddComment}
+                              disabled={!comment.trim()}
+                              className="h-11 rounded-2xl bg-blue-900 px-5 text-white hover:bg-blue-800 sm:shrink-0"
+                            >
+                              Send
+                            </Button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </>

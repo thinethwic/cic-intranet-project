@@ -53,6 +53,7 @@ import {
   adminGetDepartmentsPaged,
 } from "@/lib/api/departmentApi";
 import { AdminPagination } from "./admin-components";
+import { useSearchParams } from "react-router-dom";
 
 // ── Shared config ─────────────────────────────────────────────────────────────
 
@@ -1309,7 +1310,12 @@ function DepartmentsTab() {
 type Tab = "categories" | "departments";
 
 export default function AdminCategoriesPage() {
-  const [activeTab, setActiveTab] = useState<Tab>("categories");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = (searchParams.get("tab") as Tab) ?? "categories";
+
+  const setActiveTab = (tab: Tab) => {
+    setSearchParams({ tab });
+  };
 
   return (
     <div className="space-y-6 p-6">

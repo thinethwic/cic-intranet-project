@@ -26,5 +26,13 @@ export const mapSegmentToPath = (segment: Segment): string => {
 export const roleLabels: Record<string, string> = {
     TOP_MANAGEMENT: "Top Management",
     STAFF: "Staff",
-    ADMIN: "General Maneger",
+    POLICY_MANAGER: "Policy Manager",
+    PREMIER_MANAGER: "Premier Manager",
+    SENIOR_MANAGER: "Senior Manager",
+    MANAGER_LEVEL_1: "Manager Level 1",
+    MANAGER_LEVEL_2: "Manager Level 2",
+    JUNIOR_MANAGER: "Junior Manager",
+    SENIOR_EXECUTIVE: "Senior Execuitive",
+    EXECUTIVE: "Executive",
+    JUNIOR_EXECUTIVE: "Junior Executive"
 };

@@ -25,10 +25,21 @@ import {
   SidebarFooter,
 } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { getAdminUser, logout } from "@/lib/api/authHeaders"; // ← real user
+import { getAdminUser, logout } from "@/lib/api/authHeaders";
 import logo from "../../assets/Logo.jpg";
+import { useState } from "react";
 
-const navItems = [
+type NavChild = { name: string; path: string };
+
+type NavItem = {
+  name: string;
+  icon: React.ElementType;
+  path: string;
+  roles: string[];
+  children?: NavChild[];
+};
+
+const navItems: NavItem[] = [
   {
     name: "Dashboard",
     icon: LayoutDashboard,
@@ -58,6 +69,10 @@ const navItems = [
     icon: Calendar,
     path: "/admin/events",
     roles: ["SUPER_ADMIN"],
+    children: [
+      { name: "Events", path: "/admin/events?tab=events" },
+      { name: "Announcements", path: "/admin/events?tab=announcements" },
+    ],
   },
   {
     name: "Gallery",
@@ -72,10 +87,14 @@ const navItems = [
     roles: ["SUPER_ADMIN", "ADMIN"],
   },
   {
-    name: "Ticket Category",
+    name: "Category",
     icon: Ticket,
     path: "/admin/categories",
     roles: ["SUPER_ADMIN"],
+    children: [
+      { name: "Category", path: "/admin/categories?tab=categories" },
+      { name: "Departments", path: "/admin/categories?tab=departments" },
+    ],
   },
   {
     name: "Management",
@@ -83,14 +102,23 @@ const navItems = [
     path: "/admin/management",
     roles: ["SUPER_ADMIN"],
   },
-  { name: "Users", icon: Users, path: "/admin/users", roles: ["SUPER_ADMIN"] },
+  {
+    name: "Users",
+    icon: Users,
+    path: "/admin/users",
+    roles: ["SUPER_ADMIN"],
+  },
 ];
 
 export default function AdminSidebar() {
   const location = useLocation();
-  const adminUser = getAdminUser(); // { userId, name, email, username }
+  const adminUser = getAdminUser();
+  const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({});
 
-  // Initials from name e.g. "John Doe" → "JD"
+  const toggleMenu = (name: string) => {
+    setOpenMenus((prev) => ({ ...prev, [name]: !prev[name] }));
+  };
+
   const initials = adminUser?.name
     ? adminUser.name
         .split(" ")
@@ -105,13 +133,9 @@ export default function AdminSidebar() {
       ? location.pathname === "/admin"
       : location.pathname.startsWith(path);
 
-  // Replace handleLogout:
-  const handleLogout = () => {
-    logout(); // ✅ same logic, one source of truth
-  };
+  const handleLogout = () => logout();
 
   const role = adminUser?.role ?? "";
-
   const visibleNavItems = navItems.filter((item) => item.roles.includes(role));
 
   return (
@@ -129,7 +153,6 @@ export default function AdminSidebar() {
             <p className="text-sm font-semibold text-black leading-none">
               CIC Intranet
             </p>
-
             <p className="text-[10px] text-slate-400 mt-0.5 leading-none">
               {role === "SUPER_ADMIN" ? "Super Admin Console" : "Admin Console"}
             </p>
@@ -146,33 +169,98 @@ export default function AdminSidebar() {
             <SidebarMenu className="space-y-0.5">
               {visibleNavItems.map((item) => (
                 <SidebarMenuItem key={item.name}>
-                  <SidebarMenuButton
-                    isActive={isActive(item.path)}
-                    className={`
-                      group relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm
-                      transition-all duration-150
-                      ${
-                        isActive(item.path)
-                          ? "bg-blue-600 text-white shadow-md shadow-blue-600/20"
-                          : "text-slate-400 hover:bg-slate-800 hover:text-slate-100"
-                      }
-                    `}
-                  >
-                    <NavLink
-                      to={item.path}
-                      className="flex items-center gap-3 w-full"
-                    >
-                      <item.icon
-                        className={`w-4 h-4 shrink-0 ${
-                          isActive(item.path) ? "text-white" : "text-slate-500 "
-                        }`}
-                      />
-                      <span className="font-medium">{item.name}</span>
-                      {isActive(item.path) && (
-                        <ChevronRight className="w-3 h-3 ml-auto text-blue-200" />
+                  {item.children ? (
+                    <>
+                      {/* Parent with submenu */}
+                      <SidebarMenuButton
+                        onClick={() => toggleMenu(item.name)}
+                        className={`group flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm w-full transition-all duration-150
+                          ${
+                            isActive(item.path)
+                              ? "bg-blue-600 text-white shadow-md shadow-blue-600/20"
+                              : "text-slate-400 hover:bg-slate-800 hover:text-slate-100"
+                          }`}
+                      >
+                        <item.icon
+                          className={`w-4 h-4 shrink-0 ${
+                            isActive(item.path)
+                              ? "text-white"
+                              : "text-slate-500"
+                          }`}
+                        />
+                        <span className="font-medium flex-1 text-left">
+                          {item.name}
+                        </span>
+                        <ChevronRight
+                          className={`w-3 h-3 transition-transform duration-200 ${
+                            openMenus[item.name] ? "rotate-90" : ""
+                          } ${isActive(item.path) ? "text-blue-200" : "text-slate-600"}`}
+                        />
+                      </SidebarMenuButton>
+
+                      {/* Subitems */}
+                      {openMenus[item.name] && (
+                        <div className="ml-7 mt-0.5 space-y-0.5">
+                          {item.children.map((child) => (
+                            <NavLink
+                              key={child.path}
+                              to={child.path}
+                              className={() => {
+                                const childParams = new URLSearchParams(
+                                  child.path.split("?")[1] ?? "",
+                                );
+                                const currentTab = new URLSearchParams(
+                                  location.search,
+                                ).get("tab");
+                                const childTab = childParams.get("tab");
+                                const active = childTab
+                                  ? currentTab === childTab
+                                  : location.pathname === child.path;
+                                return `flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-colors
+    ${
+      active
+        ? "text-blue-400"
+        : "text-slate-500 hover:text-slate-200 hover:bg-slate-800"
+    }`;
+                              }}
+                            >
+                              <span className="w-1 h-1 rounded-full bg-current opacity-60 shrink-0" />
+                              {child.name}
+                            </NavLink>
+                          ))}
+                        </div>
                       )}
-                    </NavLink>
-                  </SidebarMenuButton>
+                    </>
+                  ) : (
+                    /* Regular item — no submenu */
+                    <SidebarMenuButton
+                      isActive={isActive(item.path)}
+                      className={`group relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm
+                        transition-all duration-150
+                        ${
+                          isActive(item.path)
+                            ? "bg-blue-600 text-white shadow-md shadow-blue-600/20"
+                            : "text-slate-400 hover:bg-slate-800 hover:text-slate-100"
+                        }`}
+                    >
+                      <NavLink
+                        to={item.path}
+                        className="flex items-center gap-3 w-full"
+                      >
+                        <item.icon
+                          className={`w-4 h-4 shrink-0 ${
+                            isActive(item.path)
+                              ? "text-white"
+                              : "text-slate-500"
+                          }`}
+                        />
+                        <span className="font-medium">{item.name}</span>
+                        {isActive(item.path) && (
+                          <ChevronRight className="w-3 h-3 ml-auto text-blue-200" />
+                        )}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  )}
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>
@@ -180,7 +268,7 @@ export default function AdminSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      {/* ── User Footer ── */}
+      {/* User Footer */}
       <SidebarFooter className="px-4 py-4 border-t border-slate-700/60">
         <div className="flex items-center gap-3">
           <Avatar className="w-8 h-8 shrink-0">
