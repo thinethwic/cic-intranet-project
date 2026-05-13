@@ -85,6 +85,7 @@ const EMPTY_FORM = {
   phoneNo: "",
   dob: "",
   joinedDate: "",
+  imgeURL: "",
 };
 
 function FilterDropdown({
@@ -236,6 +237,7 @@ export default function AdminManagementPage() {
       phoneNo: member.phoneNo ?? "",
       dob: member.dob ?? "",
       joinedDate: member.joinedDate ?? "",
+      imgeURL: member.imgeURL ?? "",
     });
     setFormError("");
     setDialogOpen(true);
@@ -268,6 +270,7 @@ export default function AdminManagementPage() {
         phoneNo: form.phoneNo || undefined,
         dob: form.dob || undefined,
         joinedDate: form.joinedDate || undefined,
+        imgeURL: form.imgeURL || undefined,
         user: loggedUserId ?? undefined,
       };
 
@@ -790,6 +793,23 @@ export default function AdminManagementPage() {
                   }
                 />
               </div>
+              {form.role === TOP_MANAGEMENT_ROLE && (
+                <div className="space-y-2">
+                  <Label className="text-sm text-muted-foreground">
+                    Profile Image URL
+                    <span className="text-slate-400 font-normal ml-1">
+                      (optional)
+                    </span>
+                  </Label>
+                  <Input
+                    placeholder="https://... or /images/photo.jpg"
+                    value={form.imgeURL}
+                    onChange={(e) =>
+                      setForm((p) => ({ ...p, imgeURL: e.target.value }))
+                    }
+                  />
+                </div>
+              )}
             </div>
 
             {formError && (

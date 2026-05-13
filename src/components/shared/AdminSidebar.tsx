@@ -11,6 +11,7 @@ import {
   BriefcaseBusiness,
   LogOut,
   ChevronRight,
+  AlertCircleIcon,
 } from "lucide-react";
 import {
   Sidebar,
@@ -62,6 +63,12 @@ const navItems: NavItem[] = [
     name: "News",
     icon: Newspaper,
     path: "/admin/news",
+    roles: ["SUPER_ADMIN"],
+  },
+  {
+    name: "Alert",
+    icon: AlertCircleIcon,
+    path: "/admin/alert",
     roles: ["SUPER_ADMIN"],
   },
   {

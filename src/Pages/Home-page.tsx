@@ -1,11 +1,9 @@
 import HeroSection from "./components/Hero-section";
-import { CEOMessageCard } from "./components/MessageCard";
 import MembersGrid from "./components/MembersGrid";
 import StatsSection from "./components/StatesSection";
 import UpcomingBirthdays from "./components/UpComingBirthDay";
 import { Card } from "@/components/ui/card";
 import { Flame, Newspaper, Calendar } from "lucide-react";
-
 import visionImg from "@/assets/vision.jpg"; // eye image
 import missionImg from "@/assets/mission.jpg";
 import GallerySection from "./components/GallerySection";
@@ -16,20 +14,17 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import FaqCalendarSection from "@/components/shared/FaqCalendarSection";
 import NewsSlider from "./components/NewsSlider";
 import WelcomeCarousel from "./components/WelcomeMembers";
-
-import { ceoMessage } from "@/Mock-data";
 import { useMembers } from "@/hooks/useMembers";
 import type { Member as BirthdayMember } from "@/utils/birthday";
-
 import EventsSlider from "./components/EventsSlider";
 import OurPeopleCard from "./components/OurPeople";
-
 import NoBirthdayCard from "./components/NoBirthdayCard";
 import { getTodayBirthdays, getUpcomingBirthdays } from "@/utils/birthday";
 import BirthdayCarousel from "./components/BirthdayCarousel";
 import { useVideos } from "@/hooks/useVideos";
 import { useNews } from "@/hooks/useNews";
 import { useEvents } from "@/hooks/useEvents";
+import { AlertOrCEOCard } from "./components/Alertorceocard";
 
 function HomePage() {
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -45,6 +40,8 @@ function HomePage() {
   const standardNews = news.filter((n) => !n.isHot);
 
   const { members = [], loading: membersLoading } = useMembers();
+
+  // fetch and setAlerts(...) from your API/mock data
 
   // ✅ Memoize the mapping first
   const birthdayMembers: BirthdayMember[] = useMemo(
@@ -128,7 +125,7 @@ function HomePage() {
       <HeroSection />
       {/* Hot News */}
 
-      <section className="max-w-7xl mx-auto px-4 py-4">
+      <section className="max-w-7xl mx-auto px-2 py-4">
         <div className="flex items-center gap-3 mb-6">
           <h2 className="text-2xl md:text-4xl font-bold text-blue-900">
             Hot News
@@ -171,13 +168,9 @@ function HomePage() {
             )}
           </div>
 
-          {/* CEO Card */}
+          {/* CEO Card / Alert Card */}
           <div className="w-full md:col-span-1">
-            <CEOMessageCard
-              name={ceoMessage.name}
-              image={ceoMessage.image}
-              messages={ceoMessage.messages}
-            />
+            <AlertOrCEOCard />
           </div>
         </div>
       </section>

@@ -1,16 +1,30 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useMembers } from "@/hooks/useMembers";
-import { roleLabels } from "@/utils/segmentMapper";
 
 const ROLE_ORDER = ["CEO", "COO", "CFO"];
+
+const ROLE_LABELS: Record<string, string> = {
+  CEO: "Chief Executive Officer",
+  COO: "Chief Operating Officer",
+  CFO: "Chief Financial Officer",
+};
+
+function getRoleFromEmail(email: string): string {
+  const prefix = email.split("@")[0].toUpperCase();
+  return ROLE_LABELS[prefix] ?? prefix;
+}
 
 export default function MembersCarousel() {
   const { members, loading, error } = useMembers();
 
   const topManagement = members
     .filter((m) => m.role === "TOP_MANAGEMENT")
-    .sort((a, b) => ROLE_ORDER.indexOf(a.title) - ROLE_ORDER.indexOf(b.title));
+    .sort((a, b) => {
+      const aRole = a.email.split("@")[0].toUpperCase();
+      const bRole = b.email.split("@")[0].toUpperCase();
+      return ROLE_ORDER.indexOf(aRole) - ROLE_ORDER.indexOf(bRole);
+    });
 
   if (loading) {
     return (
@@ -45,30 +59,25 @@ export default function MembersCarousel() {
           className="hover:shadow-lg transition-shadow duration-300 border border-blue-100"
         >
           <CardContent className="flex flex-col items-center py-6 px-4 gap-1.5">
-            {" "}
-            {/* py-10 → py-6, added px-4, gap-2 → gap-1.5 */}
-            <Avatar className="w-16 h-16 mb-1 ring-4 ring-blue-100">
-              {" "}
-              {/* w-24 h-24 → w-16 h-16 */}
+            <Avatar className="w-26 h-26 mb-1 ring-4 ring-blue-100">
+              {member.imgeURL && (
+                <AvatarImage
+                  src={member.imgeURL}
+                  alt={`${member.firstName} ${member.lastName}`}
+                  className="object-cover"
+                />
+              )}
               <AvatarFallback className="text-base font-bold text-blue-700 bg-blue-50">
-                {" "}
-                {/* text-xl → text-base */}
                 {member.firstName[0]}
                 {member.lastName[0]}
               </AvatarFallback>
             </Avatar>
-            <span className="text-[10px] font-semibold tracking-widest text-blue-400 uppercase">
-              {member.title}
-            </span>
-            <h3 className="text-sm font-bold text-blue-900 text-center">
-              {" "}
-              {/* text-lg → text-sm */}
-              {member.firstName} {member.lastName}
+            <h3 className="text-lg font-bold text-blue-900 text-center">
+              {member.title}. {member.firstName} {member.lastName}
             </h3>
-            <p className="text-[11px] text-gray-500">
-              {roleLabels[member.role] ?? member.role}
+            <p className="text-[14px] text-lg text-blue-600">
+              {getRoleFromEmail(member.email)}
             </p>
-            <p className="text-[11px] text-gray-400">{member.email}</p>
           </CardContent>
         </Card>
       ))}

@@ -96,6 +96,7 @@ export interface Member {
     email: string;
     phoneNo: string;
     joinedDate: string;
+    imgeURL: string;
     userId?: number | null;     // ✅ from backend response
 }
 
@@ -105,4 +106,16 @@ export interface User {
     email: string;
     role: string;
     active: boolean;
+}
+
+export type AlertSeverity = "critical" | "warning" | "info";
+
+export interface Alert {
+    id: number;
+    title: string;
+    body: string;
+    severity: AlertSeverity;
+    date?: string;
+    href?: string;
+    flyerImage?: string;
 }

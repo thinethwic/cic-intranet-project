@@ -28,11 +28,8 @@ interface Slide {
 export default function HomePageAsiavet() {
   const { pathname } = useLocation();
 
-  // ✅ slice(1) removes leading "/" → "our-segments/aisa-vet"
   const currentPath = pathname.slice(1);
   const currentSegment = mapPathToSegment(currentPath);
-
-  // ✅ Guard — if segment not found, show nothing or fallback
 
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [activeTab, setActiveTab] = useState("All");
@@ -47,16 +44,14 @@ export default function HomePageAsiavet() {
   const [authError, setAuthError] = useState<string | null>(null);
   const [authLoading, setAuthLoading] = useState(false);
 
-  // ✅ Real API data filtered by segment
   const { documents, loading: docsLoading } = useDocuments(currentSegment);
   const { events, loading: eventsLoading } = useEvents(currentSegment);
-  // ✅ Always default to empty array
   const { announcements = [], loading: announcementsLoading } =
     useAnnouncements(currentSegment);
 
   const visibleAnnouncements = showAllAnnouncements
     ? announcements
-    : announcements.slice(0, 3); // ✅ safe now
+    : announcements.slice(0, 3);
 
   const tabs = ["All", "HR & Policies", "Finance", "Operations"];
 
@@ -64,7 +59,6 @@ export default function HomePageAsiavet() {
 
   const filteredDocuments = useMemo(() => {
     return documents.filter((doc) => {
-      // ✅ match backend enum category directly
       const matchesTab =
         activeTab === "All" ||
         (activeTab === "HR & Policies" && doc.category === "HR") ||
@@ -83,7 +77,6 @@ export default function HomePageAsiavet() {
     });
   }, [documents, activeTab, searchQuery, showPrivate, isAuthorized]);
 
-  // ✅ View handler
   const handleView = async (id: number) => {
     try {
       const blob = await viewDocument(id);
@@ -94,7 +87,6 @@ export default function HomePageAsiavet() {
     }
   };
 
-  // ✅ Download handler
   const handleDownload = async (id: number, title: string) => {
     try {
       const blob = await downloadDocument(id);
@@ -109,7 +101,6 @@ export default function HomePageAsiavet() {
     }
   };
 
-  // Replace the hardcoded check in the Sign in button onClick:
   const handleAuthorizedLogin = async () => {
     if (!username || !password) return;
     setAuthError(null);
@@ -117,7 +108,6 @@ export default function HomePageAsiavet() {
     try {
       const data = await loginAuthorized(username, password);
 
-      // ✅ Only AUTHORIZED or ADMIN role can access private docs
       if (
         data.role !== "AUTHORIZED" &&
         data.role !== "ADMIN" &&
@@ -127,7 +117,6 @@ export default function HomePageAsiavet() {
         return;
       }
 
-      // ✅ Store separately from admin token
       localStorage.setItem("authorized_token", data.token);
       localStorage.setItem("authorized_user", JSON.stringify(data));
 
@@ -171,97 +160,43 @@ export default function HomePageAsiavet() {
     <div>
       <HeroSectionSegments slides={slides} />
       <ButtonsSection segment={currentSegment ?? undefined} />
+
       <section className="max-w-7xl mx-auto px-2 py-4">
         <div className="grid md:grid-cols-2 gap-10 items-start">
-          {/* ================= LEFT ================= */}
+          {/* ================= LEFT — Announcements (moved here) ================= */}
           <div>
-            <div className="flex items-center gap-3 mb-6">
-              <h2 className="text-3xl font-bold text-blue-900">Documents</h2>
-              <button
-                onClick={() => setShowPrivate(false)}
-                className={`text-xs px-2 py-1 rounded-full border ${!showPrivate ? "bg-blue-900 text-white" : "text-gray-500"}`}
-              >
-                👁 Public
-              </button>
-              <button
-                onClick={() => {
-                  if (!isAuthorized) {
-                    setShowAuthModal(true);
-                  } else {
-                    setShowPrivate(true);
-                  }
-                }}
-                className={`text-xs px-2 py-1 rounded-full border ${showPrivate ? "bg-red-600 text-white" : "text-gray-500"}`}
-              >
-                🔒 Private
-              </button>
-            </div>
-
-            <Input
-              placeholder="Search Forms & Templates"
-              className="mb-4 rounded-full"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-
-            <div className="flex gap-2 mb-6 flex-wrap">
-              {tabs.map((tab) => (
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-3xl font-bold text-blue-900">
+                Announcements
+              </h2>
+              {announcements.length > 3 && (
                 <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab)}
-                  className={`px-4 py-2 rounded-full text-sm border ${activeTab === tab ? "bg-blue-900 text-white" : "text-gray-600 bg-white"}`}
+                  onClick={() => setShowAllAnnouncements((prev) => !prev)}
+                  className="text-sm text-blue-600 hover:underline"
                 >
-                  {tab}
+                  {showAllAnnouncements ? "Show less ↑" : "View all →"}
                 </button>
-              ))}
+              )}
             </div>
-
-            {docsLoading ? (
-              <p className="text-sm text-gray-400 py-6 text-center">
-                Loading documents...
-              </p>
-            ) : (
-              <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-                {filteredDocuments.map((doc) => (
-                  <DocumentCard
-                    key={doc.id}
-                    title={doc.title}
-                    category={doc.category}
-                    type={doc.type}
-                    fileUrl={doc.fileUrl}
-                    allowDownload={doc.allowDownload}
-                    allowView={doc.allowView}
-                    onView={() => handleView(doc.id)}
-                    onDownload={() => handleDownload(doc.id, doc.title)}
-                  />
-                ))}
-                {filteredDocuments.length === 0 && (
-                  <p className="text-sm text-gray-400 col-span-full py-6 text-center">
-                    No documents found
-                  </p>
-                )}
-              </div>
-            )}
-
-            {pinnedDocs.length > 0 && (
-              <>
-                <h3 className="text-xl font-semibold text-blue-900 mt-10 mb-4">
-                  Pinned for you
-                </h3>
-                <div className="space-y-3">
-                  {pinnedDocs.map((doc) => (
-                    <PinnedCard
-                      key={doc.id}
-                      title={doc.title}
-                      category={doc.category}
-                    />
+            <div className="space-y-3">
+              {announcementsLoading ? (
+                <p className="text-sm text-gray-400">
+                  Loading announcements...
+                </p>
+              ) : (
+                <>
+                  {visibleAnnouncements.map((a) => (
+                    <AnnouncementItem key={a.id} {...a} />
                   ))}
-                </div>
-              </>
-            )}
+                  {announcements.length === 0 && (
+                    <p className="text-sm text-gray-400">No announcements</p>
+                  )}
+                </>
+              )}
+            </div>
           </div>
 
-          {/* ================= RIGHT ================= */}
+          {/* ================= RIGHT — Calendar & Events (unchanged) ================= */}
           <div className="w-full flex flex-col">
             <h2 className="text-3xl font-bold text-blue-900 mb-6">Calendar</h2>
             <div className="border rounded-xl p-4 shadow-sm w-full mb-8">
@@ -313,34 +248,92 @@ export default function HomePageAsiavet() {
         </div>
       </section>
 
+      {/* ================= Documents Section (moved here, full width) ================= */}
       <section className="max-w-7xl mx-auto px-2 pt-2 pb-8">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-3xl font-bold text-blue-900 mb-6">
-            Announcements
-          </h2>
-          {announcements.length > 3 && (
+        <div className="flex items-center gap-3 mb-6">
+          <h2 className="text-3xl font-bold text-blue-900">Documents</h2>
+          <button
+            onClick={() => setShowPrivate(false)}
+            className={`text-xs px-2 py-1 rounded-full border ${!showPrivate ? "bg-blue-900 text-white" : "text-gray-500"}`}
+          >
+            👁 Public
+          </button>
+          <button
+            onClick={() => {
+              if (!isAuthorized) {
+                setShowAuthModal(true);
+              } else {
+                setShowPrivate(true);
+              }
+            }}
+            className={`text-xs px-2 py-1 rounded-full border ${showPrivate ? "bg-red-600 text-white" : "text-gray-500"}`}
+          >
+            🔒 Private
+          </button>
+        </div>
+
+        <Input
+          placeholder="Search Forms & Templates"
+          className="mb-4 rounded-full"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+        />
+
+        <div className="flex gap-2 mb-6 flex-wrap">
+          {tabs.map((tab) => (
             <button
-              onClick={() => setShowAllAnnouncements((prev) => !prev)}
-              className="text-sm text-blue-600 hover:underline"
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`px-4 py-2 rounded-full text-sm border ${activeTab === tab ? "bg-blue-900 text-white" : "text-gray-600 bg-white"}`}
             >
-              {showAllAnnouncements ? "Show less ↑" : "View all →"}
+              {tab}
             </button>
-          )}
+          ))}
         </div>
-        <div className="space-y-3">
-          {announcementsLoading ? (
-            <p className="text-sm text-gray-400">Loading announcements...</p>
-          ) : (
-            <>
-              {visibleAnnouncements.map((a) => (
-                <AnnouncementItem key={a.id} {...a} />
+
+        {docsLoading ? (
+          <p className="text-sm text-gray-400 py-6 text-center">
+            Loading documents...
+          </p>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+            {filteredDocuments.map((doc) => (
+              <DocumentCard
+                key={doc.id}
+                title={doc.title}
+                category={doc.category}
+                type={doc.type}
+                fileUrl={doc.fileUrl}
+                allowDownload={doc.allowDownload}
+                allowView={doc.allowView}
+                onView={() => handleView(doc.id)}
+                onDownload={() => handleDownload(doc.id, doc.title)}
+              />
+            ))}
+            {filteredDocuments.length === 0 && (
+              <p className="text-sm text-gray-400 col-span-full py-6 text-center">
+                No documents found
+              </p>
+            )}
+          </div>
+        )}
+
+        {pinnedDocs.length > 0 && (
+          <>
+            <h3 className="text-xl font-semibold text-blue-900 mt-10 mb-4">
+              Pinned for you
+            </h3>
+            <div className="space-y-3">
+              {pinnedDocs.map((doc) => (
+                <PinnedCard
+                  key={doc.id}
+                  title={doc.title}
+                  category={doc.category}
+                />
               ))}
-              {announcements.length === 0 && (
-                <p className="text-sm text-gray-400">No announcements</p>
-              )}
-            </>
-          )}
-        </div>
+            </div>
+          </>
+        )}
       </section>
 
       {showAuthModal && (
@@ -385,7 +378,6 @@ export default function HomePageAsiavet() {
                 />
               </div>
 
-              {/* ✅ Show error */}
               {authError && (
                 <p className="text-xs text-red-500 text-center">{authError}</p>
               )}

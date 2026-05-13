@@ -313,7 +313,9 @@ export default function AdminNewsPage() {
       setNews([]);
       setTotalItems(0);
       setTotalPages(1);
-      setError(getUserFriendlyErrorMessage(err, "Unable to load news right now."));
+      setError(
+        getUserFriendlyErrorMessage(err, "Unable to load news right now."),
+      );
     } finally {
       setLoading(false);
     }

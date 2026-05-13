@@ -47,9 +47,7 @@ import {
   type Department,
   type SegmentValue,
 } from "@/lib/api/departmentApi";
-import {
-  getAdminUsersPage,
-} from "@/lib/api/ticketApi";
+import { getAdminUsersPage } from "@/lib/api/ticketApi";
 import { getUserFriendlyErrorMessage } from "@/lib/api/apiUtils";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
@@ -66,8 +64,6 @@ interface User {
   department?: string;
   createdAt?: string;
 }
-
-const PAGE_SIZE_OPTIONS = [8, 12, 20];
 
 const ROLE_OPTIONS = ["SUPER_ADMIN", "ADMIN", "AUTHORIZED", "SERVICE"];
 const FILTER_ROLES = ["All", "SUPER_ADMIN", "ADMIN", "AUTHORIZED", "SERVICE"];
@@ -225,6 +221,7 @@ export default function AdminUsersPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [editUser, setEditUser] = useState<User | null>(null);
   const [deleteUser, setDeleteUser] = useState<User | null>(null);
+  const [deleteError, setDeleteError] = useState(""); // ← add this
 
   const [createForm, setCreateForm] = useState({ ...EMPTY_FORM });
   const [editForm, setEditForm] = useState({ ...EMPTY_FORM });
@@ -294,7 +291,9 @@ export default function AdminUsersPage() {
       setUsers([]);
       setTotalItems(0);
       setTotalPages(1);
-      setError(getUserFriendlyErrorMessage(err, "Unable to load users right now."));
+      setError(
+        getUserFriendlyErrorMessage(err, "Unable to load users right now."),
+      );
     } finally {
       setLoading(false);
     }
@@ -409,14 +408,23 @@ export default function AdminUsersPage() {
   const handleDelete = async () => {
     if (!deleteUser) return;
     try {
-      await fetch(`${API}/${deleteUser.id}`, {
+      setSaving(true);
+      setDeleteError("");
+      const res = await fetch(`${API}/${deleteUser.id}`, {
         method: "DELETE",
         headers: authHeaders(),
       });
+      if (!res.ok) {
+        setDeleteError("Faild to Delete User !");
+        return;
+      }
       await fetchUsers();
       setDeleteUser(null);
     } catch (err) {
       console.error(err);
+      setDeleteError("Faild to Delete User !");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -732,7 +740,6 @@ export default function AdminUsersPage() {
         pageSize={pageSize}
         itemLabel="users"
         onPageChange={setPage}
-        pageSizeOptions={PAGE_SIZE_OPTIONS}
         onPageSizeChange={(nextSize) => {
           setPage(1);
           setPageSize(nextSize);
@@ -803,6 +810,12 @@ export default function AdminUsersPage() {
               <Label className="text-xs font-medium text-slate-600">
                 Password
               </Label>
+              <input
+                type="password"
+                autoComplete="new-password"
+                style={{ display: "none" }}
+                readOnly
+              />
               <Input
                 type="password"
                 placeholder="Min 8 characters"
@@ -1033,7 +1046,15 @@ export default function AdminUsersPage() {
       </Dialog>
 
       {/* ── Delete Dialog ── */}
-      <Dialog open={!!deleteUser} onOpenChange={() => setDeleteUser(null)}>
+      <Dialog
+        open={!!deleteUser}
+        onOpenChange={(o) => {
+          if (!o) {
+            setDeleteUser(null);
+            setDeleteError("");
+          }
+        }}
+      >
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
             <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center mb-2">
@@ -1045,12 +1066,30 @@ export default function AdminUsersPage() {
               undone.
             </DialogDescription>
           </DialogHeader>
+
+          {/* ← error banner */}
+          {deleteError && (
+            <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {deleteError}
+            </div>
+          )}
+
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteUser(null)}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setDeleteUser(null);
+                setDeleteError("");
+              }}
+            >
               Cancel
             </Button>
-            <Button variant="destructive" onClick={handleDelete}>
-              Delete
+            <Button
+              variant="destructive"
+              onClick={handleDelete}
+              disabled={saving}
+            >
+              {saving ? "Deleting..." : "Delete"}
             </Button>
           </DialogFooter>
         </DialogContent>

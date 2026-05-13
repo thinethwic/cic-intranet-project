@@ -23,6 +23,7 @@ import HelpDeskPage from "./Pages/Our Segments/components/HelpDeskPage";
 import EmployeeProtectedRoute from "./Pages/EmployeeProtectedRoute";
 import NotFoundPage from "./components/shared/NotFoundPage";
 import AdminCategoriesPage from "./Pages/Admin/AdminCategoriesPage";
+import AdminAlertsPage from "./Pages/Admin/AdminAlertsPage";
 
 function App() {
   return (
@@ -57,6 +58,7 @@ function App() {
             <Route path="videos" element={<AdminVideosPage />} />
             <Route path="documents" element={<AdminDocumentsPage />} />
             <Route path="news" element={<AdminNewsPage />} />
+            <Route path="alert" element={<AdminAlertsPage />} />
             <Route path="events" element={<AdminEventsPage />} />
             <Route path="gallery" element={<AdminGalleryPage />} />
             <Route path="management" element={<AdminManagementPage />} />
