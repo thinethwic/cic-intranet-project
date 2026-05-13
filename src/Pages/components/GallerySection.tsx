@@ -8,7 +8,7 @@ interface GalleryImage {
   description: string;
 }
 
-const BASE_IMAGE_URL = "http://localhost:8080";
+const BASE_IMAGE_URL = import.meta.env.VITE_API_BASE_URL;
 
 const mapGalleryToImage = (gallery: Gallery): GalleryImage => ({
   key: `${BASE_IMAGE_URL}${gallery.image}`,
