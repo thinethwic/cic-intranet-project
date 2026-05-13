@@ -2,6 +2,7 @@ import { Separator } from "@/components/ui/separator";
 import logo from "../../assets/Logo.jpg";
 import { Link } from "react-router-dom";
 import { FaFacebook, FaLinkedin, FaYoutube } from "react-icons/fa";
+import { Mail, MapPin, Phone, Globe } from "lucide-react";
 
 const companyLinks = [
   { key: "Home", Link: "/" },
@@ -10,8 +11,8 @@ const companyLinks = [
 
 const segments = [
   { SegKey: "CIC Feeds", Link: "/our-segments/cic-feeds" },
-  { SegKey: "CIC Vetcare", Link: "/our-segments/cic-vetcare" },
   { SegKey: "CIC Poultry", Link: "/our-segments/cic-poulry" },
+  { SegKey: "CIC Vetcare", Link: "/our-segments/cic-vetcare" },
   { SegKey: "Asia Vet", Link: "/our-segments/asia-vet" },
 ];
 
@@ -19,7 +20,7 @@ export default function Footer() {
   return (
     <footer className="bg-[#3a3a3a] text-gray-300">
       <div className="max-w-7xl mx-auto px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           {/* Logo */}
           <div className="flex items-start">
             <div className="bg-white rounded-md p-3">
@@ -60,8 +61,15 @@ export default function Footer() {
             <h3 className="text-white font-black text-sm uppercase tracking-widest mb-4">
               Get In Touch
             </h3>
-            <ul className="space-y-2">
-              <li>
+            <ul className="space-y-3">
+              <li className="flex items-start gap-2">
+                <MapPin className="w-4 h-4 mt-0.5 text-gray-400 flex-shrink-0" />
+                <p className="text-sm text-gray-300">
+                  No. 252, Kurunduwatte Road, Ekala
+                </p>
+              </li>
+              <li className="flex items-center gap-2">
+                <Mail className="w-4 h-4 text-gray-400 flex-shrink-0" />
                 <a
                   href="mailto:info@cicfeeds.lk"
                   className="text-sm text-blue-400 hover:text-blue-300 underline underline-offset-2 transition-colors duration-200"
@@ -69,23 +77,14 @@ export default function Footer() {
                   info@cicfeeds.lk
                 </a>
               </li>
-              <li>
-                <a
-                  href="tel:0115389800"
-                  className="text-sm text-gray-300 hover:text-white transition-colors duration-200"
-                >
-                  0115 389 800
-                </a>
+              <li className="flex items-center gap-2">
+                <Phone className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                <p className="text-sm text-gray-300">
+                  011-5389800 | 011-4830990-3
+                </p>
               </li>
-              <li>
-                <a
-                  href="tel:0115389800"
-                  className="text-sm text-gray-300 hover:text-white transition-colors duration-200"
-                >
-                  0115 389 800
-                </a>
-              </li>
-              <li>
+              <li className="flex items-center gap-2">
+                <Globe className="w-4 h-4 text-gray-400 flex-shrink-0" />
                 <a
                   href="https://www.cic.lk/"
                   target="_blank"

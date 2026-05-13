@@ -34,8 +34,8 @@ const slides: Slide[] = [
 
 const categories = [
   { label: "CIC Feeds", icon: Wheat, Link: "/our-segments/cic-feeds" },
-  { label: "CIC Vetcare", icon: Pill, Link: "/our-segments/cic-vetcare" },
   { label: "CIC Poultry", icon: Bird, Link: "/our-segments/cic-poulry" },
+  { label: "CIC Vetcare", icon: Pill, Link: "/our-segments/cic-vetcare" },
   { label: "Asia Vet", icon: Syringe, Link: "/our-segments/asia-vet" },
 ];
 
