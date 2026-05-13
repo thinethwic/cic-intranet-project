@@ -43,7 +43,7 @@ export default function OurPeopleCard() {
   if (loading) {
     return (
       <Card className="relative text-center p-4 rounded-2xl shadow-sm w-full max-w-[260px] mx-auto md:max-w-none">
-        <h3 className="text-sm font-semibold text-blue-900 mb-3">Our People</h3>
+        <h3 className="text-sm font-semibold text-blue-900 mb-3">Our Staff</h3>
         <div className="w-20 h-20 mx-auto mb-2 rounded-full bg-gray-200 animate-pulse" />
         <div className="h-3 bg-gray-200 rounded animate-pulse mx-auto w-32 mb-2" />
         <div className="h-2 bg-gray-100 rounded animate-pulse mx-auto w-24" />
@@ -54,7 +54,7 @@ export default function OurPeopleCard() {
   if (error || members.length === 0) {
     return (
       <Card className="relative text-center p-4 rounded-2xl shadow-sm w-full max-w-[260px] mx-auto md:max-w-none">
-        <h3 className="text-sm font-semibold text-blue-900 mb-3">Our People</h3>
+        <h3 className="text-sm font-semibold text-blue-900 mb-3">Our Staff</h3>
         <p className="text-xs text-gray-400">{error ?? "No members found."}</p>
       </Card>
     );
@@ -64,7 +64,7 @@ export default function OurPeopleCard() {
 
   return (
     <Card className="relative text-center p-4 rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 w-full max-w-[260px] mx-auto md:max-w-none">
-      <h3 className="text-sm font-semibold text-blue-900 mb-3">Our People</h3>
+      <h3 className="text-sm font-semibold text-blue-900 mb-3">Our Staff</h3>
       <Avatar className="w-20 h-20 mx-auto mb-2">
         <AvatarFallback className="text-lg">
           {getInitials(person.firstName, person.lastName)} {/* ✅ */}

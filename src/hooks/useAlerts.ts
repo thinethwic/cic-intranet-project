@@ -69,7 +69,7 @@ export const useAlerts = (page = 0, size = 100, adminMode = false): UseAlertsRet
     const update = async (id: number, dto: Partial<Alert>): Promise<Alert | null> => {
         try {
             const updated = await updateAlert(id, dto);
-            setAlerts((prev) => prev.map((a) => (a.id === String(id) ? updated : a)));
+            setAlerts((prev) => prev.map((a) => (Number(a.id) === id ? updated : a)));
             return updated;
         } catch (err) {
             setError(err instanceof Error ? err.message : "Failed to update alert");
@@ -80,7 +80,7 @@ export const useAlerts = (page = 0, size = 100, adminMode = false): UseAlertsRet
     const updateFlyer = async (id: number, flyer: File): Promise<Alert | null> => {
         try {
             const updated = await updateAlertFlyer(id, flyer);
-            setAlerts((prev) => prev.map((a) => (a.id === String(id) ? updated : a)));
+            setAlerts((prev) => prev.map((a) => (Number(a.id) === id ? updated : a)));
             return updated;
         } catch (err) {
             setError(err instanceof Error ? err.message : "Failed to update flyer");
@@ -91,7 +91,7 @@ export const useAlerts = (page = 0, size = 100, adminMode = false): UseAlertsRet
     const remove = async (id: number): Promise<boolean> => {
         try {
             await deleteAlert(id);
-            setAlerts((prev) => prev.filter((a) => a.id !== String(id)));
+            setAlerts((prev) => prev.filter((a) => Number(a.id) !== id));
             return true;
         } catch (err) {
             setError(err instanceof Error ? err.message : "Failed to delete alert");

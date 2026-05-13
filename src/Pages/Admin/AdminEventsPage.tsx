@@ -220,7 +220,7 @@ function EventsTab() {
       const payload = {
         ...form,
         userId: adminUser?.userId,
-        segment: form.segment || undefined,
+        segment: form.segment || null, // ← send null explicitly, not undefined
       };
       const formData = new FormData();
       formData.append(

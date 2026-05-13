@@ -158,7 +158,7 @@ function FilterDropdown({
 }) {
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
+      <DropdownMenuTrigger>
         <Button
           variant="outline"
           className={`h-9 gap-2 text-sm font-normal justify-between ${
@@ -252,8 +252,6 @@ function AlertForm({
   onFlyerChange,
 }: AlertFormProps) {
   const set = (k: string, v: string) => setForm((p) => ({ ...p, [k]: v }));
-
-  const isScheduledDate = form.date ? new Date(form.date) > new Date() : false;
 
   return (
     <div className="space-y-4">
@@ -387,7 +385,7 @@ export default function AdminAlertsPage() {
   const [severityFilter, setSeverityFilter] = useState("All");
   const [showCreate, setShowCreate] = useState(false);
   const [editItem, setEditItem] = useState<Alert | null>(null);
-  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [deleteId, setDeleteId] = useState<number | null>(null);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(8);
 
@@ -437,7 +435,6 @@ export default function AdminAlertsPage() {
   const warningCount = alerts.filter(
     (a) => getSeverity(a) === "warning",
   ).length;
-  const infoCount = alerts.filter((a) => getSeverity(a) === "info").length;
 
   // ── Create ────────────────────────────────────────────────────────────────
   const handleCreate = async () => {
