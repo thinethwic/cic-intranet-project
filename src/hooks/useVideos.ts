@@ -1,7 +1,10 @@
 import { useState, useEffect } from "react";
 import type { video as Video } from "@/types";
 
-const BASE_URL = "http://localhost:8080/api/v1";
+const BASE_IMAGE_URL =
+    import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+
+const BASE_URL = `${BASE_IMAGE_URL}/api/v1`;
 
 export const useVideos = () => {
     const [videos, setVideos] = useState<Video[]>([]);  // ✅ empty array not undefined
