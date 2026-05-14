@@ -17,8 +17,7 @@ function normalize(raw: any): Alert {
 
 export const getAllAlerts = async (page = 0, size = 100): Promise<Alert[]> => {
     const response = await fetch(
-        `${BASE_URL}/api/v1/alerts?page=${page}&size=${size}`,
-        { headers: authHeaders() },
+        `${BASE_URL}/api/v1/alerts?page=${page}&size=${size}`
     );
     if (!response.ok) throw new Error("Failed to fetch alerts");
     const data = await response.json();

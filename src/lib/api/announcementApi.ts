@@ -5,9 +5,8 @@ const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
 
 // announcementApi.ts
 export const getAllAnnouncements = async (page = 0, size = 100): Promise<Announcement[]> => {
-    const response = await fetch(`${BASE_URL}/api/v1/announcements?page=${page}&size=${size}`, {
-        headers: authHeaders()
-    });
+    const response = await fetch(`${BASE_URL}/api/v1/announcements?page=${page}&size=${size}`
+    );
     if (!response.ok) throw new Error("Failed to fetch announcements");
     const data = await response.json();
 
