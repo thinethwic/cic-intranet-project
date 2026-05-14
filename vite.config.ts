@@ -6,7 +6,7 @@ import tailwindcss from "@tailwindcss/vite"
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss()],
-  base: "./",
+  base: "/",
   build: {
     outDir: "dist", // _redirects must end up inside here after build
   },
