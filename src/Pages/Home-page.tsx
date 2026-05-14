@@ -8,7 +8,7 @@ import visionImg from "@/assets/vision.jpg"; // eye image
 import missionImg from "@/assets/mission.jpg";
 import GallerySection from "./components/GallerySection";
 import { useRef, useState, useMemo } from "react";
-import VideoCard from "./components/VideoCard";
+import VideoCard, { VideoModal } from "./components/VideoCard";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import FaqCalendarSection from "@/components/shared/FaqCalendarSection";
@@ -379,17 +379,17 @@ function HomePage() {
               size="icon"
               variant="secondary"
               onClick={() => scroll("left")}
-              className="absolute left-0 top-1/2 -translate-y-1/2 z-10"
+              className="absolute left-0 top-1/2 -translate-y-1/2 z-10 hidden sm:flex"
             >
               <ChevronLeft />
             </Button>
 
             <div
               ref={scrollRef}
-              className="flex gap-6 overflow-x-auto no-scrollbar px-10"
+              className="flex gap-4 sm:gap-6 overflow-x-auto no-scrollbar px-0 sm:px-10"
             >
               {videos
-                .filter((v) => v.videoLink) // ✅ skip videos with no link
+                .filter((v) => v.videoLink)
                 .map((video) => (
                   <VideoCard
                     key={video.id}
@@ -405,28 +405,22 @@ function HomePage() {
               size="icon"
               variant="secondary"
               onClick={() => scroll("right")}
-              className="absolute right-0 top-1/2 -translate-y-1/2 z-10"
+              className="absolute right-0 top-1/2 -translate-y-1/2 z-10 hidden sm:flex"
             >
               <ChevronRight />
             </Button>
           </div>
         )}
 
-        {/* 🎬 Modal */}
+        {/* 🎬 Modal with keyboard support */}
         {activeVideo && (
-          <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50">
-            <button
-              onClick={() => setActiveVideo(null)}
-              className="absolute top-6 right-6 text-white text-2xl"
-            >
-              ✕
-            </button>
-            <iframe
-              src={getEmbedUrl(activeVideo)}
-              className="w-[90%] md:w-200 h-75 md:h-112.5 rounded-lg"
-              allowFullScreen
-            />
-          </div>
+          <VideoModal
+            activeVideo={activeVideo}
+            videos={videos.filter((v) => v.videoLink).map((v) => v.videoLink)}
+            onClose={() => setActiveVideo(null)}
+            onNavigate={setActiveVideo}
+            getEmbedUrl={getEmbedUrl}
+          />
         )}
       </section>
       <FaqCalendarSection />

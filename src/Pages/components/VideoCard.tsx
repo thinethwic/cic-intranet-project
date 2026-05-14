@@ -5,6 +5,96 @@ interface Props {
   onClick: () => void;
 }
 
+import { useEffect } from "react";
+
+interface VideoModalProps {
+  activeVideo: string;
+  videos: string[];
+  onClose: () => void;
+  onNavigate: (link: string) => void;
+  getEmbedUrl: (link: string) => string;
+}
+
+export function VideoModal({
+  activeVideo,
+  videos,
+  onClose,
+  onNavigate,
+  getEmbedUrl,
+}: VideoModalProps) {
+  const currentIndex = videos.indexOf(activeVideo);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose();
+      } else if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+        const next = videos[currentIndex + 1];
+        if (next) onNavigate(next);
+      } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+        const prev = videos[currentIndex - 1];
+        if (prev) onNavigate(prev);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [currentIndex, videos, onClose, onNavigate]);
+
+  return (
+    <div
+      className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 px-4"
+      onClick={onClose} // click backdrop to close
+    >
+      {/* Prev arrow */}
+      {currentIndex > 0 && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onNavigate(videos[currentIndex - 1]);
+          }}
+          className="absolute left-3 sm:left-6 text-white text-3xl p-2 hover:text-gray-300 transition"
+          aria-label="Previous video"
+        >
+          ‹
+        </button>
+      )}
+
+      <div
+        className="relative w-full max-w-4xl"
+        onClick={(e) => e.stopPropagation()} // prevent backdrop close on iframe click
+      >
+        <button
+          onClick={onClose}
+          className="absolute -top-10 right-0 text-white text-2xl hover:text-gray-300 transition"
+          aria-label="Close"
+        >
+          ✕
+        </button>
+        <iframe
+          src={getEmbedUrl(activeVideo)}
+          className="w-full aspect-video rounded-lg"
+          allowFullScreen
+        />
+      </div>
+
+      {/* Next arrow */}
+      {currentIndex < videos.length - 1 && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onNavigate(videos[currentIndex + 1]);
+          }}
+          className="absolute right-3 sm:right-6 text-white text-3xl p-2 hover:text-gray-300 transition"
+          aria-label="Next video"
+        >
+          ›
+        </button>
+      )}
+    </div>
+  );
+}
+
 export default function VideoCard({
   title,
   description,
