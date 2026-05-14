@@ -5,9 +5,6 @@ import { Badge } from "@/components/ui/badge";
 import { useNewsById, useNews } from "@/hooks/useNews";
 import NotFoundPage from "./shared/NotFoundPage";
 
-const BASE_IMAGE_URL =
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
-
 // ── Helpers ───────────────────────────────────────────
 const fmtDate = (d: string) => {
   try {
@@ -142,7 +139,7 @@ export default function NewsDetailPage() {
         {news.image && (
           <div className="rounded-2xl overflow-hidden mb-8">
             <img
-              src={`${BASE_IMAGE_URL}${news.image}`}
+              src={news.image}
               alt={news.title}
               className="w-full object-cover max-h-[460px]"
             />
@@ -189,7 +186,7 @@ export default function NewsDetailPage() {
                 >
                   {item.image && (
                     <img
-                      src={`${BASE_IMAGE_URL}${item.image}`}
+                      src={item.image}
                       alt={item.title}
                       className="h-36 w-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
