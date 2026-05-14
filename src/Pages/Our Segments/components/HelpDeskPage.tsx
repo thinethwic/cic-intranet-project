@@ -1038,10 +1038,10 @@ export default function HelpDeskPage() {
           setShowCreate(open);
         }}
       >
-        <DialogContent className="rounded-[28px] border-0 p-0 shadow-[0_24px_80px_-36px_rgba(15,23,42,0.45)] sm:max-w-xl">
-          <div className="rounded-[28px] bg-white">
+        <DialogContent className="rounded-[28px] border-0 p-0 shadow-[0_24px_80px_-36px_rgba(15,23,42,0.45)] flex flex-col max-h-[92vh] w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] sm:w-full sm:max-w-xl overflow-hidden">
+          <div className="rounded-[28px] bg-white flex flex-col min-h-0 overflow-hidden">
             <DialogHeader>
-              <div className="rounded-t-[28px] bg-linear-to-r from-slate-950 via-blue-950 to-blue-900 px-6 py-6 text-white">
+              <div className="rounded-t-[28px] bg-linear-to-r from-slate-950 via-blue-950 to-blue-900 px-5 py-5 sm:px-6 text-white shrink-0">
                 <DialogTitle className="flex items-center gap-2 text-left text-xl text-white">
                   <Plus className="h-4 w-4" /> Submit a Ticket
                 </DialogTitle>
@@ -1051,9 +1051,11 @@ export default function HelpDeskPage() {
                 </DialogDescription>
               </div>
             </DialogHeader>
-            <div className="space-y-5 px-6 py-6">
-              <div className="grid gap-5 md:grid-cols-2">
-                <div className="space-y-1.5 md:col-span-2">
+
+            {/* Scrollable form body */}
+            <div className="space-y-5 px-4 py-4 sm:px-6 sm:py-6 overflow-y-auto flex-1 min-h-0">
+              <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
+                <div className="space-y-1.5 sm:col-span-2">
                   <Label className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
                     Title <span className="text-red-500">*</span>
                   </Label>
@@ -1066,7 +1068,7 @@ export default function HelpDeskPage() {
                     className="h-11 rounded-2xl border-slate-200 bg-slate-50/70 shadow-none focus-visible:ring-blue-200"
                   />
                 </div>
-                <div className="space-y-1.5 md:col-span-2">
+                <div className="space-y-1.5 sm:col-span-2">
                   <Label className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
                     Description <span className="text-red-500">*</span>
                   </Label>
@@ -1125,7 +1127,7 @@ export default function HelpDeskPage() {
                     ))}
                   </select>
                 </div>
-                <div className="space-y-1.5 md:col-span-2">
+                <div className="space-y-1.5 sm:col-span-2">
                   <Label className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
                     Department
                   </Label>
@@ -1141,30 +1143,24 @@ export default function HelpDeskPage() {
                         }))
                       }
                       readOnly={!!currentUser?.department}
-                      className={`h-11 rounded-2xl border-slate-200 bg-slate-50/70 pl-9 shadow-none focus-visible:ring-blue-200 ${
-                        currentUser?.department
-                          ? "cursor-default opacity-70"
-                          : ""
-                      }`}
+                      className={`h-11 rounded-2xl border-slate-200 bg-slate-50/70 pl-9 shadow-none focus-visible:ring-blue-200 ${currentUser?.department ? "cursor-default opacity-70" : ""}`}
                     />
                   </div>
                 </div>
-                <div className="space-y-1.5 md:col-span-2">
+                <div className="space-y-1.5 sm:col-span-2">
                   <Label className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
                     Segment
                   </Label>
                   <div
-                    className={`flex h-11 w-full items-center rounded-2xl border px-3 text-sm font-medium ${
-                      SEGMENT_CONFIG[form.segment]?.class ??
-                      "bg-slate-50 text-slate-500 border-slate-200"
-                    }`}
+                    className={`flex h-11 w-full items-center rounded-2xl border px-3 text-sm font-medium ${SEGMENT_CONFIG[form.segment]?.class ?? "bg-slate-50 text-slate-500 border-slate-200"}`}
                   >
                     {SEGMENT_CONFIG[form.segment]?.label ?? form.segment ?? "-"}
                   </div>
                 </div>
               </div>
             </div>
-            <DialogFooter className="border-t border-slate-100 px-6 py-4">
+
+            <DialogFooter className="border-t border-slate-100 px-4 py-3 sm:px-6 sm:py-4 shrink-0">
               <Button
                 variant="outline"
                 onClick={() => {
