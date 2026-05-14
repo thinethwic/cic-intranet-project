@@ -270,7 +270,7 @@ export default function HomePageAsiavet() {
                   }}
                   modifiersClassNames={{
                     hasEvent:
-                      "bg-blue-100 text-blue-800 rounded-full font-semibold",
+                      "bg-blue-100 text-blue-800 rounded-full font-bold",
                   }}
                   classNames={{
                     month: "w-full",
