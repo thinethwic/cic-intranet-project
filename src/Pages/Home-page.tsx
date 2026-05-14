@@ -25,21 +25,141 @@ import { useVideos } from "@/hooks/useVideos";
 import { useNews } from "@/hooks/useNews";
 import { useEvents } from "@/hooks/useEvents";
 import { AlertOrCEOCard } from "./components/Alertorceocard";
+import { Skeleton } from "@/components/ui/skeleton";
+import InlineErrorAlert from "@/components/shared/InlineErrorAlert";
+
+function SliderSkeleton({ count }: { count: number }) {
+  return (
+    <div className={`grid gap-4 ${count > 2 ? "md:grid-cols-3" : "md:grid-cols-2"}`}>
+      {Array.from({ length: count }).map((_, index) => (
+        <div
+          key={index}
+          className="overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
+        >
+          <Skeleton className="h-44 w-full rounded-xl" />
+          <div className="mt-4 space-y-3">
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-5 w-4/5" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-2/3" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function EventSkeleton() {
+  return (
+    <div className="flex gap-4 px-0 sm:px-10">
+      {Array.from({ length: 3 }).map((_, index) => (
+        <div
+          key={index}
+          className="flex-1 overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
+        >
+          <Skeleton className="h-40 w-full rounded-xl" />
+          <div className="mt-4 space-y-3">
+            <Skeleton className="h-5 w-3/4" />
+            <Skeleton className="h-4 w-1/2" />
+            <Skeleton className="h-4 w-2/3" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function CarouselSkeleton() {
+  return (
+    <div className="grid gap-4 md:grid-cols-4">
+      {Array.from({ length: 4 }).map((_, index) => (
+        <div
+          key={index}
+          className="overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
+        >
+          <Skeleton className="mx-auto h-24 w-24 rounded-full" />
+          <div className="mt-4 space-y-3 text-center">
+            <Skeleton className="mx-auto h-5 w-3/4" />
+            <Skeleton className="mx-auto h-4 w-1/2" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function BirthdaySkeleton() {
+  return (
+    <div className="grid gap-6 md:grid-cols-3">
+      <div className="md:col-span-2 overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="flex gap-4">
+          <Skeleton className="h-28 w-28 rounded-2xl" />
+          <div className="flex-1 space-y-3">
+            <Skeleton className="h-6 w-1/2" />
+            <Skeleton className="h-4 w-3/4" />
+            <Skeleton className="h-4 w-2/3" />
+          </div>
+        </div>
+      </div>
+      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <Skeleton className="h-5 w-32" />
+        <div className="mt-4 space-y-4">
+          {Array.from({ length: 4 }).map((_, index) => (
+            <div key={index} className="flex items-center gap-3">
+              <Skeleton className="h-10 w-10 rounded-full" />
+              <div className="flex-1 space-y-2">
+                <Skeleton className="h-4 w-3/4" />
+                <Skeleton className="h-3 w-1/2" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function VideoSkeleton() {
+  return (
+    <div className="flex gap-4 sm:gap-6 overflow-hidden px-0 sm:px-10">
+      {Array.from({ length: 3 }).map((_, index) => (
+        <div
+          key={index}
+          className="min-w-[280px] flex-1 overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
+        >
+          <Skeleton className="h-44 w-full rounded-xl" />
+          <div className="mt-4 space-y-3">
+            <Skeleton className="h-5 w-3/4" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-2/3" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 function HomePage() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [activeVideo, setActiveVideo] = useState<string | null>(null);
 
   // ✅ Replace mock data with real API
-  const { videos, loading: videosLoading } = useVideos();
-  const { events, loading } = useEvents();
-
+  const { videos, loading: videosLoading, error: videosError } = useVideos();
+  const {
+    events,
+    loading: eventsLoading,
+    error: eventsError,
+  } = useEvents();
   const { news, loading: newsLoading, error: newsError } = useNews();
 
   const hotNews = news.filter((n) => n.isHot);
   const standardNews = news.filter((n) => !n.isHot);
 
-  const { members = [], loading: membersLoading } = useMembers();
+  const {
+    members = [],
+    loading: membersLoading,
+    error: membersError,
+  } = useMembers();
 
   // fetch and setAlerts(...) from your API/mock data
 
@@ -136,17 +256,9 @@ function HomePage() {
           {/* News Slider */}
           <div className="w-full md:col-span-2">
             {newsLoading ? (
-              <div className="w-full min-h-55 flex flex-col items-center justify-center gap-3 border border-dashed border-slate-200 rounded-2xl bg-slate-50">
-                <p className="text-sm font-medium text-slate-400">
-                  Loading hot news...
-                </p>
-              </div>
+              <SliderSkeleton count={2} />
             ) : newsError ? (
-              <div className="w-full min-h-55 flex flex-col items-center justify-center gap-3 border border-dashed border-red-200 rounded-2xl bg-red-50">
-                <p className="text-sm font-medium text-red-400">
-                  Failed to load hot news. Please try again later.
-                </p>
-              </div>
+              <InlineErrorAlert message={newsError} />
             ) : hotNews.length > 0 ? (
               <NewsSlider
                 items={mapNewsItems(hotNews)}
@@ -182,17 +294,9 @@ function HomePage() {
         </div>
 
         {newsLoading ? (
-          <div className="w-full min-h-55 flex flex-col items-center justify-center gap-3 border border-dashed border-slate-200 rounded-2xl bg-slate-50">
-            <p className="text-sm font-medium text-slate-400">
-              Loading news...
-            </p>
-          </div>
+          <SliderSkeleton count={3} />
         ) : newsError ? (
-          <div className="w-full min-h-55 flex flex-col items-center justify-center gap-3 border border-dashed border-red-200 rounded-2xl bg-red-50">
-            <p className="text-sm font-medium text-red-400">
-              Failed to load news. Please try again later.
-            </p>
-          </div>
+          <InlineErrorAlert message={newsError} />
         ) : standardNews.length > 0 ? (
           <div className="md:col-span-3">
             <NewsSlider
@@ -225,16 +329,11 @@ function HomePage() {
         <div className="flex flex-col md:grid md:grid-cols-4 gap-6">
           <div className="md:col-span-3 order-1">
             <div className="md:col-span-3 order-1">
-              {loading ? (
+              {eventsLoading ? (
                 // ✅ skeleton while fetching
-                <div className="flex gap-4 px-10">
-                  {[...Array(3)].map((_, i) => (
-                    <div
-                      key={i}
-                      className="flex-1 h-64 rounded-xl bg-gray-200 animate-pulse"
-                    />
-                  ))}
-                </div>
+                <EventSkeleton />
+              ) : eventsError ? (
+                <InlineErrorAlert message={eventsError} />
               ) : events.length > 0 ? (
                 <EventsSlider events={events} /> // ✅ pass events as prop
               ) : (
@@ -275,7 +374,9 @@ function HomePage() {
           Welcome to CIC Feeds Group
         </h2>
         {membersLoading ? (
-          <p className="text-sm text-gray-400 py-6 text-center">Loading...</p>
+          <CarouselSkeleton />
+        ) : membersError ? (
+          <InlineErrorAlert message={membersError} />
         ) : recentMembers.length === 0 ? (
           <p className="text-sm text-gray-400 py-6 text-center">
             No new members
@@ -289,7 +390,9 @@ function HomePage() {
         <h2 className="text-4xl font-bold text-blue-900 mb-6">Birthdays</h2>
 
         {membersLoading ? (
-          <p className="text-sm text-gray-400 py-6 text-center">Loading...</p>
+          <BirthdaySkeleton />
+        ) : membersError ? (
+          <InlineErrorAlert message={membersError} />
         ) : (
           <div className="grid md:grid-cols-3 gap-6">
             <div className="md:col-span-2 flex flex-col gap-4">
@@ -364,9 +467,9 @@ function HomePage() {
         <h2 className="text-4xl font-bold text-blue-900 mb-6">Video</h2>
 
         {videosLoading ? (
-          <p className="text-sm text-gray-400 py-6 text-center">
-            Loading videos...
-          </p>
+          <VideoSkeleton />
+        ) : videosError ? (
+          <InlineErrorAlert message={videosError} />
         ) : videos.length === 0 ? (
           <div className="w-full min-h-55 flex flex-col items-center justify-center gap-3 border border-dashed border-slate-200 rounded-2xl bg-slate-50">
             <p className="text-sm font-medium text-slate-400">

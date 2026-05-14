@@ -1,4 +1,5 @@
-import { authHeaders, logout } from "./authHeaders";
+import { authHeaders } from "./authHeaders";
+import { expireAdminSession } from "./authSession";
 import { ApiError } from "./apiUtils";
 
 const REQUEST_TIMEOUT_MS = 15000;
@@ -36,9 +37,9 @@ export const apiFetch = async (
       signal: controller.signal,
     });
 
-    if (response.status === 401) {
-      logout();
-      throw new ApiError("Your session has expired. Please log in again.", 401);
+    if (response.status === 401 || response.status === 403) {
+      expireAdminSession();
+      throw new ApiError("Your session has expired. Please log in again.", response.status);
     }
 
     return response;

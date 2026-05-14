@@ -15,6 +15,7 @@ export const useVideos = () => {
         const fetchVideos = async () => {
             try {
                 setLoading(true);
+                setError(null);
                 const response = await fetch(`${BASE_URL}/videos?page=0&size=100`);
                 if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
                 const data = await response.json();

@@ -36,6 +36,7 @@ import {
 import { AdminPagination } from "./admin-components";
 import { useAlerts } from "@/hooks/useAlerts";
 import type { Alert, AlertSeverity } from "@/types";
+import InlineErrorAlert from "@/components/shared/InlineErrorAlert";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -617,13 +618,11 @@ export default function AdminAlertsPage() {
       </div>
 
       {/* ── Grid ── */}
+      {error && <InlineErrorAlert message={error} />}
+
       {loading ? (
         <div className="text-center py-20 text-slate-400">
           <p className="text-sm">Loading alerts...</p>
-        </div>
-      ) : error ? (
-        <div className="text-center py-20 text-slate-400">
-          <p className="text-sm">{error}</p>
         </div>
       ) : paginated.length === 0 ? (
         <div className="text-center py-20 text-slate-400">

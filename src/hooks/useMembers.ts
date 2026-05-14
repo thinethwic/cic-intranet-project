@@ -11,11 +11,12 @@ export const useMembers = () => {
         const fetchMembers = async () => {
             try {
                 setLoading(true);
+                setError(null);
                 const data = await getAllMembers();
                 setMembers(data);
             } catch (err) {
                 setError("Failed to load members");
-                console.log(err)
+                console.error(err);
             } finally {
                 setLoading(false);
             }

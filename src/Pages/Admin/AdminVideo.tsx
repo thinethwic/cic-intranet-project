@@ -37,8 +37,9 @@ import {
   updateVideo,
   deleteVideo,
 } from "@/lib/api/videoApi";
-
 import type { video } from "@/types";
+import InlineErrorAlert from "@/components/shared/InlineErrorAlert";
+import { getUserFriendlyErrorMessage } from "@/lib/api/apiUtils";
 
 const sourceOptions = ["All", "Facebook", "YouTube", "Other"];
 
@@ -78,6 +79,7 @@ export default function AdminVideosPage() {
   const [videos, setVideos] = useState<video[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
   const [search, setSearch] = useState("");
   const [sourceFilter, setSourceFilter] = useState("All");
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -94,10 +96,14 @@ export default function AdminVideosPage() {
   const fetchVideos = async () => {
     try {
       setLoading(true);
+      setError("");
       const data = await getAllVideos();
       setVideos(data);
     } catch (err) {
       console.error("Failed to fetch videos", err);
+      setError(
+        getUserFriendlyErrorMessage(err, "Unable to load videos right now."),
+      );
     } finally {
       setLoading(false);
     }
@@ -140,6 +146,7 @@ export default function AdminVideosPage() {
     if (!form.title.trim() || !form.videoLink.trim()) return;
     try {
       setSaving(true);
+      setError("");
       if (editingItem) {
         await updateVideo(editingItem.id, form);
       } else {
@@ -151,6 +158,9 @@ export default function AdminVideosPage() {
       setEditingItem(null);
     } catch (err) {
       console.error("Failed to save video", err);
+      setError(
+        getUserFriendlyErrorMessage(err, "Unable to save the video right now."),
+      );
     } finally {
       setSaving(false);
     }
@@ -159,11 +169,18 @@ export default function AdminVideosPage() {
   const handleDelete = async () => {
     if (!deleteItem) return;
     try {
+      setError("");
       await deleteVideo(deleteItem.id);
       await fetchVideos();
       setDeleteItem(null);
     } catch (err) {
       console.error("Failed to delete video", err);
+      setError(
+        getUserFriendlyErrorMessage(
+          err,
+          "Unable to delete the video right now.",
+        ),
+      );
     }
   };
 
@@ -178,6 +195,8 @@ export default function AdminVideosPage() {
           </Button>
         }
       />
+
+      {error && <InlineErrorAlert message={error} />}
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
         <StatCard

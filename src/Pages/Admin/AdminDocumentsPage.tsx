@@ -51,6 +51,8 @@ import {
 } from "@/lib/api/documentApi";
 import { getAdminUser } from "@/lib/api/authHeaders";
 import { AdminPagination } from "./admin-components";
+import InlineErrorAlert from "@/components/shared/InlineErrorAlert";
+import { getUserFriendlyErrorMessage } from "@/lib/api/apiUtils";
 
 import { History } from "lucide-react";
 import { getDocumentLogs, type DocumentAccessLog } from "@/lib/api/documentApi";
@@ -126,6 +128,7 @@ export default function AdminDocumentsPage() {
   const PAGE_SIZE = 8;
   const [docs, setDocs] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [search, setSearch] = useState("");
   const [segFilter, setSegFilter] = useState("All");
   const [typeFilter, setTypeFilter] = useState("All");
@@ -163,10 +166,17 @@ export default function AdminDocumentsPage() {
   const fetchDocs = async () => {
     try {
       setLoading(true);
+      setError("");
       const data = await getAllDocuments();
       setDocs(data);
     } catch (err) {
       console.error("Failed to fetch documents", err);
+      setError(
+        getUserFriendlyErrorMessage(
+          err,
+          "Unable to load documents right now.",
+        ),
+      );
     } finally {
       setLoading(false);
     }
@@ -189,6 +199,7 @@ export default function AdminDocumentsPage() {
     if (!newTitle.trim() || !selectedFile) return;
     try {
       setSaving(true);
+      setError("");
       const formData = new FormData();
       formData.append("file", selectedFile);
       formData.append(
@@ -217,6 +228,12 @@ export default function AdminDocumentsPage() {
       setShowUpload(false);
     } catch (err) {
       console.error("Failed to create document", err);
+      setError(
+        getUserFriendlyErrorMessage(
+          err,
+          "Unable to upload the document right now.",
+        ),
+      );
     } finally {
       setSaving(false);
     }
@@ -227,6 +244,7 @@ export default function AdminDocumentsPage() {
     if (!editDoc) return;
     try {
       setSaving(true);
+      setError("");
       await updateDocument(editDoc.id, {
         title: editDoc.title,
         type: editDoc.type,
@@ -241,6 +259,12 @@ export default function AdminDocumentsPage() {
       setEditDoc(null);
     } catch (err) {
       console.error("Failed to update document", err);
+      setError(
+        getUserFriendlyErrorMessage(
+          err,
+          "Unable to update the document right now.",
+        ),
+      );
     } finally {
       setSaving(false);
     }
@@ -250,38 +274,59 @@ export default function AdminDocumentsPage() {
   const handleDelete = async () => {
     if (!deleteId) return;
     try {
+      setError("");
       await deleteDocument(deleteId);
       await fetchDocs();
       setDeleteId(null);
     } catch (err) {
       console.error("Failed to delete document", err);
+      setError(
+        getUserFriendlyErrorMessage(
+          err,
+          "Unable to delete the document right now.",
+        ),
+      );
     }
   };
 
   // ✅ Toggle pin
   const togglePin = async (doc: Document) => {
     try {
+      setError("");
       await updateDocument(doc.id, { isPinned: !doc.isPinned });
       await fetchDocs();
     } catch (err) {
       console.error("Failed to toggle pin", err);
+      setError(
+        getUserFriendlyErrorMessage(
+          err,
+          "Unable to update the pinned state right now.",
+        ),
+      );
     }
   };
 
   // ✅ View
   const handleView = async (id: number) => {
     try {
+      setError("");
       const blob = await viewDocument(id);
       const url = URL.createObjectURL(blob);
       window.open(url, "_blank");
-    } catch {
-      alert("Failed to view document");
+    } catch (err) {
+      setError(
+        getUserFriendlyErrorMessage(
+          err,
+          "Unable to preview the document right now.",
+        ),
+      );
     }
   };
 
   // ✅ Download
   const handleDownload = async (id: number, title: string) => {
     try {
+      setError("");
       const blob = await downloadDocument(id);
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -289,8 +334,13 @@ export default function AdminDocumentsPage() {
       a.download = title;
       a.click();
       URL.revokeObjectURL(url);
-    } catch {
-      alert("Failed to download document");
+    } catch (err) {
+      setError(
+        getUserFriendlyErrorMessage(
+          err,
+          "Unable to download the document right now.",
+        ),
+      );
     }
   };
 
@@ -317,10 +367,17 @@ export default function AdminDocumentsPage() {
     setLogsDoc(doc);
     setLogsLoading(true);
     try {
+      setError("");
       const data = await getDocumentLogs(doc.id);
       setLogs(data.content);
     } catch (err) {
       console.error("Failed to fetch logs", err);
+      setError(
+        getUserFriendlyErrorMessage(
+          err,
+          "Unable to load document access logs right now.",
+        ),
+      );
       setLogs([]);
     } finally {
       setLogsLoading(false);
@@ -363,6 +420,8 @@ export default function AdminDocumentsPage() {
           <FilePlus2 className="w-4 h-4" /> Upload document
         </Button>
       </div>
+
+      {error && <InlineErrorAlert message={error} />}
 
       {/* Filters */}
       <div className="flex flex-wrap gap-3 items-center">

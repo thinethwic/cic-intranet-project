@@ -36,12 +36,15 @@ import {
   deleteGallery,
 } from "@/lib/api/galleryApi";
 import { getAdminUser } from "@/lib/api/authHeaders";
+import InlineErrorAlert from "@/components/shared/InlineErrorAlert";
+import { getUserFriendlyErrorMessage } from "@/lib/api/apiUtils";
 
 export default function AdminGalleryPage() {
   const PAGE_SIZE = 6;
   const [items, setItems] = useState<Gallery[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
   const [search, setSearch] = useState("");
   const [preview, setPreview] = useState<Gallery | null>(null);
   const [editing, setEditing] = useState<Gallery | null>(null);
@@ -61,10 +64,17 @@ export default function AdminGalleryPage() {
   const fetchGalleries = async () => {
     try {
       setLoading(true);
+      setError("");
       const data = await getAllGalleries();
       setItems(data);
     } catch (err) {
       console.error("Failed to fetch galleries", err);
+      setError(
+        getUserFriendlyErrorMessage(
+          err,
+          "Unable to load gallery items right now.",
+        ),
+      );
     } finally {
       setLoading(false);
     }
@@ -110,6 +120,7 @@ export default function AdminGalleryPage() {
     if (!selectedFile) return;
     try {
       setSaving(true);
+      setError("");
       const formData = new FormData();
       const adminUser = getAdminUser();
       formData.append("image", selectedFile);
@@ -128,6 +139,12 @@ export default function AdminGalleryPage() {
       setIsCreating(false);
     } catch (err) {
       console.error("Failed to create gallery item", err);
+      setError(
+        getUserFriendlyErrorMessage(
+          err,
+          "Unable to create the gallery item right now.",
+        ),
+      );
     } finally {
       setSaving(false);
     }
@@ -138,6 +155,7 @@ export default function AdminGalleryPage() {
     if (!editing) return;
     try {
       setSaving(true);
+      setError("");
       const formData = new FormData();
       const adminUser = getAdminUser();
       formData.append(
@@ -163,6 +181,12 @@ export default function AdminGalleryPage() {
       resetForm();
     } catch (err) {
       console.error("Failed to update gallery item", err);
+      setError(
+        getUserFriendlyErrorMessage(
+          err,
+          "Unable to update the gallery item right now.",
+        ),
+      );
     } finally {
       setSaving(false);
     }
@@ -172,11 +196,18 @@ export default function AdminGalleryPage() {
   const handleDelete = async () => {
     if (!deleteItem) return;
     try {
+      setError("");
       await deleteGallery(deleteItem.id);
       await fetchGalleries();
       setDeleteItem(null);
     } catch (err) {
       console.error("Failed to delete gallery item", err);
+      setError(
+        getUserFriendlyErrorMessage(
+          err,
+          "Unable to delete the gallery item right now.",
+        ),
+      );
     }
   };
 
@@ -191,6 +222,8 @@ export default function AdminGalleryPage() {
           </Button>
         }
       />
+
+      {error && <InlineErrorAlert message={error} />}
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         <StatCard

@@ -49,6 +49,7 @@ import {
 } from "@/lib/api/departmentApi";
 import { getAdminUsersPage } from "@/lib/api/ticketApi";
 import { getUserFriendlyErrorMessage } from "@/lib/api/apiUtils";
+import InlineErrorAlert from "@/components/shared/InlineErrorAlert";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
 const API = `${BASE_URL}/api/v1/users`;
@@ -331,6 +332,7 @@ export default function AdminUsersPage() {
       return;
     try {
       setSaving(true);
+      setError("");
       const res = await fetch(API, {
         method: "POST",
         headers: { ...authHeaders(), "Content-Type": "application/json" },
@@ -342,7 +344,7 @@ export default function AdminUsersPage() {
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        alert(err.message || "Failed to create user");
+        setError(err.message || "Failed to create user");
         return;
       }
       await fetchUsers();
@@ -350,6 +352,7 @@ export default function AdminUsersPage() {
       setShowCreate(false);
     } catch (err) {
       console.error("Failed to create user", err);
+      setError(getUserFriendlyErrorMessage(err, "Unable to create the user."));
     } finally {
       setSaving(false);
     }
@@ -375,6 +378,7 @@ export default function AdminUsersPage() {
     if (!editUser) return;
     try {
       setSaving(true);
+      setError("");
       const payload: any = {
         username: editForm.username,
         name: editForm.name,
@@ -392,13 +396,14 @@ export default function AdminUsersPage() {
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        alert(err.message || "Failed to update user");
+        setError(err.message || "Failed to update user");
         return;
       }
       await fetchUsers();
       setEditUser(null);
     } catch (err) {
       console.error("Failed to update user", err);
+      setError(getUserFriendlyErrorMessage(err, "Unable to update the user."));
     } finally {
       setSaving(false);
     }
@@ -431,6 +436,7 @@ export default function AdminUsersPage() {
   // ── Toggle active ─────────────────────────────────────────
   const toggleActive = async (user: User) => {
     try {
+      setError("");
       await fetch(`${API}/${user.id}`, {
         method: "PUT",
         headers: { ...authHeaders(), "Content-Type": "application/json" },
@@ -447,6 +453,12 @@ export default function AdminUsersPage() {
       await fetchUsers();
     } catch (err) {
       console.error(err);
+      setError(
+        getUserFriendlyErrorMessage(
+          err,
+          "Unable to update the user's active status.",
+        ),
+      );
     }
   };
 
@@ -493,6 +505,8 @@ export default function AdminUsersPage() {
           <Plus className="w-4 h-4" /> Add user
         </Button>
       </div>
+
+      {error && <InlineErrorAlert message={error} />}
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">

@@ -12,6 +12,7 @@ export const useDocuments = (segment?: Segment) => {
         const fetchDocuments = async () => {
             try {
                 setLoading(true);
+                setError(null);
                 const data = await getAllDocuments();
                 const filtered = segment
                     ? data.filter((doc) => doc.segment === segment)  // ✅ "CIC_FEEDS" === "CIC_FEEDS"

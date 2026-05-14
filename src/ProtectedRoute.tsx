@@ -1,29 +1,21 @@
-import { Navigate, Outlet } from "react-router-dom";
-import { getAdminUser } from "@/lib/api/authHeaders";
+import { Navigate, Outlet, useLocation } from "react-router-dom";
+import {
+  buildAdminLoginUrl,
+  getAdminSession,
+} from "@/lib/api/authSession";
 
-const ADMIN_ROLES = ["SUPER_ADMIN", "ADMIN"];
-
-function isTokenExpired(token: string): boolean {
-  try {
-    const payload = JSON.parse(atob(token.split(".")[1]));
-    return payload.exp * 1000 < Date.now();
-  } catch {
-    return true;
-  }
-}
+const ADMIN_ROLES = new Set(["SUPER_ADMIN", "ADMIN"]);
 
 export default function ProtectedRoute() {
-  const token = localStorage.getItem("admin_token");
-  const user = getAdminUser();
+  const location = useLocation();
+  const session = getAdminSession();
+  const returnTo = `${location.pathname}${location.search}${location.hash}`;
 
-  if (!token) return <Navigate to="/admin/login" replace />;
-
-  if (isTokenExpired(token)) {
-    localStorage.removeItem("admin_token");
-    return <Navigate to="/admin/login" replace />;
+  if (!session) {
+    return <Navigate to={buildAdminLoginUrl(returnTo)} replace />;
   }
 
-  if (!ADMIN_ROLES.includes(user?.role ?? "")) {
+  if (!ADMIN_ROLES.has(session.user.role)) {
     return <Navigate to="/" replace />;
   }
 

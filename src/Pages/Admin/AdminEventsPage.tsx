@@ -55,6 +55,8 @@ import {
 import { useSearchParams } from "react-router-dom";
 
 import { getAdminUser } from "@/lib/api/authHeaders";
+import InlineErrorAlert from "@/components/shared/InlineErrorAlert";
+import { getUserFriendlyErrorMessage } from "@/lib/api/apiUtils";
 
 const SEGMENT_OPTIONS = [
   "All",
@@ -137,6 +139,7 @@ function EventsTab() {
   const [items, setItems] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
   const [search, setSearch] = useState("");
   const [segment, setSegment] = useState("All");
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -154,9 +157,13 @@ function EventsTab() {
   const fetchEvents = async () => {
     try {
       setLoading(true);
+      setError("");
       setItems(await getAllEvents());
     } catch (err) {
       console.error("Failed to fetch events", err);
+      setError(
+        getUserFriendlyErrorMessage(err, "Unable to load events right now."),
+      );
     } finally {
       setLoading(false);
     }
@@ -214,6 +221,7 @@ function EventsTab() {
     if (!form.title.trim()) return;
     try {
       setSaving(true);
+      setError("");
       const adminUser = getAdminUser();
       const payload = {
         ...form,
@@ -235,6 +243,9 @@ function EventsTab() {
       setDialogOpen(false);
     } catch (err) {
       console.error("Failed to save event", err);
+      setError(
+        getUserFriendlyErrorMessage(err, "Unable to save the event right now."),
+      );
     } finally {
       setSaving(false);
     }
@@ -243,11 +254,18 @@ function EventsTab() {
   const handleDelete = async () => {
     if (!deleteItem) return;
     try {
+      setError("");
       await deleteEvent(deleteItem.id);
       await fetchEvents();
       setDeleteItem(null);
     } catch (err) {
       console.error("Failed to delete event", err);
+      setError(
+        getUserFriendlyErrorMessage(
+          err,
+          "Unable to delete the event right now.",
+        ),
+      );
     }
   };
 
@@ -291,6 +309,8 @@ function EventsTab() {
           <Plus className="h-4 w-4" /> Create Event
         </Button>
       </div>
+
+      {error && <InlineErrorAlert message={error} />}
 
       {/* Table */}
       <DataTable
@@ -590,9 +610,16 @@ function AnnouncementsTab() {
   const fetchAnnouncements = async () => {
     try {
       setLoading(true);
+      setError("");
       setItems(await getAllAnnouncements());
     } catch (err) {
       console.error("Failed to fetch announcements", err);
+      setError(
+        getUserFriendlyErrorMessage(
+          err,
+          "Unable to load announcements right now.",
+        ),
+      );
     } finally {
       setLoading(false);
     }
@@ -665,11 +692,18 @@ function AnnouncementsTab() {
   const handleDelete = async () => {
     if (!deleteItem) return;
     try {
+      setError("");
       await deleteAnnouncement(deleteItem.id);
       await fetchAnnouncements();
       setDeleteItem(null);
     } catch (err) {
       console.error("Failed to delete announcement", err);
+      setError(
+        getUserFriendlyErrorMessage(
+          err,
+          "Unable to delete the announcement right now.",
+        ),
+      );
     }
   };
 
@@ -730,6 +764,8 @@ function AnnouncementsTab() {
           <Plus className="h-4 w-4" /> New Announcement
         </Button>
       </div>
+
+      {error && <InlineErrorAlert message={error} />}
 
       {/* Table */}
       <DataTable
@@ -878,11 +914,7 @@ function AnnouncementsTab() {
               </select>
             </div>
 
-            {error && (
-              <p className="rounded bg-red-50 px-3 py-2 text-xs text-red-500">
-                {error}
-              </p>
-            )}
+            {error && <InlineErrorAlert message={error} className="py-3" />}
           </div>
 
           <DialogFooter>

@@ -11,6 +11,7 @@ export const useEvents = (segment?: string) => {
         const fetchEvents = async () => {
             try {
                 setLoading(true);
+                setError(null);
                 const data = await getAllEvents();
                 const filtered = segment
                     ? data.filter((e) => e.segment === segment)

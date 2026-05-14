@@ -24,6 +24,7 @@ import { useVideos } from "@/hooks/useVideos";
 import { useEvents } from "@/hooks/useEvents";
 import { useDocuments } from "@/hooks/useDocuments";
 import { useMembers } from "@/hooks/useMembers";
+import InlineErrorAlert from "@/components/shared/InlineErrorAlert";
 
 const quickLinks = [
   {
@@ -80,11 +81,33 @@ export default function AdminDashboard() {
         : "Good evening";
 
   // ✅ Real API data
-  const { news: newsList = [], loading: newsLoading } = useNews();
-  const { videos = [], loading: videosLoading } = useVideos();
-  const { events = [], loading: eventsLoading } = useEvents();
-  const { documents = [], loading: documentsLoading } = useDocuments();
-  const { members = [], loading: membersLoading } = useMembers();
+  const {
+    news: newsList = [],
+    loading: newsLoading,
+    error: newsError,
+  } = useNews();
+  const {
+    videos = [],
+    loading: videosLoading,
+    error: videosError,
+  } = useVideos();
+  const {
+    events = [],
+    loading: eventsLoading,
+    error: eventsError,
+  } = useEvents();
+  const {
+    documents = [],
+    loading: documentsLoading,
+    error: documentsError,
+  } = useDocuments();
+  const {
+    members = [],
+    loading: membersLoading,
+    error: membersError,
+  } = useMembers();
+  const dashboardError =
+    newsError || videosError || eventsError || documentsError || membersError || "";
 
   const hotCount = newsList.filter((item) => item.isHot).length;
 
@@ -115,6 +138,8 @@ export default function AdminDashboard() {
       />
 
       {/* ── Stat Cards ── */}
+      {dashboardError && <InlineErrorAlert message={dashboardError} />}
+
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="News"

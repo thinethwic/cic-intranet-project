@@ -7,6 +7,5 @@ export default function SuperAdminRoute() {
     <Outlet />
   ) : (
     <Navigate to="/admin/ticket" replace />
-    /* Add */
   );
 }

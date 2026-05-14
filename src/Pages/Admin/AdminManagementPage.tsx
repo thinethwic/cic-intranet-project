@@ -50,6 +50,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { roleLabels } from "@/utils/segmentMapper";
+import InlineErrorAlert from "@/components/shared/InlineErrorAlert";
+import { getUserFriendlyErrorMessage } from "@/lib/api/apiUtils";
 
 const ROLE_OPTIONS = [
   "All",
@@ -136,6 +138,7 @@ export default function AdminManagementPage() {
   const [items, setItems] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("All");
 
@@ -159,10 +162,17 @@ export default function AdminManagementPage() {
   const fetchMembers = async () => {
     try {
       setLoading(true);
+      setError("");
       const data = await getAllMembers();
       setItems(data);
     } catch (err) {
       console.error("Failed to fetch members", err);
+      setError(
+        getUserFriendlyErrorMessage(
+          err,
+          "Unable to load management profiles right now.",
+        ),
+      );
     } finally {
       setLoading(false);
     }
@@ -261,6 +271,7 @@ export default function AdminManagementPage() {
 
     try {
       setSaving(true);
+      setError("");
       const dto = {
         title: form.title.trim(),
         firstName: form.firstName.trim(),
@@ -284,7 +295,12 @@ export default function AdminManagementPage() {
       setDialogOpen(false);
     } catch (err) {
       console.error("Failed to save member", err);
-      setFormError("Failed to save. Please try again.");
+      const message = getUserFriendlyErrorMessage(
+        err,
+        "Unable to save the profile right now.",
+      );
+      setError(message);
+      setFormError(message);
     } finally {
       setSaving(false);
     }
@@ -293,11 +309,18 @@ export default function AdminManagementPage() {
   const handleDelete = async () => {
     if (!deleteItem) return;
     try {
+      setError("");
       await deleteMember(deleteItem.id);
       await fetchMembers();
       setDeleteItem(null);
     } catch (err) {
       console.error("Failed to delete member", err);
+      setError(
+        getUserFriendlyErrorMessage(
+          err,
+          "Unable to delete the profile right now.",
+        ),
+      );
     }
   };
 
@@ -410,6 +433,8 @@ export default function AdminManagementPage() {
           </Button>
         }
       />
+
+      {error && <InlineErrorAlert message={error} />}
 
       {/* Stats */}
       <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
@@ -812,9 +837,7 @@ export default function AdminManagementPage() {
               )}
             </div>
 
-            {formError && (
-              <p className="text-sm text-destructive">{formError}</p>
-            )}
+            {formError && <InlineErrorAlert message={formError} className="py-3" />}
           </div>
 
           <DialogFooter>

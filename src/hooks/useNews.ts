@@ -11,6 +11,7 @@ export const useNews = (segment?: string) => {
         const fetchNews = async () => {
             try {
                 setLoading(true);
+                setError(null);
                 const data = await getAllNews();
                 const filtered = segment
                     ? data.filter((n) => n.category === segment)
@@ -18,7 +19,7 @@ export const useNews = (segment?: string) => {
                 setNews(filtered);
             } catch (err) {
                 setError("Failed to load news");
-                console.log(err)
+                console.error(err);
             } finally {
                 setLoading(false);
             }
@@ -38,11 +39,12 @@ export const useNewsById = (id: number) => {
         const fetch = async () => {
             try {
                 setLoading(true);
+                setError(null);
                 const data = await getNewsById(id);
                 setNews(data);
             } catch (err) {
                 setError("Failed to load article");
-                console.log(err);
+                console.error(err);
             } finally {
                 setLoading(false);
             }

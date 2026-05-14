@@ -42,6 +42,7 @@ import {
 } from "@/lib/api/newsApi";
 import { getAdminUser } from "@/lib/api/authHeaders";
 import { getUserFriendlyErrorMessage } from "@/lib/api/apiUtils";
+import InlineErrorAlert from "@/components/shared/InlineErrorAlert";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -342,6 +343,7 @@ export default function AdminNewsPage() {
     if (!createForm.title.trim()) return;
     try {
       setSaving(true);
+      setError("");
       const adminUser = getAdminUser();
       const formData = new FormData();
       formData.append(
@@ -369,6 +371,12 @@ export default function AdminNewsPage() {
       setShowCreate(false);
     } catch (err) {
       console.error("Failed to create news", err);
+      setError(
+        getUserFriendlyErrorMessage(
+          err,
+          "Unable to create the article right now.",
+        ),
+      );
     } finally {
       setSaving(false);
     }
@@ -393,6 +401,7 @@ export default function AdminNewsPage() {
     if (!editItem) return;
     try {
       setSaving(true);
+      setError("");
       const adminUser = getAdminUser();
       await updateNews(editItem.id, {
         title: editForm.title,
@@ -409,6 +418,12 @@ export default function AdminNewsPage() {
       setEditImagePreview(null);
     } catch (err) {
       console.error("Failed to update news", err);
+      setError(
+        getUserFriendlyErrorMessage(
+          err,
+          "Unable to update the article right now.",
+        ),
+      );
     } finally {
       setSaving(false);
     }
@@ -418,11 +433,18 @@ export default function AdminNewsPage() {
   const handleDelete = async () => {
     if (!deleteId) return;
     try {
+      setError("");
       await deleteNews(deleteId);
       await fetchNews();
       setDeleteId(null);
     } catch (err) {
       console.error("Failed to delete news", err);
+      setError(
+        getUserFriendlyErrorMessage(
+          err,
+          "Unable to delete the article right now.",
+        ),
+      );
     }
   };
 
@@ -499,14 +521,12 @@ export default function AdminNewsPage() {
         />
       </div>
 
+      {error && <InlineErrorAlert message={error} />}
+
       {/* Grid */}
       {loading ? (
         <div className="text-center py-20 text-slate-400">
           <p className="text-sm">Loading news...</p>
-        </div>
-      ) : error ? (
-        <div className="text-center py-20 text-slate-400">
-          <p className="text-sm">{error}</p>
         </div>
       ) : filtered.length === 0 ? (
         <div className="text-center py-20 text-slate-400">
