@@ -8,10 +8,9 @@ interface GalleryImage {
   description: string;
 }
 
-const BASE_IMAGE_URL = import.meta.env.VITE_API_BASE_URL;
-
+// ✅ Replace with
 const mapGalleryToImage = (gallery: Gallery): GalleryImage => ({
-  key: `${BASE_IMAGE_URL}${gallery.image}`,
+  key: gallery.image, // GCS URL is already absolute
   description: gallery.description,
 });
 

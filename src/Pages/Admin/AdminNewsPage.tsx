@@ -386,7 +386,7 @@ export default function AdminNewsPage() {
       isHot: item.isHot,
     });
     setEditImageFile(null);
-    setEditImagePreview(item.image ? `${BASE_URL}${item.image}` : null);
+    setEditImagePreview(item.image ?? null);
   };
 
   // ── Save Edit ─────────────────────────────────────────────
@@ -525,7 +525,7 @@ export default function AdminNewsPage() {
               >
                 {item.image ? (
                   <img
-                    src={`${BASE_URL}${item.image}`}
+                    src={item.image}
                     alt={item.title}
                     className="w-full h-44 object-cover block"
                   />

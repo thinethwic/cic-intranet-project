@@ -124,8 +124,8 @@ function fmtDateTime(d?: string | null) {
 
 function resolveImageUrl(path?: string | null): string {
   if (!path) return "";
-  if (/^https?:\/\//.test(path)) return path;
-  return `${BASE_URL}${path.startsWith("/") ? "" : "/"}${path}`;
+  if (/^https?:\/\//.test(path)) return path; // ✅ GCS URL — used as-is
+  return `${BASE_URL}${path.startsWith("/") ? "" : "/"}${path}`; // old local path fallback
 }
 
 function getSeverity(item: Alert): AlertSeverity {

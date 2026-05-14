@@ -17,8 +17,6 @@ interface Props {
   visibleCount?: number;
   autoInterval?: number;
 }
-const BASE_IMAGE_URL =
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
 
 export default function NewsSlider({
   items,
@@ -92,7 +90,7 @@ export default function NewsSlider({
                 id={item.id}
                 title={item.title}
                 description={item.description}
-                image={`${BASE_IMAGE_URL}${item.image}`}
+                image={item.image}
                 date={item.date}
                 category={item.category}
               />

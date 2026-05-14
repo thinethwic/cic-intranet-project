@@ -37,8 +37,6 @@ import {
 } from "@/lib/api/galleryApi";
 import { getAdminUser } from "@/lib/api/authHeaders";
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
-
 export default function AdminGalleryPage() {
   const PAGE_SIZE = 6;
   const [items, setItems] = useState<Gallery[]>([]);
@@ -98,7 +96,7 @@ export default function AdminGalleryPage() {
     setEditing(item);
     setDescription(item.description ?? "");
     setSelectedFile(null);
-    setImagePreview(item.image ? `${BASE_URL}${item.image}` : null);
+    setImagePreview(item.image ? `${item.image}` : null);
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -229,7 +227,7 @@ export default function AdminGalleryPage() {
             <AdminCard key={item.id} className="overflow-hidden">
               {item.image ? (
                 <img
-                  src={`${BASE_URL}${item.image}`}
+                  src={item.image}
                   alt={item.description}
                   className="aspect-video w-full object-cover"
                 />
@@ -289,7 +287,7 @@ export default function AdminGalleryPage() {
           </DialogHeader>
           {preview && (
             <img
-              src={`${BASE_URL}${preview.image}`}
+              src={preview.image}
               alt={preview.description}
               className="max-h-[70vh] w-full rounded-2xl object-cover"
             />

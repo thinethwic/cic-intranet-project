@@ -202,7 +202,7 @@ function EventsTab() {
       segment: event.segment ?? "", // null → empty string so select shows "— None —"
     });
     setSelectedImage(null);
-    setImagePreview(event.image ? `${BASE_URL}${event.image}` : null);
+    setImagePreview(event.image);
     setDialogOpen(true);
   };
 
@@ -307,7 +307,7 @@ function EventsTab() {
               <div className="flex items-center gap-3">
                 {event.image ? (
                   <img
-                    src={`${BASE_URL}${event.image}`}
+                    src={event.image}
                     alt=""
                     className="h-12 w-12 rounded-2xl object-cover"
                   />
