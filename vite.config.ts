@@ -7,6 +7,9 @@ import tailwindcss from "@tailwindcss/vite"
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   base: "./",
+  build: {
+    outDir: "dist", // _redirects must end up inside here after build
+  },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
