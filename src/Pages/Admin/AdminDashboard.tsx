@@ -70,8 +70,6 @@ const quickLinks = [
   },
 ];
 
-const BASE_IMAGE_URL = "http://localhost:8080";
-
 export default function AdminDashboard() {
   const now = new Date();
   const greeting =
@@ -240,7 +238,7 @@ export default function AdminDashboard() {
                 >
                   {news.image ? (
                     <img
-                      src={`${BASE_IMAGE_URL}${news.image}`} // ✅ full URL
+                      src={news.image} // ✅ full URL
                       alt=""
                       className="h-12 w-12 shrink-0 rounded-2xl object-cover"
                     />
