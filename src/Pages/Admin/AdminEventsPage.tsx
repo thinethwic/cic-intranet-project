@@ -56,8 +56,6 @@ import { useSearchParams } from "react-router-dom";
 
 import { getAdminUser } from "@/lib/api/authHeaders";
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
-
 const SEGMENT_OPTIONS = [
   "All",
   "CIC_FEEDS",

@@ -59,7 +59,6 @@ export interface News {
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
 const CATEGORIES = ["CIC_FEEDS", "CIC_VET_CARE", "CIC_POULTRY", "AISA_VET"];
 const CAT_FILTER = ["All", ...CATEGORIES];
 const HOT_FILTER = ["All news", "Hot only", "Standard only"];
