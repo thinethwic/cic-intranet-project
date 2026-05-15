@@ -88,7 +88,7 @@ export default function GallerySection() {
   const hiddenCount = rest.length - visibleRest.length;
 
   return (
-    <section className="max-w-7xl mx-auto px-6 py-14">
+    <section className="max-w-7xl mx-auto px-2 py-4">
       <h2 className="text-4xl font-bold text-blue-900 mb-6">Gallery</h2>
       <div className="w-12 h-0.5 bg-blue-900 rounded mb-5" />
 

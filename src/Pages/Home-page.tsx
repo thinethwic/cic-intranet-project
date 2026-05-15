@@ -252,9 +252,7 @@ function HomePage() {
 
       <section className="max-w-7xl mx-auto px-2 py-4">
         <div className="flex items-center gap-3 mb-6">
-          <h2 className="text-2xl md:text-4xl font-bold text-blue-900">
-            Hot News
-          </h2>
+          <h2 className="text-4xl font-bold text-blue-900">Hot News</h2>
         </div>
         <div className="w-12 h-0.5 bg-blue-900 rounded mb-5" />
 
