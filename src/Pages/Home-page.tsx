@@ -256,6 +256,7 @@ function HomePage() {
             Hot News
           </h2>
         </div>
+        <div className="w-12 h-0.5 bg-blue-900 rounded mb-5" />
 
         <div className="flex flex-col md:grid md:grid-cols-3 gap-6">
           {/* News Slider */}
@@ -297,6 +298,7 @@ function HomePage() {
         <div className="flex items-center gap-3 mb-6">
           <h2 className="text-4xl font-bold text-blue-900">News Events</h2>
         </div>
+        <div className="w-12 h-0.5 bg-blue-900 rounded mb-5" />
 
         {newsLoading ? (
           <SliderSkeleton count={3} />
@@ -329,6 +331,7 @@ function HomePage() {
         <div className="flex items-center gap-3 mb-6">
           <h2 className="text-4xl font-bold text-blue-900">Upcoming Events</h2>
         </div>
+        <div className="w-12 h-0.5 bg-blue-900 rounded mb-5" />
 
         {/* ✅ FIX: On mobile, stack vertically. OurPeopleCard goes below and is centered. */}
         <div className="flex flex-col md:grid md:grid-cols-4 gap-6">
@@ -367,6 +370,7 @@ function HomePage() {
 
       <section className="max-w-7xl mx-auto px-2 py-4">
         <h2 className="text-4xl font-bold text-blue-900 mb-6">Top Manegment</h2>
+        <div className="w-12 h-0.5 bg-blue-900 rounded mb-5" />
 
         {/* 👇 Reusable Grid */}
         <MembersGrid />
@@ -378,6 +382,7 @@ function HomePage() {
         <h2 className="text-4xl font-bold text-blue-900 mb-6">
           Welcome to CIC Feeds Group
         </h2>
+        <div className="w-12 h-0.5 bg-blue-900 rounded mb-5" />
         {membersLoading ? (
           <CarouselSkeleton />
         ) : membersError ? (
@@ -393,6 +398,7 @@ function HomePage() {
 
       <section className="max-w-7xl mx-auto px-2 py-4">
         <h2 className="text-4xl font-bold text-blue-900 mb-6">Birthdays</h2>
+        <div className="w-12 h-0.5 bg-blue-900 rounded mb-5" />
 
         {membersLoading ? (
           <BirthdaySkeleton />
@@ -519,6 +525,7 @@ function HomePage() {
       {/* ✅ Video Section */}
       <section className="max-w-7xl mx-auto px-2 py-4">
         <h2 className="text-4xl font-bold text-blue-900 mb-6">Video</h2>
+        <div className="w-12 h-0.5 bg-blue-900 rounded mb-5" />
 
         {videosLoading ? (
           <VideoSkeleton />

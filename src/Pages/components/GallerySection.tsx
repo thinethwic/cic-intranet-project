@@ -44,6 +44,7 @@ export default function GallerySection() {
     return (
       <section className="max-w-7xl mx-auto px-6 py-14">
         <h2 className="text-4xl font-bold text-blue-900 mb-6">Gallery</h2>
+        <div className="w-12 h-0.5 bg-blue-900 rounded mb-5" />
         <p className="text-sm text-gray-400">Loading gallery...</p>
       </section>
     );
@@ -53,6 +54,7 @@ export default function GallerySection() {
     return (
       <section className="max-w-7xl mx-auto px-6 py-14">
         <h2 className="text-4xl font-bold text-blue-900 mb-6">Gallery</h2>
+        <div className="w-12 h-0.5 bg-blue-900 rounded mb-5" />
         <div className="w-full min-h-55 flex flex-col items-center justify-center gap-3 border border-dashed border-red-200 rounded-2xl bg-red-50">
           <p className="text-sm font-medium text-red-400">
             Failed to load gallery. Please try again later.
@@ -88,6 +90,7 @@ export default function GallerySection() {
   return (
     <section className="max-w-7xl mx-auto px-6 py-14">
       <h2 className="text-4xl font-bold text-blue-900 mb-6">Gallery</h2>
+      <div className="w-12 h-0.5 bg-blue-900 rounded mb-5" />
 
       <div className="grid md:grid-cols-3 gap-4 mb-4">
         {main && (

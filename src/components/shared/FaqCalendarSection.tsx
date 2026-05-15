@@ -29,6 +29,7 @@ export default function FaqCalendarSection() {
     <section className="max-w-7xl mx-auto px-2 py-4">
       <div>
         <h2 className="text-4xl font-bold text-blue-900 mb-6">FAQ</h2>
+        <div className="w-12 h-0.5 bg-blue-900 rounded mb-5" />
         <div className="space-y-3">
           {faqs.map((faq, i) => {
             const isOpen = openItem === i;
