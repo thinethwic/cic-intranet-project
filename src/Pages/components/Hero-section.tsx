@@ -43,12 +43,19 @@ const AUTO_SLIDE_INTERVAL = 8000;
 
 export default function HeroSection() {
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [cardsVisible, setCardsVisible] = useState(false); // 👈 add this
 
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % slides.length);
     }, AUTO_SLIDE_INTERVAL);
     return () => clearInterval(timer);
+  }, []);
+
+  // 👇 add this
+  useEffect(() => {
+    const timeout = setTimeout(() => setCardsVisible(true), 300);
+    return () => clearTimeout(timeout);
   }, []);
 
   return (
@@ -91,16 +98,26 @@ export default function HeroSection() {
       <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-20 grid grid-cols-2 sm:grid-cols-4 gap-4 w-max px-4">
         {categories.map(({ label, icon: Icon, Link: link }, i) => (
           <Link to={link} key={i}>
-            <Card className="bg-white/80 backdrop-blur-sm border border-white/60 hover:bg-white transition-all cursor-pointer group shadow-md w-36 sm:w-44">
-              <CardContent className="flex flex-col items-center justify-center py-6 px-3">
-                <div className="mb-3 p-3 rounded-2xl bg-blue-50 group-hover:bg-blue-100 transition-all group-hover:scale-110">
-                  <Icon className="w-7 h-7 md:w-8 md:h-8 stroke-[1.5] text-[oklch(37.9%_0.146_265.522)]" />
-                </div>
-                <p className="text-sm sm:text-base font-semibold tracking-wide text-center leading-tight text-gray-700">
-                  {label}
-                </p>
-              </CardContent>
-            </Card>
+            {/* 👇 wrap Card in animated div */}
+            <div
+              style={{
+                opacity: cardsVisible ? 1 : 0,
+                transform: cardsVisible ? "translateY(0)" : "translateY(20px)",
+                transition: `opacity 0.5s ease, transform 0.5s ease`,
+                transitionDelay: `${300 + i * 120}ms`,
+              }}
+            >
+              <Card className="bg-white/80 backdrop-blur-sm border border-white/60 hover:bg-white transition-all cursor-pointer group shadow-md w-36 sm:w-44">
+                <CardContent className="flex flex-col items-center justify-center py-6 px-3">
+                  <div className="mb-3 p-3 rounded-2xl bg-blue-50 group-hover:bg-blue-100 transition-all group-hover:scale-110">
+                    <Icon className="w-7 h-7 md:w-8 md:h-8 stroke-[1.5] text-[oklch(37.9%_0.146_265.522)]" />
+                  </div>
+                  <p className="text-sm sm:text-base font-semibold tracking-wide text-center leading-tight text-gray-700">
+                    {label}
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
           </Link>
         ))}
       </div>
