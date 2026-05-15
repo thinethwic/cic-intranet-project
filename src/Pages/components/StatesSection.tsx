@@ -41,6 +41,10 @@ function StatSkeleton() {
 /* ✅ Stats Section */
 export default function StatsSection() {
   const { members, loading, error } = useMembers();
+  const [visibleCards, setVisibleCards] = useState<boolean[]>([]);
+  const [isVisible, setIsVisible] = useState(false);
+  const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const sectionRef = useRef<HTMLDivElement | null>(null);
 
   const topManagement = members.filter((m) => m.role === "TOP_MANAGEMENT");
 
@@ -50,9 +54,7 @@ export default function StatsSection() {
     { value: 4, suffix: "+", label: "Companies" },
   ];
 
-  const ref = useRef<HTMLDivElement | null>(null);
-  const [isVisible, setIsVisible] = useState(false);
-
+  // Counter trigger — fires when section enters viewport
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -61,12 +63,46 @@ export default function StatsSection() {
       { threshold: 0.3 },
     );
 
-    if (ref.current) observer.observe(ref.current);
+    if (sectionRef.current) observer.observe(sectionRef.current);
     return () => observer.disconnect();
   }, []);
 
+  // Card entrance animation — per-card observer
+  useEffect(() => {
+    if (loading || stats.length === 0) return;
+
+    setVisibleCards(new Array(stats.length).fill(false));
+
+    const observers: IntersectionObserver[] = [];
+
+    cardRefs.current.forEach((card, i) => {
+      if (!card) return;
+
+      const observer = new IntersectionObserver(
+        ([entry]) => {
+          if (entry.isIntersecting) {
+            setTimeout(() => {
+              setVisibleCards((prev) => {
+                const next = [...prev];
+                next[i] = true;
+                return next;
+              });
+            }, i * 150);
+            observer.disconnect();
+          }
+        },
+        { threshold: 0.1 },
+      );
+
+      observer.observe(card);
+      observers.push(observer);
+    });
+
+    return () => observers.forEach((o) => o.disconnect());
+  }, [loading]);
+
   return (
-    <section ref={ref} className="max-w-7xl mx-auto px-6 py-10">
+    <section ref={sectionRef} className="max-w-7xl mx-auto px-6 py-10">
       {error ? (
         <div className="rounded-xl bg-red-50 border border-red-100 px-6 py-8 text-center">
           <p className="text-sm font-medium text-red-500">
@@ -81,6 +117,16 @@ export default function StatsSection() {
             : stats.map((item, i) => (
                 <div
                   key={i}
+                  ref={(el) => {
+                    cardRefs.current[i] = el;
+                  }}
+                  style={{
+                    opacity: visibleCards[i] ? 1 : 0,
+                    transform: visibleCards[i]
+                      ? "translateY(0)"
+                      : "translateY(28px)",
+                    transition: "opacity 0.6s ease, transform 0.6s ease",
+                  }}
                   className="rounded-xl p-6 bg-white shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 text-center"
                 >
                   <h3 className="text-6xl font-bold text-(--custom-colour)">
