@@ -14,7 +14,7 @@ import {
 import visionImg from "@/assets/vision.jpg"; // eye image
 import missionImg from "@/assets/mission.jpg";
 import GallerySection from "./components/GallerySection";
-import { useRef, useState, useMemo } from "react";
+import { useRef, useState, useMemo, useEffect } from "react";
 import VideoCard, { VideoModal } from "./components/VideoCard";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -179,6 +179,27 @@ function HomePage() {
     [members],
   );
 
+  function useScrollReveal(threshold = 0.15) {
+    const ref = useRef<HTMLDivElement>(null);
+    const [visible, setVisible] = useState(false);
+
+    useEffect(() => {
+      const observer = new IntersectionObserver(
+        ([entry]) => {
+          if (entry.isIntersecting) {
+            setVisible(true);
+            observer.disconnect();
+          }
+        },
+        { threshold },
+      );
+      if (ref.current) observer.observe(ref.current);
+      return () => observer.disconnect();
+    }, [threshold]);
+
+    return { ref, visible };
+  }
+
   // ✅ Then depend on birthdayMembers — not members
   const todayBirthdays = useMemo(
     () => getTodayBirthdays(birthdayMembers),
@@ -244,6 +265,11 @@ function HomePage() {
       image: n.image,
       category: n.category,
     }));
+
+  const visionText = useScrollReveal();
+  const visionImage = useScrollReveal();
+  const missionText = useScrollReveal();
+  const missionImage = useScrollReveal();
 
   return (
     <div>
@@ -419,8 +445,17 @@ function HomePage() {
       <section className="max-w-7xl mx-auto px-2 py-4 space-y-12">
         {/* 🔷 Vision */}
         <div className="grid md:grid-cols-2 gap-12 items-center">
-          {/* Text */}
-          <div>
+          {/* Text — slides from left */}
+          <div
+            ref={visionText.ref}
+            style={{
+              opacity: visionText.visible ? 1 : 0,
+              transform: visionText.visible
+                ? "translateX(0)"
+                : "translateX(-40px)",
+              transition: "opacity 0.7s ease, transform 0.7s ease",
+            }}
+          >
             <span className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1 rounded-full bg-blue-50 text-blue-800 mb-4">
               <Eye className="w-3.5 h-3.5" /> Our Vision
             </span>
@@ -447,8 +482,18 @@ function HomePage() {
             </div>
           </div>
 
-          {/* Image Stack */}
-          <div className="relative flex items-center justify-center h-56">
+          {/* Image — slides from right, 0.2s delay */}
+          <div
+            ref={visionImage.ref}
+            className="relative flex items-center justify-center h-56"
+            style={{
+              opacity: visionImage.visible ? 1 : 0,
+              transform: visionImage.visible
+                ? "translateX(0)"
+                : "translateX(40px)",
+              transition: "opacity 0.7s ease 0.2s, transform 0.7s ease 0.2s",
+            }}
+          >
             <div className="w-64 h-40 rounded-xl overflow-hidden border border-gray-200 relative z-10">
               <img
                 src={visionImg}
@@ -471,8 +516,18 @@ function HomePage() {
 
         {/* 🔷 Mission */}
         <div className="grid md:grid-cols-2 gap-12 items-center">
-          {/* Image Stack */}
-          <div className="relative flex items-center justify-center h-56 order-2 md:order-1">
+          {/* Image — slides from left */}
+          <div
+            ref={missionImage.ref}
+            className="relative flex items-center justify-center h-56 order-2 md:order-1"
+            style={{
+              opacity: missionImage.visible ? 1 : 0,
+              transform: missionImage.visible
+                ? "translateX(0)"
+                : "translateX(-40px)",
+              transition: "opacity 0.7s ease, transform 0.7s ease",
+            }}
+          >
             <div className="w-64 h-40 rounded-xl overflow-hidden border border-gray-200 relative z-10">
               <img
                 src={missionImg}
@@ -489,8 +544,18 @@ function HomePage() {
             </div>
           </div>
 
-          {/* Text */}
-          <div className="order-1 md:order-2">
+          {/* Text — slides from right, 0.2s delay */}
+          <div
+            ref={missionText.ref}
+            className="order-1 md:order-2"
+            style={{
+              opacity: missionText.visible ? 1 : 0,
+              transform: missionText.visible
+                ? "translateX(0)"
+                : "translateX(40px)",
+              transition: "opacity 0.7s ease 0.2s, transform 0.7s ease 0.2s",
+            }}
+          >
             <span className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1 rounded-full bg-teal-50 text-teal-800 mb-4">
               <Target className="w-3.5 h-3.5" /> Our Mission
             </span>
