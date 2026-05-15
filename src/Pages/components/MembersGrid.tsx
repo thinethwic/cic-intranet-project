@@ -1,9 +1,9 @@
+import { useEffect, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useMembers } from "@/hooks/useMembers";
 
 const ROLE_ORDER = ["CEO", "COO", "CFO"];
-
 const ROLE_LABELS: Record<string, string> = {
   CEO: "Chief Executive Officer",
   COO: "Chief Operating Officer",
@@ -17,6 +17,35 @@ function getRoleFromEmail(email: string): string {
 
 export default function MembersCarousel() {
   const { members, loading, error } = useMembers();
+  const sectionRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = sectionRef.current;
+    if (!el || loading) return; // ← skip while loading
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target
+              .querySelectorAll<HTMLElement>(".animate-on-scroll")
+              .forEach((child, i) => {
+                child.style.transitionDelay = `${i * 120}ms`;
+                // rAF ensures the browser has painted the initial hidden state first
+                requestAnimationFrame(() => {
+                  child.classList.add("is-visible");
+                });
+              });
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.15 },
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [loading]); // ← depends on loading so it re-runs after cards render
 
   const topManagement = members
     .filter((m) => m.role === "TOP_MANAGEMENT")
@@ -52,11 +81,11 @@ export default function MembersCarousel() {
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+    <div ref={sectionRef} className="grid grid-cols-1 sm:grid-cols-3 gap-6">
       {topManagement.map((member) => (
         <Card
           key={member.id}
-          className="hover:shadow-lg transition-shadow duration-300 border border-blue-100"
+          className="animate-on-scroll hover:shadow-lg transition-shadow duration-300 border border-blue-100"
         >
           <CardContent className="flex flex-col items-center py-6 px-4 gap-1.5">
             <Avatar className="w-26 h-26 mb-1 ring-4 ring-blue-100">
