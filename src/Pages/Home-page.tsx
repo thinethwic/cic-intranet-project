@@ -2,8 +2,15 @@ import HeroSection from "./components/Hero-section";
 import MembersGrid from "./components/MembersGrid";
 import StatsSection from "./components/StatesSection";
 import UpcomingBirthdays from "./components/UpComingBirthDay";
-import { Card } from "@/components/ui/card";
-import { Flame, Newspaper, Calendar } from "lucide-react";
+import {
+  Flame,
+  Newspaper,
+  Calendar,
+  Eye,
+  Telescope,
+  Target,
+  Flag,
+} from "lucide-react";
 import visionImg from "@/assets/vision.jpg"; // eye image
 import missionImg from "@/assets/mission.jpg";
 import GallerySection from "./components/GallerySection";
@@ -30,7 +37,9 @@ import InlineErrorAlert from "@/components/shared/InlineErrorAlert";
 
 function SliderSkeleton({ count }: { count: number }) {
   return (
-    <div className={`grid gap-4 ${count > 2 ? "md:grid-cols-3" : "md:grid-cols-2"}`}>
+    <div
+      className={`grid gap-4 ${count > 2 ? "md:grid-cols-3" : "md:grid-cols-2"}`}
+    >
       {Array.from({ length: count }).map((_, index) => (
         <div
           key={index}
@@ -145,11 +154,7 @@ function HomePage() {
 
   // ✅ Replace mock data with real API
   const { videos, loading: videosLoading, error: videosError } = useVideos();
-  const {
-    events,
-    loading: eventsLoading,
-    error: eventsError,
-  } = useEvents();
+  const { events, loading: eventsLoading, error: eventsError } = useEvents();
   const { news, loading: newsLoading, error: newsError } = useNews();
 
   const hotNews = news.filter((n) => n.isHot);
@@ -407,56 +412,105 @@ function HomePage() {
         )}
       </section>
 
-      <section className="max-w-7xl mx-auto px-2 py-4 space-y-20">
+      <section className="max-w-7xl mx-auto px-2 py-4 space-y-12">
         {/* 🔷 Vision */}
-        <div className="grid md:grid-cols-2 gap-10 items-center">
+        <div className="grid md:grid-cols-2 gap-12 items-center">
           {/* Text */}
           <div>
-            <h2 className="text-4xl font-bold text-blue-900 mb-6"> Vision </h2>
-
+            <span className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1 rounded-full bg-blue-50 text-blue-800 mb-4">
+              <Eye className="w-3.5 h-3.5" /> Our Vision
+            </span>
+            <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center mb-3">
+              <Telescope className="w-5 h-5 text-blue-700" />
+            </div>
+            <h2 className="text-4xl font-bold text-blue-900 mb-3">Vision</h2>
+            <div className="w-12 h-0.5 bg-blue-900 rounded mb-5" />
             <p className="text-gray-600 leading-relaxed">
               To raise living standards around the country by delivering
               increased value to producers and consumers while optimizing
               benefits to our customers, shareholders, employees and other
               stakeholders.
             </p>
+            <div className="flex gap-8 mt-6 pt-6 border-t border-gray-100">
+              <div>
+                <p className="text-xl font-medium text-blue-900">Nation</p>
+                <p className="text-xs text-gray-500">wide reach</p>
+              </div>
+              <div>
+                <p className="text-xl font-medium text-blue-900">Value</p>
+                <p className="text-xs text-gray-500">for all stakeholders</p>
+              </div>
+            </div>
           </div>
 
           {/* Image Stack */}
-          <div className="relative flex justify-center">
-            <Card className="absolute top-6 right-6 w-64 h-40 overflow-hidden shadow-lg">
-              <img src={visionImg} className="w-full h-full object-cover" />
-            </Card>
-
-            <Card className="w-75 h-55 overflow-hidden shadow-xl">
-              <img src={visionImg} className="w-full h-full object-cover" />
-            </Card>
+          <div className="relative flex items-center justify-center h-56">
+            <div className="w-64 h-40 rounded-xl overflow-hidden border border-gray-200 relative z-10">
+              <img
+                src={visionImg}
+                className="w-full h-full object-cover"
+                alt="Vision"
+              />
+            </div>
+            <div className="absolute top-0 right-0 w-44 h-28 rounded-xl overflow-hidden border border-gray-200 z-0">
+              <img
+                src={visionImg}
+                className="w-full h-full object-cover"
+                alt="Vision accent"
+              />
+            </div>
           </div>
         </div>
 
-        {/* 🔷 Mission */}
-        <div className="grid md:grid-cols-2 gap-10 items-center">
-          {/* Image Stack */}
-          <div className="relative flex justify-center order-2 md:order-1">
-            <Card className="absolute bottom-6 left-6 w-64 h-40 overflow-hidden shadow-lg">
-              <img src={missionImg} className="w-full h-full object-cover" />
-            </Card>
+        {/* Divider */}
+        <hr className="border-gray-100" />
 
-            <Card className="w-75 h-55 overflow-hidden shadow-xl">
-              <img src={missionImg} className="w-full h-full object-cover" />
-            </Card>
+        {/* 🔷 Mission */}
+        <div className="grid md:grid-cols-2 gap-12 items-center">
+          {/* Image Stack */}
+          <div className="relative flex items-center justify-center h-56 order-2 md:order-1">
+            <div className="w-64 h-40 rounded-xl overflow-hidden border border-gray-200 relative z-10">
+              <img
+                src={missionImg}
+                className="w-full h-full object-cover"
+                alt="Mission"
+              />
+            </div>
+            <div className="absolute bottom-0 left-0 w-44 h-28 rounded-xl overflow-hidden border border-gray-200 z-0">
+              <img
+                src={missionImg}
+                className="w-full h-full object-cover"
+                alt="Mission accent"
+              />
+            </div>
           </div>
 
           {/* Text */}
           <div className="order-1 md:order-2">
-            <h2 className="text-4xl font-bold text-blue-900 mb-6"> Mission </h2>
-
+            <span className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1 rounded-full bg-teal-50 text-teal-800 mb-4">
+              <Target className="w-3.5 h-3.5" /> Our Mission
+            </span>
+            <div className="w-10 h-10 rounded-lg bg-teal-50 flex items-center justify-center mb-3">
+              <Flag className="w-5 h-5 text-teal-700" />
+            </div>
+            <h2 className="text-4xl font-bold text-blue-900 mb-3">Mission</h2>
+            <div className="w-12 h-0.5 bg-teal-600 rounded mb-5" />
             <p className="text-gray-600 leading-relaxed">
               To become the national leader in providing products, services and
               expertise for the growth and care of livestock by understanding,
               creating and communicating superior value for our customers while
               prioritizing food safety technologies.
             </p>
+            <div className="flex gap-8 mt-6 pt-6 border-t border-gray-100">
+              <div>
+                <p className="text-xl font-medium text-teal-700">Leader</p>
+                <p className="text-xs text-gray-500">in livestock care</p>
+              </div>
+              <div>
+                <p className="text-xl font-medium text-teal-700">Safety</p>
+                <p className="text-xs text-gray-500">first technologies</p>
+              </div>
+            </div>
           </div>
         </div>
       </section>
