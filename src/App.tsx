@@ -24,8 +24,10 @@ import EmployeeProtectedRoute from "./Pages/EmployeeProtectedRoute";
 import NotFoundPage from "./components/shared/NotFoundPage";
 import AdminCategoriesPage from "./Pages/Admin/AdminCategoriesPage";
 import AdminAlertsPage from "./Pages/Admin/AdminAlertsPage";
+import { usePageTitle } from "./hooks/usePageTitle";
 
 function App() {
+  usePageTitle();
   return (
     <Routes>
       {/* ── Public routes ── */}
