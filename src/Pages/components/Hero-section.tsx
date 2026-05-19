@@ -6,7 +6,7 @@ import { Link } from "react-router-dom";
 
 import slide1 from "../../assets/slide1.png";
 import slide2 from "../../assets/slide2.png";
-import slide3 from "../../assets/feeds_slide.png";
+import slide3 from "../../assets/Mask-group3.avif";
 
 interface Slide {
   title: string;
@@ -36,7 +36,7 @@ const categories = [
   { label: "CIC Feeds", icon: Wheat, Link: "/our-segments/cic-feeds" },
   { label: "CIC Poultry", icon: Bird, Link: "/our-segments/cic-poulry" },
   { label: "CIC Vetcare", icon: Pill, Link: "/our-segments/cic-vetcare" },
-  { label: "Asia Vet", icon: Syringe, Link: "/our-segments/asia-vet" },
+  { label: "Asiavet", icon: Syringe, Link: "/our-segments/asia-vet" },
 ];
 
 const AUTO_SLIDE_INTERVAL = 8000;

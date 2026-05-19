@@ -65,7 +65,7 @@ const SEGMENT_OPTIONS = [
   },
   {
     value: "CIC_VET_CARE" as SegmentValue,
-    label: "CIC Vet Care",
+    label: "CIC Vetcare",
     className: "bg-purple-50 text-purple-700 border-purple-200",
   },
   {
@@ -75,7 +75,7 @@ const SEGMENT_OPTIONS = [
   },
   {
     value: "AISA_VET" as SegmentValue,
-    label: "Asia Vet",
+    label: "Asiavet",
     className: "bg-teal-50 text-teal-700 border-teal-200",
   },
 ];

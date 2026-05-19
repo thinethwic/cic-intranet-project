@@ -78,9 +78,9 @@ const SEGMENT_OPTIONS = [
 
 const SEGMENT_LABELS: Record<string, string> = {
   CIC_FEEDS: "CIC Feeds",
-  CIC_VET_CARE: "CIC Vet Care",
+  CIC_VET_CARE: "CIC Vetcare",
   CIC_POULTRY: "CIC Poultry",
-  AISA_VET: "Asia Vet",
+  AISA_VET: "Asiavet",
 };
 
 const EMPTY_FORM = {

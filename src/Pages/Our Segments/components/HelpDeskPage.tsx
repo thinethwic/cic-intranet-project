@@ -96,7 +96,7 @@ const SEGMENT_CONFIG: Record<string, { label: string; class: string }> = {
     class: "bg-green-50 text-green-700 border-green-200",
   },
   CIC_VET_CARE: {
-    label: "CIC Vet Care",
+    label: "CIC Vetcare",
     class: "bg-purple-50 text-purple-700 border-purple-200",
   },
   CIC_POULTRY: {
@@ -104,7 +104,7 @@ const SEGMENT_CONFIG: Record<string, { label: string; class: string }> = {
     class: "bg-orange-50 text-orange-700 border-orange-200",
   },
   AISA_VET: {
-    label: "Asia Vet",
+    label: "Asiavet",
     class: "bg-teal-50 text-teal-700 border-teal-200",
   },
 };
@@ -320,7 +320,10 @@ export default function HelpDeskPage() {
         const fresh = await getMyTickets();
         setTickets(fresh);
 
-        for (const ticket of fresh) {
+        const myTickets = fresh.filter(
+          (t) => !currentSegment || t.segment === currentSegment,
+        );
+        for (const ticket of myTickets) {
           try {
             const commentData = await getComments(ticket.id);
             const latestComment = getLatestCommentSnapshot(commentData);

@@ -106,7 +106,7 @@ const SEGMENT_CONFIG: Record<string, { label: string; className: string }> = {
     className: "bg-green-50 text-green-700 border-green-200",
   },
   CIC_VET_CARE: {
-    label: "CIC Vet Care",
+    label: "CIC Vetcare",
     className: "bg-purple-50 text-purple-700 border-purple-200",
   },
   CIC_POULTRY: {
@@ -114,7 +114,7 @@ const SEGMENT_CONFIG: Record<string, { label: string; className: string }> = {
     className: "bg-orange-50 text-orange-700 border-orange-200",
   },
   AISA_VET: {
-    label: "Asia Vet",
+    label: "Asiavet",
     className: "bg-teal-50 text-teal-700 border-teal-200",
   },
 };
@@ -260,7 +260,47 @@ export default function AdminTicketsPage() {
   const currentViewer = getAdminUser();
   const isAdmin = currentViewer?.role === "ADMIN";
   const adminSegment = currentViewer?.segment ?? null;
+  const adminDepartment = currentViewer?.department ?? null;
   const activeUserId = currentViewer?.userId ?? null;
+
+  // ── Ticket visibility logic ──────────────────────────────────────────────
+  //
+  //  SUPER_ADMIN  (isAdmin = false) → sees ALL tickets across every segment
+  //               and department. No filtering applied.
+  //
+  //  ADMIN + department = "IT"     → sees IT-category tickets from EVERY
+  //               segment. The IT function is centralised under CIC Feeds,
+  //               so an IT admin is not segment-scoped for IT tickets.
+  //
+  //  ADMIN + department ≠ "IT"     → sees only tickets where BOTH
+  //               segment === adminSegment  AND
+  //               department (case-insensitive) === adminDepartment
+  //               This keeps HR, Finance, Facilities etc. within their
+  //               own business unit.
+  //
+  // The function below is used both in the filtered useMemo AND in the
+  // polling seed so notifications are consistent with what the admin sees.
+  //
+  const isITAdmin = isAdmin && adminDepartment?.toUpperCase() === "IT";
+
+  const isTicketVisibleToViewer = (ticket: Ticket): boolean => {
+    // Super admin sees everything
+    if (!isAdmin) return true;
+
+    if (isITAdmin) {
+      // IT admin sees ALL IT-category tickets regardless of which segment
+      // raised them. Non-IT tickets are not their concern.
+      return ticket.category?.toUpperCase() === "IT";
+    }
+
+    // All other admins: segment AND department must both match
+    const segmentMatch = !adminSegment || ticket.segment === adminSegment;
+    const deptMatch =
+      !adminDepartment ||
+      (ticket.department ?? "").toLowerCase() === adminDepartment.toLowerCase();
+
+    return segmentMatch && deptMatch;
+  };
 
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
@@ -290,7 +330,6 @@ export default function AdminTicketsPage() {
       const stored = localStorage.getItem("helpdesk_notifications");
       if (!stored) return [];
       const parsed: NotificationItem[] = JSON.parse(stored);
-      // ✅ 5 minutes filter — purana notifications remove karanna
       const fiveMinutesAgo = Date.now() - 5 * 60 * 1000;
       return parsed.filter(
         (n) => new Date(n.createdAt).getTime() > fiveMinutesAgo,
@@ -314,12 +353,11 @@ export default function AdminTicketsPage() {
   const getConversationOwnerId = (entries: Comment[]): number | null => {
     if (entries.length === 0) return null;
     const first = entries[0];
-    // Only lock if the first commenter is an admin/super_admin role
     const role = first.commentedBy.role;
     if (role === "ADMIN" || role === "SUPER_ADMIN") {
       return first.commentedBy.id;
     }
-    return null; // first message is from employee — conversation is open
+    return null;
   };
 
   const conversationOwnerId = getConversationOwnerId(comments);
@@ -356,7 +394,6 @@ export default function AdminTicketsPage() {
       if (prev.some((item) => item.id === notification.id)) {
         return prev;
       }
-
       return [{ ...notification, unread: true }, ...prev].slice(0, 10);
     });
   };
@@ -405,6 +442,9 @@ export default function AdminTicketsPage() {
           if (!knownTicketIdsRef.current.has(ticket.id)) {
             knownTicketIdsRef.current.add(ticket.id);
 
+            // Only notify for tickets this admin is scoped to see
+            if (!isTicketVisibleToViewer(ticket)) continue;
+
             appendNotification({
               id: `ticket-new-${ticket.id}`,
               ticketId: ticket.id,
@@ -412,7 +452,7 @@ export default function AdminTicketsPage() {
               title: ticket.title,
               description: `New ticket submitted by ${ticket.submittedBy.name}${
                 ticket.department ? ` · ${ticket.department}` : ""
-              }`,
+              }${isITAdmin ? ` · ${ticket.segment ?? ""}` : ""}`,
               createdAt: ticket.createdAt,
             });
 
@@ -439,10 +479,13 @@ export default function AdminTicketsPage() {
       const data = await getAllTickets();
       setTickets(data);
       knownTicketIdsRef.current = new Set(data.map((t) => t.id));
-      isSeededRef.current = true; // this line already exists
+      isSeededRef.current = true;
+
+      // Seed latest comment IDs only for tickets this admin can see
+      const scopedTickets = data.filter(isTicketVisibleToViewer);
 
       await Promise.all(
-        data.map(async (t) => {
+        scopedTickets.map(async (t) => {
           try {
             const commentData = await adminGetComments(t.id);
             const snapshot = getLatestCommentSnapshot(commentData);
@@ -539,9 +582,10 @@ export default function AdminTicketsPage() {
     const q = search.toLowerCase();
     return tickets
       .filter((ticket) => {
-        if (isAdmin && adminSegment && ticket.segment !== adminSegment)
-          return false;
+        // Apply viewer-level routing scope first
+        if (!isTicketVisibleToViewer(ticket)) return false;
 
+        // Then apply the UI filter controls (search box, dropdowns)
         return (
           (ticket.title.toLowerCase().includes(q) ||
             ticket.ticketNumber.toLowerCase().includes(q) ||
@@ -549,6 +593,8 @@ export default function AdminTicketsPage() {
             (ticket.department ?? "").toLowerCase().includes(q)) &&
           (statusFilter === "All" || ticket.status === statusFilter) &&
           (priorityFilter === "All" || ticket.priority === priorityFilter) &&
+          // Segment filter is only relevant for super admins browsing across
+          // segments; IT admins already see all segments for IT tickets.
           (!isAdmin
             ? segmentFilter === "All" || ticket.segment === segmentFilter
             : true)
@@ -557,7 +603,7 @@ export default function AdminTicketsPage() {
       .sort(
         (a, b) =>
           new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-      ); // ← newest first
+      );
   }, [
     tickets,
     search,
@@ -566,6 +612,8 @@ export default function AdminTicketsPage() {
     segmentFilter,
     isAdmin,
     adminSegment,
+    adminDepartment,
+    isITAdmin,
   ]);
 
   useEffect(() => {
@@ -645,11 +693,12 @@ export default function AdminTicketsPage() {
       assignedToId: ticket.assignedTo?.id ?? null,
     });
 
-    setEditCategories([]); // reset while loading
+    setEditCategories([]);
     getCategories(ticket.segment, ticket.department ?? undefined)
       .then((data) => setEditCategories(data.map((c) => c.name)))
       .catch(() => setEditCategories(CATEGORY_OPTIONS));
   };
+
   const handleSaveEdit = async () => {
     if (!editTicket || !editForm.title.trim() || !editForm.description.trim())
       return;
@@ -744,7 +793,6 @@ export default function AdminTicketsPage() {
   return (
     <div className="space-y-6 p-6">
       {/* ── Admin Welcome Banner ── */}
-      {/* ── Admin Welcome Banner ── */}
       {isAdmin && (
         <div className="rounded-xl border border-blue-100 bg-gradient-to-r from-blue-50 to-slate-50 px-5 py-4 flex items-center justify-between gap-4">
           <div>
@@ -754,46 +802,71 @@ export default function AdminTicketsPage() {
             <h2 className="text-base font-semibold text-slate-800">
               Welcome back, {currentViewer?.name ?? "Admin"} 👋
             </h2>
-            {(adminSegment || currentViewer?.department) && (
+            {(adminSegment || adminDepartment) && (
               <p className="text-xs text-slate-500 mt-0.5">
-                You're managing tickets for{" "}
-                {adminSegment && (
-                  <span className="font-medium text-blue-700">
-                    {SEGMENT_CONFIG[adminSegment]?.label ?? adminSegment}
-                  </span>
-                )}
-                {adminSegment && currentViewer?.department && (
-                  <span className="text-slate-400"> · </span>
-                )}
-                {currentViewer?.department && (
-                  <span className="font-medium text-blue-700">
-                    {currentViewer.department}
-                  </span>
+                {isITAdmin ? (
+                  // IT admin sees tickets across all segments — reflect that
+                  <>
+                    You're managing{" "}
+                    <span className="font-medium text-blue-700">IT</span>{" "}
+                    tickets across{" "}
+                    <span className="font-medium text-blue-700">
+                      All Locations
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    You're managing tickets for{" "}
+                    {adminSegment && (
+                      <span className="font-medium text-blue-700">
+                        {SEGMENT_CONFIG[adminSegment]?.label ?? adminSegment}
+                      </span>
+                    )}
+                    {adminSegment && adminDepartment && (
+                      <span className="text-slate-400"> · </span>
+                    )}
+                    {adminDepartment && (
+                      <span className="font-medium text-blue-700">
+                        {adminDepartment}
+                      </span>
+                    )}
+                  </>
                 )}
               </p>
             )}
           </div>
           <div className="hidden sm:flex items-center gap-2">
-            {adminSegment && (
-              <div
-                className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-medium ${
-                  SEGMENT_CONFIG[adminSegment]?.className ??
-                  "bg-blue-50 text-blue-700 border-blue-200"
-                }`}
-              >
+            {isITAdmin ? (
+              // IT admin badge — shows cross-segment scope
+              <div className="flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-medium text-blue-700">
                 <ShieldCheck className="h-4 w-4" />
-                {SEGMENT_CONFIG[adminSegment]?.label ?? adminSegment}
+                IT · All Locations
               </div>
-            )}
-            {currentViewer?.department && (
-              <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-100 px-3 py-2 text-xs font-medium text-slate-600">
-                <Building2 className="h-4 w-4" />
-                {currentViewer.department}
-              </div>
+            ) : (
+              <>
+                {adminSegment && (
+                  <div
+                    className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-medium ${
+                      SEGMENT_CONFIG[adminSegment]?.className ??
+                      "bg-blue-50 text-blue-700 border-blue-200"
+                    }`}
+                  >
+                    <ShieldCheck className="h-4 w-4" />
+                    {SEGMENT_CONFIG[adminSegment]?.label ?? adminSegment}
+                  </div>
+                )}
+                {adminDepartment && (
+                  <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-100 px-3 py-2 text-xs font-medium text-slate-600">
+                    <Building2 className="h-4 w-4" />
+                    {adminDepartment}
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>
       )}
+
       {/* ── Header ── */}
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
@@ -802,11 +875,16 @@ export default function AdminTicketsPage() {
           </h1>
           <p className="mt-1 text-sm text-slate-500">
             Review, update, edit, and remove employee support requests.
-            {isAdmin && adminSegment && (
-              <span className="ml-2 inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700 border border-blue-200">
-                {SEGMENT_CONFIG[adminSegment]?.label ?? adminSegment}
-              </span>
-            )}
+            {isAdmin &&
+              (isITAdmin ? (
+                <span className="ml-2 inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700 border border-blue-200">
+                  IT · All Locations
+                </span>
+              ) : adminSegment ? (
+                <span className="ml-2 inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700 border border-blue-200">
+                  {SEGMENT_CONFIG[adminSegment]?.label ?? adminSegment}
+                </span>
+              ) : null)}
           </p>
         </div>
 
@@ -856,7 +934,6 @@ export default function AdminTicketsPage() {
                     onClick={() => {
                       markNotificationRead(notification.id);
                       if (notification.id.startsWith("ticket-new-")) {
-                        // New ticket — highlight the row, don't open dialog
                         setHighlightedTicketId(notification.ticketId);
                         setTimeout(() => {
                           highlightedRowRef.current?.scrollIntoView({
@@ -866,7 +943,6 @@ export default function AdminTicketsPage() {
                         }, 100);
                         setTimeout(() => setHighlightedTicketId(null), 3000);
                       } else {
-                        // Comment notification — open dialog as before
                         const ticket = tickets.find(
                           (item) => item.id === notification.ticketId,
                         );
@@ -1217,7 +1293,7 @@ export default function AdminTicketsPage() {
       {filtered.length > 0 && !loading && (
         <p className="text-right text-xs text-slate-400">
           Showing {filtered.length} of{" "}
-          {isAdmin ? filtered.length : tickets.length} tickets
+          {!isAdmin ? tickets.length : filtered.length} tickets
         </p>
       )}
 
