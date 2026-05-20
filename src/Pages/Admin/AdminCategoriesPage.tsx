@@ -54,6 +54,8 @@ import {
 } from "@/lib/api/departmentApi";
 import { AdminPagination } from "./admin-components";
 import { useSearchParams } from "react-router-dom";
+import InlineErrorAlert from "@/components/shared/InlineErrorAlert";
+import { getUserFriendlyErrorMessage } from "@/lib/api/apiUtils";
 
 // ── Shared config ─────────────────────────────────────────────────────────────
 
@@ -297,9 +299,7 @@ function CategoryForm({
       </div>
 
       {error && (
-        <p className="text-xs text-red-500 bg-red-50 rounded px-3 py-2">
-          {error}
-        </p>
+        <InlineErrorAlert message={error} />
       )}
     </div>
   );
@@ -394,9 +394,7 @@ function DeptForm({ form, setForm, error }: DeptFormProps) {
       </div>
 
       {error && (
-        <p className="text-xs text-red-500 bg-red-50 rounded px-3 py-2">
-          {error}
-        </p>
+        <InlineErrorAlert message={error} />
       )}
     </div>
   );
@@ -452,9 +450,16 @@ function CategoriesTab() {
   const fetchCategories = async () => {
     try {
       setLoading(true);
+      setError("");
       setCategories(await adminGetCategories());
     } catch (err) {
-      console.error(err);
+      console.error("Failed to fetch categories", err);
+      setError(
+        getUserFriendlyErrorMessage(
+          err,
+          "Unable to load categories right now.",
+        ),
+      );
     } finally {
       setLoading(false);
     }
@@ -530,8 +535,13 @@ function CategoriesTab() {
       await fetchCategories();
       setForm({ ...EMPTY_CAT_FORM });
       setShowCreate(false);
-    } catch (err: any) {
-      setError(err.message ?? "Failed to create");
+    } catch (err) {
+      setError(
+        getUserFriendlyErrorMessage(
+          err,
+          "Unable to create the category right now.",
+        ),
+      );
     } finally {
       setSaving(false);
     }
@@ -550,8 +560,13 @@ function CategoriesTab() {
       });
       await fetchCategories();
       setEditItem(null);
-    } catch (err: any) {
-      setError(err.message ?? "Failed to update");
+    } catch (err) {
+      setError(
+        getUserFriendlyErrorMessage(
+          err,
+          "Unable to update the category right now.",
+        ),
+      );
     } finally {
       setSaving(false);
     }
@@ -559,10 +574,17 @@ function CategoriesTab() {
 
   const handleToggleActive = async (cat: TicketCategory) => {
     try {
+      setError("");
       await adminUpdateCategory(cat.id, { ...cat, active: !cat.active });
       await fetchCategories();
     } catch (err) {
-      console.error(err);
+      console.error("Failed to update category", err);
+      setError(
+        getUserFriendlyErrorMessage(
+          err,
+          "Unable to update the category right now.",
+        ),
+      );
     }
   };
 
@@ -570,11 +592,18 @@ function CategoriesTab() {
     if (!deleteItem) return;
     try {
       setSaving(true);
+      setError("");
       await adminDeleteCategory(deleteItem.id);
       await fetchCategories();
       setDeleteItem(null);
     } catch (err) {
-      console.error(err);
+      console.error("Failed to delete category", err);
+      setError(
+        getUserFriendlyErrorMessage(
+          err,
+          "Unable to delete the category right now.",
+        ),
+      );
     } finally {
       setSaving(false);
     }
@@ -647,6 +676,8 @@ function CategoriesTab() {
           <Plus className="h-4 w-4" /> Add Category
         </Button>
       </div>
+
+      {error && <InlineErrorAlert message={error} />}
 
       <Card className="overflow-hidden border border-slate-200 shadow-sm">
         <CardContent className="p-0">
@@ -860,6 +891,7 @@ function CategoriesTab() {
           <p className="text-sm text-slate-500">
             "{deleteItem?.name}" will be permanently removed.
           </p>
+          {error && <InlineErrorAlert message={error} />}
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteItem(null)}>
               Cancel
@@ -900,10 +932,17 @@ function DepartmentsTab() {
   const fetchDepartments = async () => {
     try {
       setLoading(true);
+      setError("");
       const data = await adminGetDepartmentsPaged(0, 100); // ← use paged
       setDepartments(data.content);
     } catch (err) {
-      console.error(err);
+      console.error("Failed to fetch departments", err);
+      setError(
+        getUserFriendlyErrorMessage(
+          err,
+          "Unable to load departments right now.",
+        ),
+      );
     } finally {
       setLoading(false);
     }
@@ -957,8 +996,13 @@ function DepartmentsTab() {
       await fetchDepartments();
       setForm({ ...EMPTY_DEPT_FORM });
       setShowCreate(false);
-    } catch (err: any) {
-      setError(err.message ?? "Failed to create department");
+    } catch (err) {
+      setError(
+        getUserFriendlyErrorMessage(
+          err,
+          "Unable to create the department right now.",
+        ),
+      );
     } finally {
       setSaving(false);
     }
@@ -977,8 +1021,13 @@ function DepartmentsTab() {
       });
       await fetchDepartments();
       setEditItem(null);
-    } catch (err: any) {
-      setError(err.message ?? "Failed to update department");
+    } catch (err) {
+      setError(
+        getUserFriendlyErrorMessage(
+          err,
+          "Unable to update the department right now.",
+        ),
+      );
     } finally {
       setSaving(false);
     }
@@ -988,11 +1037,18 @@ function DepartmentsTab() {
     if (!deleteItem) return;
     try {
       setSaving(true);
+      setError("");
       await adminDeleteDepartment(deleteItem.id);
       await fetchDepartments();
       setDeleteItem(null);
     } catch (err) {
-      console.error(err);
+      console.error("Failed to delete department", err);
+      setError(
+        getUserFriendlyErrorMessage(
+          err,
+          "Unable to delete the department right now.",
+        ),
+      );
     } finally {
       setSaving(false);
     }
@@ -1077,6 +1133,8 @@ function DepartmentsTab() {
           <Plus className="h-4 w-4" /> Add Department
         </Button>
       </div>
+
+      {error && <InlineErrorAlert message={error} />}
 
       <Card className="overflow-hidden border border-slate-200 shadow-sm">
         <CardContent className="p-0">
@@ -1287,6 +1345,7 @@ function DepartmentsTab() {
             <strong>{deleteItem?.name}</strong> ({deleteItem?.code}) will be
             permanently removed.
           </p>
+          {error && <InlineErrorAlert message={error} />}
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteItem(null)}>
               Cancel

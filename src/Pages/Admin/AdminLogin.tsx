@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { Lock, LogIn, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CardContent } from "@/components/ui/card";
+import InlineErrorAlert from "@/components/shared/InlineErrorAlert";
+import { getUserFriendlyErrorMessage } from "@/lib/api/apiUtils";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AdminCard } from "./admin-components";
@@ -62,8 +64,10 @@ export default function AdminLogin() {
           navigate("/helpdesk", { replace: true });
         }
       }
-    } catch {
-      setError("Error Fail to Loggin");
+    } catch (err) {
+      setError(
+        getUserFriendlyErrorMessage(err, "Unable to sign in right now."),
+      );
     } finally {
       setLoading(false);
     }
@@ -111,9 +115,7 @@ export default function AdminLogin() {
               </div>
             </div>
 
-            {error && (
-              <p className="text-sm text-red-500 text-center">{error}</p>
-            )}
+            {error && <InlineErrorAlert message={error} />}
 
             <Button
               type="submit"

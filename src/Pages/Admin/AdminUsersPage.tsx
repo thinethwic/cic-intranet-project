@@ -125,6 +125,7 @@ function StatCard({
     </div>
   );
 }
+void DialogError;
 
 // ── Inline dialog error banner ────────────────────────────────────────────────
 
@@ -911,7 +912,7 @@ export default function AdminUsersPage() {
 
           <div className="grid gap-4 overflow-y-auto overflow-x-hidden pb-1 flex-1 min-h-0 mr-[-20px] pr-[20px]">
             {/* Error inside dialog */}
-            <DialogError message={createError} />
+            {createError && <InlineErrorAlert message={createError} />}
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1.5">
@@ -1083,7 +1084,7 @@ export default function AdminUsersPage() {
 
           <div className="grid gap-4 overflow-y-auto overflow-x-hidden pb-1 flex-1 min-h-0 mr-[-20px] pr-[20px]">
             {/* Error inside dialog */}
-            <DialogError message={editError} />
+            {editError && <InlineErrorAlert message={editError} />}
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1.5">
@@ -1284,7 +1285,7 @@ export default function AdminUsersPage() {
             </DialogDescription>
           </DialogHeader>
 
-          <DialogError message={deleteError} />
+          {deleteError && <InlineErrorAlert message={deleteError} />}
 
           <DialogFooter>
             <Button

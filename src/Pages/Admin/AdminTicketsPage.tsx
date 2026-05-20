@@ -60,6 +60,7 @@ import type { AdminUser } from "@/lib/api/ticketApi";
 import { getAdminUser } from "@/lib/api/authHeaders";
 import { AdminPagination } from "./admin-components";
 import { getUserFriendlyErrorMessage } from "@/lib/api/apiUtils";
+import InlineErrorAlert from "@/components/shared/InlineErrorAlert";
 
 // ── Configs ─────────────────────────────────────────────────────────────────
 
@@ -1022,6 +1023,8 @@ export default function AdminTicketsPage() {
           </AlertDescription>
         </Alert>
       )}
+
+      {error && <InlineErrorAlert message={error} />}
 
       {/* ── Stats ── */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">

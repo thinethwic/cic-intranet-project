@@ -281,7 +281,12 @@ export default function AdminAuditLogPage() {
       a.click();
       URL.revokeObjectURL(url);
     } catch (err) {
-      setError("Failed to export. Please try again.");
+      setError(
+        getUserFriendlyErrorMessage(
+          err,
+          "Unable to export audit logs right now.",
+        ),
+      );
     } finally {
       setExporting(false);
     }
