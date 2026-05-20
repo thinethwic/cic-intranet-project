@@ -2,7 +2,7 @@ import { authHeaders } from "./authHeaders";
 import { expireAdminSession } from "./authSession";
 import { ApiError } from "./apiUtils";
 
-const REQUEST_TIMEOUT_MS = 15000;
+const REQUEST_TIMEOUT_MS = 30000;
 
 export const apiFetch = async (
   url: string,

@@ -10,6 +10,9 @@ import {
   UserCheck,
   UserX,
   Settings,
+  Eye,
+  EyeOff,
+  KeyRound,
   type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -88,6 +91,7 @@ const EMPTY_FORM = {
   name: "",
   email: "",
   password: "",
+  currentPassword: "",
   role: "AUTHORIZED" as "SUPER_ADMIN" | "ADMIN" | "AUTHORIZED" | "SERVICE",
   active: true,
   segment: "",
@@ -122,14 +126,113 @@ function StatCard({
   );
 }
 
+// ── Inline dialog error banner ────────────────────────────────────────────────
+
+function DialogError({ message }: { message: string }) {
+  if (!message) return null;
+  return (
+    <div className="rounded-lg border border-red-200 bg-red-50 px-3.5 py-2.5 text-sm text-red-700 flex items-start gap-2">
+      <span className="mt-0.5 shrink-0 text-red-400">⚠</span>
+      <span>{message}</span>
+    </div>
+  );
+}
+
+// ── Password strength ─────────────────────────────────────────────────────────
+
+function getPasswordStrength(pw: string): {
+  score: number; // 0–4
+  label: string;
+  color: string;
+  textColor: string;
+} {
+  if (!pw) return { score: 0, label: "", color: "", textColor: "" };
+  let score = 0;
+  if (pw.length >= 8) score++;
+  if (pw.length >= 12) score++;
+  if (/[A-Z]/.test(pw) && /[a-z]/.test(pw)) score++;
+  if (/\d/.test(pw)) score++;
+  if (/[^A-Za-z0-9]/.test(pw)) score++;
+  score = Math.min(score, 4);
+  const map: Record<
+    number,
+    { label: string; color: string; textColor: string }
+  > = {
+    0: { label: "", color: "", textColor: "" },
+    1: { label: "Weak", color: "bg-red-400", textColor: "text-red-500" },
+    2: { label: "Fair", color: "bg-amber-400", textColor: "text-amber-500" },
+    3: { label: "Good", color: "bg-blue-400", textColor: "text-blue-500" },
+    4: {
+      label: "Strong",
+      color: "bg-emerald-500",
+      textColor: "text-emerald-600",
+    },
+  };
+  return { score, ...map[score] };
+}
+
+function PasswordStrengthBar({ password }: { password: string }) {
+  const { score, label, color, textColor } = getPasswordStrength(password);
+  if (!password) return null;
+  return (
+    <div className="space-y-1 mt-1.5">
+      <div className="flex gap-1">
+        {[1, 2, 3, 4].map((i) => (
+          <div
+            key={i}
+            className={`h-1 flex-1 rounded-full transition-all duration-300 ${
+              i <= score ? color : "bg-slate-200"
+            }`}
+          />
+        ))}
+      </div>
+      <p className={`text-[11px] font-medium ${textColor}`}>{label}</p>
+    </div>
+  );
+}
+
+// ── Password input with show/hide toggle ──────────────────────────────────────
+
+function PasswordInput({
+  value,
+  onChange,
+  placeholder,
+  autoComplete,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  autoComplete?: string;
+}) {
+  const [show, setShow] = useState(false);
+  return (
+    <div className="relative">
+      <Input
+        type={show ? "text" : "password"}
+        placeholder={placeholder}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        autoComplete={autoComplete}
+        className="pr-9"
+      />
+      <button
+        type="button"
+        onClick={() => setShow((s) => !s)}
+        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+        tabIndex={-1}
+      >
+        {show ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+      </button>
+    </div>
+  );
+}
+
 // ── Segment + Department fields ───────────────────────────────────────────────
-// Defined at module scope so React never treats it as a new component type on
-// re-render (which would remount inputs and cause letter-by-letter loss).
 
 interface SegmentDeptFieldsProps {
   segment: string;
   department: string;
-  departments: Department[]; // pre-fetched by the parent for the current segment
+  departments: Department[];
   loadingDepts: boolean;
   onSegmentChange: (v: string) => void;
   onDeptChange: (v: string) => void;
@@ -144,8 +247,7 @@ function SegmentDeptFields({
   onDeptChange,
 }: SegmentDeptFieldsProps) {
   return (
-    <div className="grid grid-cols-2 gap-3">
-      {/* Segment */}
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
       <div className="space-y-1.5">
         <Label className="text-xs font-medium text-slate-600">
           Segment <span className="text-red-400">*</span>
@@ -159,7 +261,7 @@ function SegmentDeptFields({
               {segment ? SEGMENT_LABELS[segment] : "Select segment"}
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-full">
+          <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width]">
             {SEGMENT_OPTIONS.map((s) => (
               <DropdownMenuItem key={s} onClick={() => onSegmentChange(s)}>
                 {SEGMENT_LABELS[s]}
@@ -169,7 +271,6 @@ function SegmentDeptFields({
         </DropdownMenu>
       </div>
 
-      {/* Department — select when segment chosen, plain input otherwise */}
       <div className="space-y-1.5">
         <Label className="text-xs font-medium text-slate-600">
           Department{" "}
@@ -210,7 +311,7 @@ export default function AdminUsersPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
+  const [pageError, setPageError] = useState("");
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("All");
   const [statusFilter, setStatusFilter] = useState("All");
@@ -220,20 +321,22 @@ export default function AdminUsersPage() {
   const [totalPages, setTotalPages] = useState(1);
 
   const [showCreate, setShowCreate] = useState(false);
+  const [createError, setCreateError] = useState("");
+
   const [editUser, setEditUser] = useState<User | null>(null);
+  const [editError, setEditError] = useState("");
+
   const [deleteUser, setDeleteUser] = useState<User | null>(null);
-  const [deleteError, setDeleteError] = useState(""); // ← add this
+  const [deleteError, setDeleteError] = useState("");
 
   const [createForm, setCreateForm] = useState({ ...EMPTY_FORM });
   const [editForm, setEditForm] = useState({ ...EMPTY_FORM });
 
-  // Departments for the segment currently chosen in each dialog
   const [createDepts, setCreateDepts] = useState<Department[]>([]);
   const [createDeptsLoading, setCreateDeptsLoading] = useState(false);
   const [editDepts, setEditDepts] = useState<Department[]>([]);
   const [editDeptsLoading, setEditDeptsLoading] = useState(false);
 
-  // ── Fetch departments when segment changes (create form) ──
   useEffect(() => {
     if (!createForm.segment) {
       setCreateDepts([]);
@@ -254,7 +357,6 @@ export default function AdminUsersPage() {
     };
   }, [createForm.segment]);
 
-  // ── Fetch departments when segment changes (edit form) ────
   useEffect(() => {
     if (!editForm.segment) {
       setEditDepts([]);
@@ -282,7 +384,7 @@ export default function AdminUsersPage() {
   const fetchUsers = async (pageNumber = page, currentPageSize = pageSize) => {
     try {
       setLoading(true);
-      setError("");
+      setPageError("");
       const data = await getAdminUsersPage(pageNumber - 1, currentPageSize);
       setUsers((data.content ?? []) as User[]);
       setTotalItems(data.totalElements ?? 0);
@@ -292,7 +394,7 @@ export default function AdminUsersPage() {
       setUsers([]);
       setTotalItems(0);
       setTotalPages(1);
-      setError(
+      setPageError(
         getUserFriendlyErrorMessage(err, "Unable to load users right now."),
       );
     } finally {
@@ -330,9 +432,17 @@ export default function AdminUsersPage() {
       !createForm.segment
     )
       return;
+
+    if (getPasswordStrength(createForm.password).score < 2) {
+      setCreateError(
+        "Password is too weak. Use at least 8 characters with mixed case or numbers.",
+      );
+      return;
+    }
+
     try {
       setSaving(true);
-      setError("");
+      setCreateError("");
       const res = await fetch(API, {
         method: "POST",
         headers: { ...authHeaders(), "Content-Type": "application/json" },
@@ -344,7 +454,7 @@ export default function AdminUsersPage() {
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        setError(err.message || "Failed to create user");
+        setCreateError(err.message || "Failed to create user.");
         return;
       }
       await fetchUsers();
@@ -352,7 +462,9 @@ export default function AdminUsersPage() {
       setShowCreate(false);
     } catch (err) {
       console.error("Failed to create user", err);
-      setError(getUserFriendlyErrorMessage(err, "Unable to create the user."));
+      setCreateError(
+        getUserFriendlyErrorMessage(err, "Unable to create the user."),
+      );
     } finally {
       setSaving(false);
     }
@@ -361,11 +473,13 @@ export default function AdminUsersPage() {
   // ── Open Edit ─────────────────────────────────────────────
   const openEdit = (user: User) => {
     setEditUser(user);
+    setEditError("");
     setEditForm({
       username: user.username,
       name: user.name,
       email: user.email,
       password: "",
+      currentPassword: "",
       role: user.role,
       active: user.active,
       segment: user.segment ?? "",
@@ -376,9 +490,23 @@ export default function AdminUsersPage() {
   // ── Save Edit ─────────────────────────────────────────────
   const handleSaveEdit = async () => {
     if (!editUser) return;
+
+    if (editForm.password.trim()) {
+      if (!editForm.currentPassword.trim()) {
+        setEditError("Please enter the current password to set a new one.");
+        return;
+      }
+      if (getPasswordStrength(editForm.password).score < 2) {
+        setEditError(
+          "New password is too weak. Use at least 8 characters with mixed case or numbers.",
+        );
+        return;
+      }
+    }
+
     try {
       setSaving(true);
-      setError("");
+      setEditError("");
       const payload: any = {
         username: editForm.username,
         name: editForm.name,
@@ -388,7 +516,10 @@ export default function AdminUsersPage() {
         segment: editForm.segment || undefined,
         department: editForm.department.trim() || undefined,
       };
-      if (editForm.password.trim()) payload.password = editForm.password;
+      if (editForm.password.trim()) {
+        payload.password = editForm.password;
+        payload.currentPassword = editForm.currentPassword;
+      }
       const res = await fetch(`${API}/${editUser.id}`, {
         method: "PUT",
         headers: { ...authHeaders(), "Content-Type": "application/json" },
@@ -396,14 +527,16 @@ export default function AdminUsersPage() {
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        setError(err.message || "Failed to update user");
+        setEditError(err.message || "Failed to update user.");
         return;
       }
       await fetchUsers();
       setEditUser(null);
     } catch (err) {
       console.error("Failed to update user", err);
-      setError(getUserFriendlyErrorMessage(err, "Unable to update the user."));
+      setEditError(
+        getUserFriendlyErrorMessage(err, "Unable to update the user."),
+      );
     } finally {
       setSaving(false);
     }
@@ -420,14 +553,14 @@ export default function AdminUsersPage() {
         headers: authHeaders(),
       });
       if (!res.ok) {
-        setDeleteError("Faild to Delete User !");
+        setDeleteError("Failed to delete user. Please try again.");
         return;
       }
       await fetchUsers();
       setDeleteUser(null);
     } catch (err) {
       console.error(err);
-      setDeleteError("Faild to Delete User !");
+      setDeleteError("Failed to delete user. Please try again.");
     } finally {
       setSaving(false);
     }
@@ -436,7 +569,7 @@ export default function AdminUsersPage() {
   // ── Toggle active ─────────────────────────────────────────
   const toggleActive = async (user: User) => {
     try {
-      setError("");
+      setPageError("");
       await fetch(`${API}/${user.id}`, {
         method: "PUT",
         headers: { ...authHeaders(), "Content-Type": "application/json" },
@@ -453,7 +586,7 @@ export default function AdminUsersPage() {
       await fetchUsers();
     } catch (err) {
       console.error(err);
-      setError(
+      setPageError(
         getUserFriendlyErrorMessage(
           err,
           "Unable to update the user's active status.",
@@ -506,7 +639,7 @@ export default function AdminUsersPage() {
         </Button>
       </div>
 
-      {error && <InlineErrorAlert message={error} />}
+      {pageError && <InlineErrorAlert message={pageError} />}
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -624,13 +757,13 @@ export default function AdminUsersPage() {
                     Loading users...
                   </TableCell>
                 </TableRow>
-              ) : error ? (
+              ) : pageError ? (
                 <TableRow>
                   <TableCell
                     colSpan={7}
                     className="text-center py-14 text-slate-400 text-sm"
                   >
-                    {error}
+                    {pageError}
                   </TableCell>
                 </TableRow>
               ) : filtered.length === 0 ? (
@@ -665,15 +798,11 @@ export default function AdminUsersPage() {
                     <TableCell className="py-3.5 text-sm text-slate-500">
                       @{user.username}
                     </TableCell>
-
                     <TableCell className="py-3.5">
                       {(() => {
                         const { icon: Icon, label } = ROLE_CONFIG[
                           user.role
-                        ] ?? {
-                          icon: ShieldOff,
-                          label: "AUTHORIZED",
-                        };
+                        ] ?? { icon: ShieldOff, label: "AUTHORIZED" };
                         return (
                           <Badge
                             variant="outline"
@@ -685,7 +814,6 @@ export default function AdminUsersPage() {
                         );
                       })()}
                     </TableCell>
-
                     <TableCell className="py-3.5">
                       {user.segment ? (
                         <div>
@@ -760,15 +888,18 @@ export default function AdminUsersPage() {
         }}
       />
 
-      {/* ── Create Dialog ── */}
+      {/* ── Create Dialog ─────────────────────────────────────────────────── */}
       <Dialog
         open={showCreate}
         onOpenChange={(o) => {
-          if (!o) setCreateForm({ ...EMPTY_FORM });
+          if (!o) {
+            setCreateForm({ ...EMPTY_FORM });
+            setCreateError("");
+          }
           setShowCreate(o);
         }}
       >
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md max-h-[90vh] flex flex-col overflow-hidden">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Plus className="w-4 h-4 text-blue-600" /> Add user
@@ -777,8 +908,12 @@ export default function AdminUsersPage() {
               Create a new admin or authorized user account.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4">
-            <div className="grid grid-cols-2 gap-3">
+
+          <div className="grid gap-4 overflow-y-auto overflow-x-hidden pb-1 flex-1 min-h-0 mr-[-20px] pr-[20px]">
+            {/* Error inside dialog */}
+            <DialogError message={createError} />
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label className="text-xs font-medium text-slate-600">
                   Full name
@@ -806,6 +941,7 @@ export default function AdminUsersPage() {
                 />
               </div>
             </div>
+
             <div className="space-y-1.5">
               <Label className="text-xs font-medium text-slate-600">
                 Email
@@ -820,6 +956,7 @@ export default function AdminUsersPage() {
                 autoComplete="off"
               />
             </div>
+
             <div className="space-y-1.5">
               <Label className="text-xs font-medium text-slate-600">
                 Password
@@ -830,16 +967,15 @@ export default function AdminUsersPage() {
                 style={{ display: "none" }}
                 readOnly
               />
-              <Input
-                type="password"
-                placeholder="Min 8 characters"
+              <PasswordInput
                 value={createForm.password}
-                onChange={(e) =>
-                  setCreateForm((p) => ({ ...p, password: e.target.value }))
-                }
+                onChange={(v) => setCreateForm((p) => ({ ...p, password: v }))}
+                placeholder="Min 8 characters"
                 autoComplete="new-password"
               />
+              <PasswordStrengthBar password={createForm.password} />
             </div>
+
             <div className="space-y-1.5">
               <Label className="text-xs font-medium text-slate-600">Role</Label>
               <DropdownMenu>
@@ -851,7 +987,7 @@ export default function AdminUsersPage() {
                     {createForm.role}
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-full">
+                <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width]">
                   {ROLE_OPTIONS.map((r) => (
                     <DropdownMenuItem
                       key={r}
@@ -865,7 +1001,7 @@ export default function AdminUsersPage() {
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
-            {/* Segment + department — department becomes a select once segment is chosen */}
+
             <SegmentDeptFields
               segment={createForm.segment}
               department={createForm.department}
@@ -878,6 +1014,7 @@ export default function AdminUsersPage() {
                 setCreateForm((p) => ({ ...p, department: v }))
               }
             />
+
             <div className="flex items-center justify-between py-2 border-t border-slate-100">
               <div>
                 <p className="text-sm font-medium">Active</p>
@@ -893,11 +1030,13 @@ export default function AdminUsersPage() {
               />
             </div>
           </div>
+
           <DialogFooter>
             <Button
               variant="outline"
               onClick={() => {
                 setCreateForm({ ...EMPTY_FORM });
+                setCreateError("");
                 setShowCreate(false);
               }}
             >
@@ -909,6 +1048,7 @@ export default function AdminUsersPage() {
                 !createForm.username.trim() ||
                 !createForm.email.trim() ||
                 !createForm.password.trim() ||
+                getPasswordStrength(createForm.password).score < 2 ||
                 !createForm.segment ||
                 saving
               }
@@ -920,24 +1060,32 @@ export default function AdminUsersPage() {
         </DialogContent>
       </Dialog>
 
-      {/* ── Edit Dialog ── */}
+      {/* ── Edit Dialog ───────────────────────────────────────────────────── */}
       <Dialog
         open={!!editUser}
         onOpenChange={(o) => {
-          if (!o) setEditUser(null);
+          if (!o) {
+            setEditUser(null);
+            setEditError("");
+          }
         }}
       >
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md max-h-[90vh] flex flex-col overflow-hidden">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Pencil className="w-4 h-4 text-blue-600" /> Edit user
             </DialogTitle>
             <DialogDescription>
-              Update user details. Leave password blank to keep it unchanged.
+              Update user details. Leave the password section blank to keep it
+              unchanged.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4">
-            <div className="grid grid-cols-2 gap-3">
+
+          <div className="grid gap-4 overflow-y-auto overflow-x-hidden pb-1 flex-1 min-h-0 mr-[-20px] pr-[20px]">
+            {/* Error inside dialog */}
+            <DialogError message={editError} />
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label className="text-xs font-medium text-slate-600">
                   Full name
@@ -963,6 +1111,7 @@ export default function AdminUsersPage() {
                 />
               </div>
             </div>
+
             <div className="space-y-1.5">
               <Label className="text-xs font-medium text-slate-600">
                 Email
@@ -976,21 +1125,67 @@ export default function AdminUsersPage() {
                 autoComplete="off"
               />
             </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs font-medium text-slate-600">
-                New password{" "}
-                <span className="text-slate-400 font-normal">(optional)</span>
-              </Label>
-              <Input
-                type="password"
-                placeholder="Leave blank to keep current"
-                value={editForm.password}
-                onChange={(e) =>
-                  setEditForm((p) => ({ ...p, password: e.target.value }))
-                }
-                autoComplete="new-password"
-              />
+
+            {/* ── Password reset section ── */}
+            <div className="rounded-lg border border-slate-200 bg-slate-50/60 p-3.5 space-y-3">
+              {/* Section header */}
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-md bg-slate-200 flex items-center justify-center">
+                  <KeyRound className="w-3.5 h-3.5 text-slate-500" />
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-slate-700">
+                    Reset Password
+                  </p>
+                  <p className="text-[11px] text-slate-400">
+                    Leave blank to keep the current password
+                  </p>
+                </div>
+              </div>
+
+              {/* Current password — only shown when new password has input */}
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium text-slate-600">
+                  Current password
+                  {editForm.password.trim() && (
+                    <span className="text-red-400 ml-0.5">*</span>
+                  )}
+                </Label>
+                <PasswordInput
+                  value={editForm.currentPassword}
+                  onChange={(v) =>
+                    setEditForm((p) => ({ ...p, currentPassword: v }))
+                  }
+                  placeholder={
+                    editForm.password.trim()
+                      ? "Required to set a new password"
+                      : "Enter current password"
+                  }
+                  autoComplete="current-password"
+                />
+                {editForm.password.trim() &&
+                  !editForm.currentPassword.trim() && (
+                    <p className="text-[11px] text-amber-500 flex items-center gap-1">
+                      <span>⚠</span> Current password is required
+                    </p>
+                  )}
+              </div>
+
+              {/* New password */}
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium text-slate-600">
+                  New password
+                </Label>
+                <PasswordInput
+                  value={editForm.password}
+                  onChange={(v) => setEditForm((p) => ({ ...p, password: v }))}
+                  placeholder="Enter new password"
+                  autoComplete="new-password"
+                />
+                <PasswordStrengthBar password={editForm.password} />
+              </div>
             </div>
+
             <div className="space-y-1.5">
               <Label className="text-xs font-medium text-slate-600">Role</Label>
               <DropdownMenu>
@@ -1002,7 +1197,7 @@ export default function AdminUsersPage() {
                     {editForm.role}
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-full">
+                <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width]">
                   {ROLE_OPTIONS.map((r) => (
                     <DropdownMenuItem
                       key={r}
@@ -1016,7 +1211,7 @@ export default function AdminUsersPage() {
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
-            {/* Segment + department — pre-loads existing user's departments on open */}
+
             <SegmentDeptFields
               segment={editForm.segment}
               department={editForm.department}
@@ -1029,6 +1224,7 @@ export default function AdminUsersPage() {
                 setEditForm((p) => ({ ...p, department: v }))
               }
             />
+
             <div className="flex items-center justify-between py-2 border-t border-slate-100">
               <div>
                 <p className="text-sm font-medium">Active</p>
@@ -1044,8 +1240,15 @@ export default function AdminUsersPage() {
               />
             </div>
           </div>
+
           <DialogFooter>
-            <Button variant="outline" onClick={() => setEditUser(null)}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setEditUser(null);
+                setEditError("");
+              }}
+            >
               Cancel
             </Button>
             <Button
@@ -1059,7 +1262,7 @@ export default function AdminUsersPage() {
         </DialogContent>
       </Dialog>
 
-      {/* ── Delete Dialog ── */}
+      {/* ── Delete Dialog ─────────────────────────────────────────────────── */}
       <Dialog
         open={!!deleteUser}
         onOpenChange={(o) => {
@@ -1081,12 +1284,7 @@ export default function AdminUsersPage() {
             </DialogDescription>
           </DialogHeader>
 
-          {/* ← error banner */}
-          {deleteError && (
-            <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-              {deleteError}
-            </div>
-          )}
+          <DialogError message={deleteError} />
 
           <DialogFooter>
             <Button

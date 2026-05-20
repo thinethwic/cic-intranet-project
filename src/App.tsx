@@ -25,6 +25,7 @@ import NotFoundPage from "./components/shared/NotFoundPage";
 import AdminCategoriesPage from "./Pages/Admin/AdminCategoriesPage";
 import AdminAlertsPage from "./Pages/Admin/AdminAlertsPage";
 import { usePageTitle } from "./hooks/usePageTitle";
+import AdminAuditLogPage from "./Pages/Admin/AdminAuditLogPage";
 
 function App() {
   usePageTitle();
@@ -66,6 +67,7 @@ function App() {
             <Route path="management" element={<AdminManagementPage />} />
             <Route path="users" element={<AdminUsersPage />} />
             <Route path="categories" element={<AdminCategoriesPage />} />
+            <Route path="auditLog" element={<AdminAuditLogPage />} />
           </Route>
         </Route>
       </Route>

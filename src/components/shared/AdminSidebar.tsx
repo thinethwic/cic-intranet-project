@@ -12,6 +12,7 @@ import {
   LogOut,
   ChevronRight,
   AlertCircleIcon,
+  Activity,
 } from "lucide-react";
 import {
   Sidebar,
@@ -115,6 +116,12 @@ const navItems: NavItem[] = [
     path: "/admin/users",
     roles: ["SUPER_ADMIN"],
   },
+  {
+    name: "Audit Logs",
+    icon: Activity,
+    path: "/admin/auditLog",
+    roles: ["SUPER_ADMIN"],
+  },
 ];
 
 export default function AdminSidebar() {
@@ -140,7 +147,9 @@ export default function AdminSidebar() {
       ? location.pathname === "/admin"
       : location.pathname.startsWith(path);
 
-  const handleLogout = () => logout();
+  const handleLogout = async () => {
+    await logout("/admin/login");
+  };
 
   const role = adminUser?.role ?? "";
   const visibleNavItems = navItems.filter((item) => item.roles.includes(role));

@@ -55,7 +55,24 @@ export default function Navbar() {
             <div className="flex-shrink-0">
               <Link
                 to="/"
-                onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+                onClick={(e) => {
+                  e.preventDefault();
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+
+                  const onScrollEnd = () => {
+                    window.removeEventListener("scrollend", onScrollEnd);
+                    window.location.href = "/";
+                  };
+
+                  // 'scrollend' fires when scroll animation finishes
+                  window.addEventListener("scrollend", onScrollEnd);
+
+                  // Fallback in case scrollend doesn't fire (already at top or unsupported browser)
+                  setTimeout(() => {
+                    window.removeEventListener("scrollend", onScrollEnd);
+                    window.location.href = "/";
+                  }, 600);
+                }}
               >
                 <img
                   src={logo}

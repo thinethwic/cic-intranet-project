@@ -202,7 +202,24 @@ export const expireAdminSession = (returnTo = getCurrentReturnTo()): void => {
   window.location.replace(buildAdminLoginUrl(returnTo));
 };
 
-export const logout = (redirectTo = "/"): void => {
+export const logout = async (redirectTo = "/"): Promise<void> => {
+  const token = getStoredAdminToken();
+
+  // Call backend to record the logout audit log
+  if (token && !isTokenExpired(token)) {
+    try {
+      await fetch(`${import.meta.env.VITE_API_BASE_URL || "http://localhost:8080"}/api/public/auth/logout`, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+    } catch {
+      // Don't block logout if the API call fails
+    }
+  }
+
   clearAdminSession();
   isRedirectingAfterExpiry = false;
   window.location.replace(redirectTo);

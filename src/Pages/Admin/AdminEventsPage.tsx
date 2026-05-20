@@ -28,7 +28,6 @@ import {
   AdminSearchInput,
   AdminSectionHeader,
   DataTable,
-  FilterPillGroup,
   StatCard,
   StatusBadge,
 } from "./admin-components";
@@ -76,8 +75,13 @@ const CATEGORIES = [
   "GENERAL",
 ];
 
-// FIX #2: Define TYPES constant (was referenced but never declared)
 const TYPES = ["All", "Unread", "Read"];
+const ALLOWED_IMAGE_TYPES = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+];
 
 const EMPTY_EVENT_FORM = {
   title: "",
@@ -132,6 +136,50 @@ function TabPill({
   );
 }
 
+// ── Shared FilterDropdown ─────────────────────────────────────────────────────
+
+function FilterDropdown({
+  options,
+  value,
+  onChange,
+  className,
+}: {
+  options: string[];
+  value: string;
+  onChange: (v: string) => void;
+  className?: string;
+}) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger>
+        <Button
+          variant="outline"
+          className={`h-9 gap-2 text-sm font-normal justify-between ${
+            value !== "All" && value !== options[0]
+              ? "border-blue-500 text-blue-600"
+              : ""
+          } ${className ?? ""}`}
+        >
+          <span>{value}</span>
+          <ChevronDown className="w-3.5 h-3.5 opacity-50" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="min-w-[160px]">
+        {options.map((opt) => (
+          <DropdownMenuItem
+            key={opt}
+            onClick={() => onChange(opt)}
+            className="flex items-center justify-between text-sm cursor-pointer"
+          >
+            {opt}
+            {value === opt && <Check className="w-3.5 h-3.5 text-blue-600" />}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
 // ── Events tab ────────────────────────────────────────────────────────────────
 
 function EventsTab() {
@@ -141,7 +189,8 @@ function EventsTab() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
-  const [segment, setSegment] = useState("All");
+  const [segFilter, setSegFilter] = useState("All");
+  const [locationFilter] = useState("All");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Event | null>(null);
   const [deleteItem, setDeleteItem] = useState<Event | null>(null);
@@ -173,17 +222,18 @@ function EventsTab() {
     () =>
       items.filter((event) => {
         const q = search.toLowerCase();
-        return (
-          event.title.toLowerCase().includes(q) &&
-          (segment === "All" || event.segment === segment)
-        );
+        const matchesSearch = event.title.toLowerCase().includes(q);
+        const matchesSeg = segFilter === "All" || event.segment === segFilter;
+        const matchesLocation =
+          locationFilter === "All" || event.location === locationFilter;
+        return matchesSearch && matchesSeg && matchesLocation;
       }),
-    [items, search, segment],
+    [items, search, segFilter, locationFilter],
   );
 
   useEffect(() => {
     setPage(1);
-  }, [search, segment, items.length]);
+  }, [search, segFilter, locationFilter, items.length]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -196,7 +246,6 @@ function EventsTab() {
     setDialogOpen(true);
   };
 
-  // openEdit — handle null segment from backend
   const openEdit = (event: Event) => {
     setEditing(event);
     setForm({
@@ -204,7 +253,7 @@ function EventsTab() {
       date: event.date,
       time: event.time,
       location: event.location,
-      segment: event.segment ?? "", // null → empty string so select shows "— None —"
+      segment: event.segment ?? "",
     });
     setSelectedImage(null);
     setImagePreview(event.image);
@@ -213,6 +262,14 @@ function EventsTab() {
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] ?? null;
+    if (file && !ALLOWED_IMAGE_TYPES.includes(file.type)) {
+      setError(
+        `Unsupported file type "${file.type}". Please upload a JPG, PNG, WEBP, or GIF image.`,
+      );
+      setSelectedImage(null);
+      return;
+    }
+    setError("");
     setSelectedImage(file);
     if (file) setImagePreview(URL.createObjectURL(file));
   };
@@ -226,7 +283,7 @@ function EventsTab() {
       const payload = {
         ...form,
         userId: adminUser?.userId,
-        segment: form.segment || null, // ← send null explicitly, not undefined
+        segment: form.segment || null,
       };
       const formData = new FormData();
       formData.append(
@@ -300,10 +357,11 @@ function EventsTab() {
           onChange={setSearch}
           placeholder="Search events..."
         />
-        <FilterPillGroup
+        <FilterDropdown
           options={SEGMENT_OPTIONS}
-          value={segment}
-          onChange={setSegment}
+          value={segFilter}
+          onChange={setSegFilter}
+          className="min-w-[140px]"
         />
         <Button onClick={openCreate} className="ml-auto gap-2 rounded-2xl">
           <Plus className="h-4 w-4" /> Create Event
@@ -348,7 +406,6 @@ function EventsTab() {
             header: "Location",
             cell: (event) => event.location,
           },
-          // Table segment cell — show "No Segment" badge when null/empty
           {
             key: "segment",
             header: "Segment",
@@ -433,7 +490,7 @@ function EventsTab() {
                 </p>
                 <input
                   type="file"
-                  accept="image/*"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
                   className="hidden"
                   onChange={handleImageChange}
                 />
@@ -542,60 +599,15 @@ function EventsTab() {
 
 // ── Announcements tab ─────────────────────────────────────────────────────────
 
-function FilterDropdown({
-  options,
-  value,
-  onChange,
-  className,
-}: {
-  options: string[];
-  value: string;
-  onChange: (v: string) => void;
-  className?: string;
-}) {
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger>
-        <Button
-          variant="outline"
-          className={`h-9 gap-2 text-sm font-normal justify-between ${
-            value !== "All" && value !== options[0]
-              ? "border-blue-500 text-blue-600"
-              : ""
-          } ${className ?? ""}`}
-        >
-          <span>{value}</span>
-          <ChevronDown className="w-3.5 h-3.5 opacity-50" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="min-w-[160px]">
-        {options.map((opt) => (
-          <DropdownMenuItem
-            key={opt}
-            onClick={() => onChange(opt)}
-            className="flex items-center justify-between text-sm cursor-pointer"
-          >
-            {opt}
-            {value === opt && <Check className="w-3.5 h-3.5 text-blue-600" />}
-          </DropdownMenuItem>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
-}
-
 function AnnouncementsTab() {
   const PAGE_SIZE = 8;
   const [items, setItems] = useState<Announcement[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState("");
-
-  // FIX #2: Declare all filter state variables that were referenced but missing
   const [segFilter, setSegFilter] = useState("All");
   const [typeFilter, setTypeFilter] = useState("All");
   const [catFilter, setCatFilter] = useState("All");
-
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Announcement | null>(null);
   const [deleteItem, setDeleteItem] = useState<Announcement | null>(null);
@@ -625,7 +637,6 @@ function AnnouncementsTab() {
     }
   };
 
-  // FIX #4: Apply all three filters (segFilter, catFilter, typeFilter) in the memo
   const filtered = useMemo(
     () =>
       items.filter((ann) => {
@@ -644,7 +655,6 @@ function AnnouncementsTab() {
     [items, search, segFilter, catFilter, typeFilter],
   );
 
-  // FIX #5: Include all filter variables in the reset dep array
   useEffect(() => {
     setPage(1);
   }, [search, segFilter, catFilter, typeFilter, items.length]);
@@ -735,7 +745,7 @@ function AnnouncementsTab() {
         />
       </div>
 
-      {/* FIX #1: Filters + Create button are now inside a single wrapper div */}
+      {/* Filters + Create */}
       <div className="flex flex-wrap items-center gap-4">
         <AdminSearchInput
           value={search}
@@ -879,7 +889,6 @@ function AnnouncementsTab() {
               />
             </div>
 
-            {/* FIX #3: Category is now a <select> using the CATEGORIES enum for consistency */}
             <div className="space-y-1.5">
               <Label className="text-xs font-medium text-slate-600">
                 Category <span className="text-red-500">*</span>

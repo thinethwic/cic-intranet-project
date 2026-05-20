@@ -39,12 +39,25 @@ import { getAdminUser } from "@/lib/api/authHeaders";
 import InlineErrorAlert from "@/components/shared/InlineErrorAlert";
 import { getUserFriendlyErrorMessage } from "@/lib/api/apiUtils";
 
+const ALLOWED_IMAGE_TYPES = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+];
+
 export default function AdminGalleryPage() {
   const PAGE_SIZE = 6;
   const [items, setItems] = useState<Gallery[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
+
+  // Scoped error state per dialog
+  const [pageError, setPageError] = useState("");
+  const [createError, setCreateError] = useState("");
+  const [editError, setEditError] = useState("");
+  const [deleteError, setDeleteError] = useState("");
+
   const [search, setSearch] = useState("");
   const [preview, setPreview] = useState<Gallery | null>(null);
   const [editing, setEditing] = useState<Gallery | null>(null);
@@ -64,12 +77,12 @@ export default function AdminGalleryPage() {
   const fetchGalleries = async () => {
     try {
       setLoading(true);
-      setError("");
+      setPageError("");
       const data = await getAllGalleries();
       setItems(data);
     } catch (err) {
       console.error("Failed to fetch galleries", err);
-      setError(
+      setPageError(
         getUserFriendlyErrorMessage(
           err,
           "Unable to load gallery items right now.",
@@ -99,11 +112,13 @@ export default function AdminGalleryPage() {
 
   const openCreate = () => {
     resetForm();
+    setCreateError("");
     setIsCreating(true);
   };
 
   const openEdit = (item: Gallery) => {
     setEditing(item);
+    setEditError("");
     setDescription(item.description ?? "");
     setSelectedFile(null);
     setImagePreview(item.image ? `${item.image}` : null);
@@ -111,6 +126,24 @@ export default function AdminGalleryPage() {
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] ?? null;
+    if (file && !ALLOWED_IMAGE_TYPES.includes(file.type)) {
+      if (editing) {
+        setEditError(
+          `Unsupported file type "${file.type}". Please upload a JPG, PNG, WEBP, or GIF image.`,
+        );
+      } else {
+        setCreateError(
+          `Unsupported file type "${file.type}". Please upload a JPG, PNG, WEBP, or GIF image.`,
+        );
+      }
+      setSelectedFile(null);
+      return;
+    }
+    if (editing) {
+      setEditError("");
+    } else {
+      setCreateError("");
+    }
     setSelectedFile(file);
     if (file) setImagePreview(URL.createObjectURL(file));
   };
@@ -120,7 +153,7 @@ export default function AdminGalleryPage() {
     if (!selectedFile) return;
     try {
       setSaving(true);
-      setError("");
+      setCreateError("");
       const formData = new FormData();
       const adminUser = getAdminUser();
       formData.append("image", selectedFile);
@@ -139,7 +172,7 @@ export default function AdminGalleryPage() {
       setIsCreating(false);
     } catch (err) {
       console.error("Failed to create gallery item", err);
-      setError(
+      setCreateError(
         getUserFriendlyErrorMessage(
           err,
           "Unable to create the gallery item right now.",
@@ -155,7 +188,7 @@ export default function AdminGalleryPage() {
     if (!editing) return;
     try {
       setSaving(true);
-      setError("");
+      setEditError("");
       const formData = new FormData();
       const adminUser = getAdminUser();
       formData.append(
@@ -181,7 +214,7 @@ export default function AdminGalleryPage() {
       resetForm();
     } catch (err) {
       console.error("Failed to update gallery item", err);
-      setError(
+      setEditError(
         getUserFriendlyErrorMessage(
           err,
           "Unable to update the gallery item right now.",
@@ -196,13 +229,13 @@ export default function AdminGalleryPage() {
   const handleDelete = async () => {
     if (!deleteItem) return;
     try {
-      setError("");
+      setDeleteError("");
       await deleteGallery(deleteItem.id);
       await fetchGalleries();
       setDeleteItem(null);
     } catch (err) {
       console.error("Failed to delete gallery item", err);
-      setError(
+      setDeleteError(
         getUserFriendlyErrorMessage(
           err,
           "Unable to delete the gallery item right now.",
@@ -223,7 +256,7 @@ export default function AdminGalleryPage() {
         }
       />
 
-      {error && <InlineErrorAlert message={error} />}
+      {pageError && <InlineErrorAlert message={pageError} />}
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         <StatCard
@@ -301,7 +334,6 @@ export default function AdminGalleryPage() {
         </div>
       )}
 
-      {/* ── Preview Dialog ── */}
       <AdminPagination
         page={page}
         totalPages={totalPages}
@@ -311,6 +343,7 @@ export default function AdminGalleryPage() {
         onPageChange={setPage}
       />
 
+      {/* ── Preview Dialog ── */}
       <Dialog open={!!preview} onOpenChange={() => setPreview(null)}>
         <DialogContent className="sm:max-w-3xl">
           <DialogHeader>
@@ -334,6 +367,7 @@ export default function AdminGalleryPage() {
         onOpenChange={(o) => {
           if (!o) {
             resetForm();
+            setCreateError("");
             setIsCreating(false);
           }
         }}
@@ -347,6 +381,9 @@ export default function AdminGalleryPage() {
               Upload an image to the gallery.
             </DialogDescription>
           </DialogHeader>
+
+          {createError && <InlineErrorAlert message={createError} />}
+
           <div className="space-y-4">
             <label className="flex flex-col items-center justify-center border-2 border-dashed border-slate-200 rounded-xl p-4 cursor-pointer hover:border-blue-400 hover:bg-blue-50/40 transition-colors">
               {imagePreview ? (
@@ -362,7 +399,7 @@ export default function AdminGalleryPage() {
               </p>
               <input
                 type="file"
-                accept="image/*"
+                accept="image/jpeg,image/png,image/webp,image/gif"
                 className="hidden"
                 onChange={handleImageChange}
               />
@@ -383,6 +420,7 @@ export default function AdminGalleryPage() {
               variant="outline"
               onClick={() => {
                 resetForm();
+                setCreateError("");
                 setIsCreating(false);
               }}
             >
@@ -401,6 +439,7 @@ export default function AdminGalleryPage() {
         onOpenChange={(o) => {
           if (!o) {
             setEditing(null);
+            setEditError("");
             resetForm();
           }
         }}
@@ -414,6 +453,9 @@ export default function AdminGalleryPage() {
               Update the image or its description.
             </DialogDescription>
           </DialogHeader>
+
+          {editError && <InlineErrorAlert message={editError} />}
+
           <div className="space-y-4">
             <label className="flex flex-col items-center justify-center border-2 border-dashed border-slate-200 rounded-xl p-4 cursor-pointer hover:border-blue-400 hover:bg-blue-50/40 transition-colors">
               {imagePreview ? (
@@ -429,7 +471,7 @@ export default function AdminGalleryPage() {
               </p>
               <input
                 type="file"
-                accept="image/*"
+                accept="image/jpeg,image/png,image/webp,image/gif"
                 className="hidden"
                 onChange={handleImageChange}
               />
@@ -450,6 +492,7 @@ export default function AdminGalleryPage() {
               variant="outline"
               onClick={() => {
                 setEditing(null);
+                setEditError("");
                 resetForm();
               }}
             >
@@ -463,7 +506,15 @@ export default function AdminGalleryPage() {
       </Dialog>
 
       {/* ── Delete Dialog ── */}
-      <Dialog open={!!deleteItem} onOpenChange={() => setDeleteItem(null)}>
+      <Dialog
+        open={!!deleteItem}
+        onOpenChange={(o) => {
+          if (!o) {
+            setDeleteError("");
+            setDeleteItem(null);
+          }
+        }}
+      >
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
             <DialogTitle>Delete image?</DialogTitle>
@@ -471,8 +522,17 @@ export default function AdminGalleryPage() {
               This image will be permanently removed from the gallery.
             </DialogDescription>
           </DialogHeader>
+
+          {deleteError && <InlineErrorAlert message={deleteError} />}
+
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteItem(null)}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setDeleteError("");
+                setDeleteItem(null);
+              }}
+            >
               Cancel
             </Button>
             <Button variant="destructive" onClick={handleDelete}>

@@ -53,7 +53,7 @@ export interface News {
   content: string;
   image: string;
   category: string;
-  isHot: boolean; // matches Java's @JsonProperty — backend sends "hot"
+  isHot: boolean;
   hotSince: string | null;
   createdAt: string;
 }
@@ -64,6 +64,12 @@ const CATEGORIES = ["CIC_FEEDS", "CIC_VET_CARE", "CIC_POULTRY", "AISA_VET"];
 const CAT_FILTER = ["All", ...CATEGORIES];
 const HOT_FILTER = ["All news", "Hot only", "Standard only"];
 const PAGE_SIZE_OPTIONS = [8, 12, 24];
+const ALLOWED_IMAGE_TYPES = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+];
 
 const EMPTY_FORM = {
   title: "",
@@ -88,7 +94,6 @@ function fmtDate(d?: string | null) {
   }
 }
 
-/** Returns how many days are left before the hot label expires (30-day window). */
 function hotDaysLeft(hotSince?: string | null): number | null {
   if (!hotSince) return null;
   const expiresAt = new Date(hotSince);
@@ -180,7 +185,7 @@ function ImageUploadZone({
         ref={ref}
         type="file"
         className="hidden"
-        accept="image/*"
+        accept="image/jpeg,image/png,image/webp,image/gif"
         onChange={(e) => {
           const f = e.target.files?.[0];
           if (f) onFileChange(f);
@@ -191,7 +196,6 @@ function ImageUploadZone({
 }
 
 // ── NewsForm ──────────────────────────────────────────────────────────────────
-// Defined at module scope — never inside the parent — to prevent remount/focus loss.
 
 interface NewsFormProps {
   form: typeof EMPTY_FORM;
@@ -274,7 +278,13 @@ export default function AdminNewsPage() {
   const [news, setNews] = useState<News[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
+
+  // Scoped error state per dialog
+  const [pageError, setPageError] = useState("");
+  const [createError, setCreateError] = useState("");
+  const [editError, setEditError] = useState("");
+  const [deleteError, setDeleteError] = useState("");
+
   const [search, setSearch] = useState("");
   const [catFilter, setCatFilter] = useState("All");
   const [hotFilter, setHotFilter] = useState("All news");
@@ -303,7 +313,7 @@ export default function AdminNewsPage() {
   const fetchNews = async (pageNumber = page, currentPageSize = pageSize) => {
     try {
       setLoading(true);
-      setError("");
+      setPageError("");
       const data = await getNewsPage(pageNumber - 1, currentPageSize);
       setNews((data.content ?? []) as News[]);
       setTotalItems(data.totalElements ?? 0);
@@ -313,7 +323,7 @@ export default function AdminNewsPage() {
       setNews([]);
       setTotalItems(0);
       setTotalPages(1);
-      setError(
+      setPageError(
         getUserFriendlyErrorMessage(err, "Unable to load news right now."),
       );
     } finally {
@@ -335,6 +345,7 @@ export default function AdminNewsPage() {
   useEffect(() => {
     setPage(1);
   }, [search, catFilter, hotFilter, pageSize]);
+
   const hotCount = news.filter((n) => n.isHot).length;
   const catCount = new Set(news.map((n) => n.category)).size;
 
@@ -343,7 +354,7 @@ export default function AdminNewsPage() {
     if (!createForm.title.trim()) return;
     try {
       setSaving(true);
-      setError("");
+      setCreateError("");
       const adminUser = getAdminUser();
       const formData = new FormData();
       formData.append(
@@ -355,7 +366,7 @@ export default function AdminNewsPage() {
               description: createForm.description,
               content: createForm.content,
               category: createForm.category,
-              hot: createForm.isHot, // ← "hot" matches the Java field name
+              hot: createForm.isHot,
               authorId: adminUser?.userId ?? null,
             }),
           ],
@@ -365,13 +376,10 @@ export default function AdminNewsPage() {
       if (createImageFile) formData.append("image", createImageFile);
       await createNews(formData);
       await fetchNews();
-      setCreateForm({ ...EMPTY_FORM });
-      setCreateImageFile(null);
-      setCreateImagePreview(null);
-      setShowCreate(false);
+      resetCreate();
     } catch (err) {
       console.error("Failed to create news", err);
-      setError(
+      setCreateError(
         getUserFriendlyErrorMessage(
           err,
           "Unable to create the article right now.",
@@ -385,6 +393,7 @@ export default function AdminNewsPage() {
   // ── Open Edit ─────────────────────────────────────────────
   const openEdit = (item: News) => {
     setEditItem(item);
+    setEditError("");
     setEditForm({
       title: item.title,
       description: item.description,
@@ -401,24 +410,22 @@ export default function AdminNewsPage() {
     if (!editItem) return;
     try {
       setSaving(true);
-      setError("");
+      setEditError("");
       const adminUser = getAdminUser();
       await updateNews(editItem.id, {
         title: editForm.title,
         description: editForm.description,
         content: editForm.content,
         category: editForm.category,
-        isHot: editForm.isHot, // ← "hot" matches the Java field name
+        isHot: editForm.isHot,
         authorId: adminUser?.userId ?? null,
       });
       if (editImageFile) await updateNewsImage(editItem.id, editImageFile);
       await fetchNews();
-      setEditItem(null);
-      setEditImageFile(null);
-      setEditImagePreview(null);
+      resetEdit();
     } catch (err) {
       console.error("Failed to update news", err);
-      setError(
+      setEditError(
         getUserFriendlyErrorMessage(
           err,
           "Unable to update the article right now.",
@@ -433,13 +440,13 @@ export default function AdminNewsPage() {
   const handleDelete = async () => {
     if (!deleteId) return;
     try {
-      setError("");
+      setDeleteError("");
       await deleteNews(deleteId);
       await fetchNews();
       setDeleteId(null);
     } catch (err) {
       console.error("Failed to delete news", err);
-      setError(
+      setDeleteError(
         getUserFriendlyErrorMessage(
           err,
           "Unable to delete the article right now.",
@@ -452,6 +459,7 @@ export default function AdminNewsPage() {
     setCreateForm({ ...EMPTY_FORM });
     setCreateImageFile(null);
     setCreateImagePreview(null);
+    setCreateError("");
     setShowCreate(false);
   };
 
@@ -459,6 +467,7 @@ export default function AdminNewsPage() {
     setEditItem(null);
     setEditImageFile(null);
     setEditImagePreview(null);
+    setEditError("");
   };
 
   return (
@@ -521,7 +530,7 @@ export default function AdminNewsPage() {
         />
       </div>
 
-      {error && <InlineErrorAlert message={error} />}
+      {pageError && <InlineErrorAlert message={pageError} />}
 
       {/* Grid */}
       {loading ? (
@@ -579,7 +588,6 @@ export default function AdminNewsPage() {
                     </span>
                   </div>
 
-                  {/* Hot expiry indicator */}
                   {item.isHot && daysLeft !== null && (
                     <div
                       className={`flex items-center gap-1 text-[11px] mb-3 ${
@@ -650,11 +658,21 @@ export default function AdminNewsPage() {
             </DialogDescription>
           </DialogHeader>
           <div className="overflow-y-auto flex-1 px-6 py-5">
+            {createError && (
+              <InlineErrorAlert message={createError} className="mb-4" />
+            )}
             <NewsForm
               form={createForm}
               setForm={setCreateForm}
               imagePreview={createImagePreview}
               onImageChange={(file) => {
+                if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+                  setCreateError(
+                    `Unsupported file type "${file.type}". Please upload a JPG, PNG, WEBP, or GIF image.`,
+                  );
+                  return;
+                }
+                setCreateError("");
                 setCreateImageFile(file);
                 setCreateImagePreview(URL.createObjectURL(file));
               }}
@@ -692,11 +710,21 @@ export default function AdminNewsPage() {
             </DialogDescription>
           </DialogHeader>
           <div className="overflow-y-auto flex-1 px-6 py-5">
+            {editError && (
+              <InlineErrorAlert message={editError} className="mb-4" />
+            )}
             <NewsForm
               form={editForm}
               setForm={setEditForm}
               imagePreview={editImagePreview}
               onImageChange={(file) => {
+                if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+                  setEditError(
+                    `Unsupported file type "${file.type}". Please upload a JPG, PNG, WEBP, or GIF image.`,
+                  );
+                  return;
+                }
+                setEditError("");
                 setEditImageFile(file);
                 setEditImagePreview(URL.createObjectURL(file));
               }}
@@ -718,7 +746,15 @@ export default function AdminNewsPage() {
       </Dialog>
 
       {/* ── Delete Dialog ── */}
-      <Dialog open={deleteId !== null} onOpenChange={() => setDeleteId(null)}>
+      <Dialog
+        open={deleteId !== null}
+        onOpenChange={(o) => {
+          if (!o) {
+            setDeleteError("");
+            setDeleteId(null);
+          }
+        }}
+      >
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
             <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center mb-2">
@@ -730,8 +766,15 @@ export default function AdminNewsPage() {
               ..." will be permanently removed.
             </DialogDescription>
           </DialogHeader>
+          {deleteError && <InlineErrorAlert message={deleteError} />}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteId(null)}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setDeleteError("");
+                setDeleteId(null);
+              }}
+            >
               Cancel
             </Button>
             <Button variant="destructive" onClick={handleDelete}>

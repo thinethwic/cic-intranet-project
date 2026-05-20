@@ -37,6 +37,7 @@ import { AdminPagination } from "./admin-components";
 import { useAlerts } from "@/hooks/useAlerts";
 import type { Alert, AlertSeverity } from "@/types";
 import InlineErrorAlert from "@/components/shared/InlineErrorAlert";
+import { getUserFriendlyErrorMessage } from "@/lib/api/apiUtils";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -196,6 +197,7 @@ function FlyerUploadZone({
   onFileChange: (file: File) => void;
 }) {
   const ref = useRef<HTMLInputElement>(null);
+
   return (
     <div
       onClick={() => ref.current?.click()}
@@ -227,7 +229,7 @@ function FlyerUploadZone({
         ref={ref}
         type="file"
         className="hidden"
-        accept="image/*"
+        accept="image/jpeg,image/png,image/webp,image/gif"
         onChange={(e) => {
           const f = e.target.files?.[0];
           if (f) onFileChange(f);
@@ -368,11 +370,17 @@ function AlertForm({
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
 export default function AdminAlertsPage() {
+  const ALLOWED_IMAGE_TYPES = [
+    "image/jpeg",
+    "image/png",
+    "image/webp",
+    "image/gif",
+  ];
   // ← adminMode: true — fetches ALL alerts including scheduled ones
   const {
     alerts,
     loading,
-    error,
+    error: fetchError,
     refresh,
     create,
     update,
@@ -381,6 +389,7 @@ export default function AdminAlertsPage() {
   } = useAlerts(0, 100, true);
 
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [severityFilter, setSeverityFilter] = useState("All");
@@ -399,6 +408,11 @@ export default function AdminAlertsPage() {
   );
   const [editFlyerFile, setEditFlyerFile] = useState<File | null>(null);
   const [editFlyerPreview, setEditFlyerPreview] = useState<string | null>(null);
+  const pageError =
+    error ||
+    (fetchError
+      ? getUserFriendlyErrorMessage(fetchError, "Unable to load alerts right now.")
+      : "");
 
   // ── Filters ───────────────────────────────────────────────────────────────
   const filtered = alerts.filter((a) => {
@@ -440,26 +454,39 @@ export default function AdminAlertsPage() {
   // ── Create ────────────────────────────────────────────────────────────────
   const handleCreate = async () => {
     if (!createForm.title.trim()) return;
-    setSaving(true);
-    await create(
-      {
-        title: createForm.title,
-        body: createForm.body,
-        severity: createForm.severity,
-        date: createForm.date
-          ? new Date(createForm.date).toISOString()
-          : undefined,
-        href: createForm.href || undefined,
-      },
-      createFlyerFile ?? undefined,
-    );
-    setSaving(false);
-    resetCreate();
-    refresh();
+    try {
+      setSaving(true);
+      setError("");
+      const created = await create(
+        {
+          title: createForm.title,
+          body: createForm.body,
+          severity: createForm.severity,
+          date: createForm.date
+            ? new Date(createForm.date).toISOString()
+            : undefined,
+          href: createForm.href || undefined,
+        },
+        createFlyerFile ?? undefined,
+      );
+      if (!created) {
+        throw new Error("Failed to create alert");
+      }
+      resetCreate();
+      refresh();
+    } catch (err) {
+      console.error("Failed to create alert", err);
+      setError(
+        getUserFriendlyErrorMessage(err, "Unable to create the alert right now."),
+      );
+    } finally {
+      setSaving(false);
+    }
   };
 
   // ── Edit ──────────────────────────────────────────────────────────────────
   const openEdit = (item: Alert) => {
+    setError("");
     setEditItem(item);
     // Convert ISO datetime back to datetime-local format for the input
     const dateValue = item.date
@@ -480,30 +507,59 @@ export default function AdminAlertsPage() {
 
   const handleSaveEdit = async () => {
     if (!editItem) return;
-    setSaving(true);
-    await update(Number(editItem.id), {
-      title: editForm.title,
-      body: editForm.body,
-      severity: editForm.severity,
-      date: editForm.date ? new Date(editForm.date).toISOString() : undefined,
-      href: editForm.href || undefined,
-    });
-    if (editFlyerFile) await updateFlyer(Number(editItem.id), editFlyerFile);
-    setSaving(false);
-    resetEdit();
-    refresh();
+    try {
+      setSaving(true);
+      setError("");
+      const updated = await update(Number(editItem.id), {
+        title: editForm.title,
+        body: editForm.body,
+        severity: editForm.severity,
+        date: editForm.date ? new Date(editForm.date).toISOString() : undefined,
+        href: editForm.href || undefined,
+      });
+      if (!updated) {
+        throw new Error("Failed to update alert");
+      }
+      if (editFlyerFile) {
+        const flyerUpdated = await updateFlyer(Number(editItem.id), editFlyerFile);
+        if (!flyerUpdated) {
+          throw new Error("Failed to update alert flyer");
+        }
+      }
+      resetEdit();
+      refresh();
+    } catch (err) {
+      console.error("Failed to update alert", err);
+      setError(
+        getUserFriendlyErrorMessage(err, "Unable to update the alert right now."),
+      );
+    } finally {
+      setSaving(false);
+    }
   };
 
   // ── Delete ────────────────────────────────────────────────────────────────
   const handleDelete = async () => {
     if (!deleteId) return;
-    await remove(Number(deleteId));
-    setDeleteId(null);
-    refresh();
+    try {
+      setError("");
+      const deleted = await remove(Number(deleteId));
+      if (!deleted) {
+        throw new Error("Failed to delete alert");
+      }
+      setDeleteId(null);
+      refresh();
+    } catch (err) {
+      console.error("Failed to delete alert", err);
+      setError(
+        getUserFriendlyErrorMessage(err, "Unable to delete the alert right now."),
+      );
+    }
   };
 
   // ── Resets ────────────────────────────────────────────────────────────────
   const resetCreate = () => {
+    setError("");
     setCreateForm({ ...EMPTY_FORM });
     setCreateFlyerFile(null);
     setCreateFlyerPreview(null);
@@ -511,6 +567,7 @@ export default function AdminAlertsPage() {
   };
 
   const resetEdit = () => {
+    setError("");
     setEditItem(null);
     setEditFlyerFile(null);
     setEditFlyerPreview(null);
@@ -618,7 +675,7 @@ export default function AdminAlertsPage() {
       </div>
 
       {/* ── Grid ── */}
-      {error && <InlineErrorAlert message={error} />}
+      {pageError && <InlineErrorAlert message={pageError} />}
 
       {loading ? (
         <div className="text-center py-20 text-slate-400">
@@ -776,6 +833,13 @@ export default function AdminAlertsPage() {
               setForm={setCreateForm}
               flyerPreview={createFlyerPreview}
               onFlyerChange={(file) => {
+                if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+                  setError(
+                    `Unsupported file type "${file.type}". Please upload a JPG, PNG, WEBP, or GIF image.`,
+                  );
+                  return;
+                }
+                setError("");
                 setCreateFlyerFile(file);
                 setCreateFlyerPreview(URL.createObjectURL(file));
               }}
@@ -818,6 +882,13 @@ export default function AdminAlertsPage() {
               setForm={setEditForm}
               flyerPreview={editFlyerPreview}
               onFlyerChange={(file) => {
+                if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+                  setError(
+                    `Unsupported file type "${file.type}". Please upload a JPG, PNG, WEBP, or GIF image.`,
+                  );
+                  return;
+                }
+                setError("");
                 setEditFlyerFile(file);
                 setEditFlyerPreview(URL.createObjectURL(file));
               }}
