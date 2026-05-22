@@ -296,6 +296,7 @@ export const adminGetComments = async (
 export interface TicketCategory {
     id: number;
     name: string;
+    catCode: string;
     segment: string | null;
     department: string | null;
     active: boolean;

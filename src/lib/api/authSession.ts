@@ -94,7 +94,7 @@ export const isTokenExpired = (
       : tokenOrPayload;
 
   if (!payload?.exp) return true;
-  return payload.exp * 1000 <= Date.now() + bufferMs;
+  return payload.exp * 1000 - bufferMs <= Date.now();
 };
 
 export const clearAdminSession = (): void => {

@@ -86,7 +86,7 @@ const SEGMENT_MAP = Object.fromEntries(
   SEGMENT_OPTIONS.map((s) => [s.value, s]),
 );
 
-const EMPTY_CAT_FORM = { name: "", segment: "", department: "" };
+const EMPTY_CAT_FORM = { name: "", catCode: "", segment: "", department: "" };
 const EMPTY_DEPT_FORM = {
   name: "",
   code: "",
@@ -94,6 +94,16 @@ const EMPTY_DEPT_FORM = {
 };
 const CATEGORY_PAGE_SIZE = 10;
 const DEPARTMENT_PAGE_SIZE = 10;
+
+// ── Shared auto-code generator ────────────────────────────────────────────────
+
+const autoCode = (name: string) =>
+  name
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, "_")
+    .replace(/^_|_$/g, "")
+    .slice(0, 20);
 
 // ── Reusable sub-components ───────────────────────────────────────────────────
 
@@ -229,6 +239,17 @@ function CategoryForm({
   loadingDepts,
   error,
 }: CatFormProps) {
+  const handleNameChange = (name: string) => {
+    setForm((p) => ({
+      ...p,
+      name,
+      // Auto-fill catCode only if it still matches the previous auto-generated value
+      ...(p.catCode === "" || p.catCode === autoCode(p.name)
+        ? { catCode: autoCode(name) }
+        : {}),
+    }));
+  };
+
   return (
     <div className="space-y-4">
       <div className="space-y-1.5">
@@ -238,8 +259,29 @@ function CategoryForm({
         <Input
           placeholder="e.g. Network Issue, Payroll Query"
           value={form.name}
-          onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
+          onChange={(e) => handleNameChange(e.target.value)}
           autoComplete="off"
+        />
+      </div>
+
+      <div className="space-y-1.5">
+        <Label className="text-xs font-medium text-slate-600">
+          Category Code <span className="text-red-500">*</span>
+          <span className="text-slate-400 font-normal ml-1">
+            (unique, uppercase)
+          </span>
+        </Label>
+        <Input
+          placeholder="e.g. NETWORK_ISSUE"
+          value={form.catCode}
+          onChange={(e) =>
+            setForm((p) => ({
+              ...p,
+              catCode: e.target.value.toUpperCase().replace(/[^A-Z0-9_-]/g, ""),
+            }))
+          }
+          autoComplete="off"
+          className="font-mono text-sm"
         />
       </div>
 
@@ -298,9 +340,7 @@ function CategoryForm({
         )}
       </div>
 
-      {error && (
-        <InlineErrorAlert message={error} />
-      )}
+      {error && <InlineErrorAlert message={error} />}
     </div>
   );
 }
@@ -312,14 +352,6 @@ interface DeptFormProps {
   setForm: React.Dispatch<React.SetStateAction<typeof EMPTY_DEPT_FORM>>;
   error: string;
 }
-
-const autoCode = (name: string) =>
-  name
-    .trim()
-    .toUpperCase()
-    .replace(/[^A-Z0-9]+/g, "_")
-    .replace(/^_|_$/g, "")
-    .slice(0, 20);
 
 function DeptForm({ form, setForm, error }: DeptFormProps) {
   const handleNameChange = (name: string) => {
@@ -361,7 +393,7 @@ function DeptForm({ form, setForm, error }: DeptFormProps) {
             onChange={(e) =>
               setForm((p) => ({
                 ...p,
-                code: e.target.value.toUpperCase().replace(/[^A-Z0-9_\-]/g, ""),
+                code: e.target.value.toUpperCase().replace(/[^A-Z0-9_-]/g, ""),
               }))
             }
             autoComplete="off"
@@ -393,9 +425,7 @@ function DeptForm({ form, setForm, error }: DeptFormProps) {
         </div>
       </div>
 
-      {error && (
-        <InlineErrorAlert message={error} />
-      )}
+      {error && <InlineErrorAlert message={error} />}
     </div>
   );
 }
@@ -470,6 +500,7 @@ function CategoriesTab() {
     return categories.filter((cat) => {
       const matchSearch =
         cat.name.toLowerCase().includes(q) ||
+        (cat.catCode ?? "").toLowerCase().includes(q) ||
         (cat.department ?? "").toLowerCase().includes(q) ||
         (cat.segment ?? "").toLowerCase().includes(q);
       const matchSegment =
@@ -523,12 +554,13 @@ function CategoriesTab() {
   ];
 
   const handleCreate = async () => {
-    if (!form.name.trim()) return;
+    if (!form.name.trim() || !form.catCode.trim()) return;
     try {
       setSaving(true);
       setError("");
       await adminCreateCategory({
         name: form.name.trim(),
+        catCode: form.catCode.trim().toUpperCase(),
         segment: form.segment || null,
         department: form.department.trim() || null,
       });
@@ -548,12 +580,13 @@ function CategoriesTab() {
   };
 
   const handleEdit = async () => {
-    if (!editItem || !form.name.trim()) return;
+    if (!editItem || !form.name.trim() || !form.catCode.trim()) return;
     try {
       setSaving(true);
       setError("");
       await adminUpdateCategory(editItem.id, {
         name: form.name.trim(),
+        catCode: form.catCode.trim().toUpperCase(),
         segment: form.segment || null,
         department: form.department.trim() || null,
         active: editItem.active,
@@ -613,6 +646,7 @@ function CategoriesTab() {
     setEditItem(cat);
     setForm({
       name: cat.name,
+      catCode: cat.catCode ?? "",
       segment: cat.segment ?? "",
       department: cat.department ?? "",
     });
@@ -640,7 +674,7 @@ function CategoriesTab() {
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
           <Input
             className="h-9 pl-9"
-            placeholder="Search by name, segment or department..."
+            placeholder="Search by name, code, segment or department..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             autoComplete="off"
@@ -688,6 +722,9 @@ function CategoriesTab() {
                   Name
                 </TableHead>
                 <TableHead className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Code
+                </TableHead>
+                <TableHead className="text-xs font-semibold uppercase tracking-wide text-slate-500">
                   Segment
                 </TableHead>
                 <TableHead className="text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -705,7 +742,7 @@ function CategoriesTab() {
               {loading ? (
                 <TableRow>
                   <TableCell
-                    colSpan={5}
+                    colSpan={6}
                     className="py-14 text-center text-sm text-slate-400"
                   >
                     Loading categories...
@@ -714,7 +751,7 @@ function CategoriesTab() {
               ) : filtered.length === 0 ? (
                 <TableRow>
                   <TableCell
-                    colSpan={5}
+                    colSpan={6}
                     className="py-14 text-center text-sm text-slate-400"
                   >
                     <Layers className="mx-auto mb-2 h-8 w-8 opacity-25" />
@@ -729,6 +766,15 @@ function CategoriesTab() {
                   >
                     <TableCell className="pl-5 py-3.5 text-sm font-medium text-slate-800">
                       {cat.name}
+                    </TableCell>
+                    <TableCell className="py-3.5">
+                      {cat.catCode ? (
+                        <span className="font-mono text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded">
+                          {cat.catCode}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-slate-300">—</span>
+                      )}
                     </TableCell>
                     <TableCell className="py-3.5">
                       <SegmentBadge segment={cat.segment} />
@@ -827,7 +873,7 @@ function CategoriesTab() {
             </Button>
             <Button
               onClick={handleCreate}
-              disabled={!form.name.trim() || saving}
+              disabled={!form.name.trim() || !form.catCode.trim() || saving}
               className="bg-blue-900 text-white hover:bg-blue-800"
             >
               {saving ? "Saving..." : "Save"}
@@ -865,7 +911,7 @@ function CategoriesTab() {
             </Button>
             <Button
               onClick={handleEdit}
-              disabled={!form.name.trim() || saving}
+              disabled={!form.name.trim() || !form.catCode.trim() || saving}
               className="bg-blue-900 text-white hover:bg-blue-800"
             >
               {saving ? "Saving..." : "Save Changes"}
@@ -933,7 +979,7 @@ function DepartmentsTab() {
     try {
       setLoading(true);
       setError("");
-      const data = await adminGetDepartmentsPaged(0, 100); // ← use paged
+      const data = await adminGetDepartmentsPaged(0, 100);
       setDepartments(data.content);
     } catch (err) {
       console.error("Failed to fetch departments", err);
