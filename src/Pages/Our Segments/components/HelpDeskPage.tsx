@@ -201,11 +201,7 @@ export default function HelpDeskPage() {
     try {
       const stored = localStorage.getItem("helpdesk_notifications");
       if (!stored) return [];
-      const parsed: NotificationItem[] = JSON.parse(stored);
-      const fiveMinutesAgo = Date.now() - 5 * 60 * 1000;
-      return parsed.filter(
-        (n) => new Date(n.createdAt).getTime() > fiveMinutesAgo,
-      );
+      return JSON.parse(stored) as NotificationItem[]; // ✅ no time filter
     } catch {
       return [];
     }
@@ -272,7 +268,6 @@ export default function HelpDeskPage() {
   const commentsContainerRef = useRef<HTMLDivElement>(null);
   const shouldScrollRef = useRef(false);
   const selectedTicketRef = useRef<Ticket | null>(null);
-  const lastUpdatedAtRef = useRef<Record<number, string>>({});
   const latestCommentIdRef = useRef<Record<number, number | null>>({});
   const isSeededRef = useRef(false);
 
@@ -327,18 +322,16 @@ export default function HelpDeskPage() {
           try {
             const commentData = await getComments(ticket.id);
             const latestComment = getLatestCommentSnapshot(commentData);
-            const previousCommentId =
-              latestCommentIdRef.current[ticket.id] ?? null;
 
-            if (latestComment) {
-              latestCommentIdRef.current[ticket.id] = latestComment.id;
-            }
+            // ✅ Read FIRST, then update
+            const previousCommentId = latestCommentIdRef.current[ticket.id];
+            latestCommentIdRef.current[ticket.id] = latestComment?.id ?? -1;
 
             if (
               latestComment &&
-              latestComment.id !== previousCommentId &&
-              previousCommentId !== null &&
-              latestComment.authorId !== activeUserId
+              previousCommentId !== undefined && // seeded
+              latestComment.id !== previousCommentId && // actually new
+              latestComment.authorId !== activeUserId // not own message
             ) {
               appendNotification({
                 id: `ticket-${ticket.id}-comment-${latestComment.id}`,
@@ -369,22 +362,41 @@ export default function HelpDeskPage() {
       const data = await getMyTickets();
       setTickets(data);
 
-      data.forEach((ticket) => {
-        lastUpdatedAtRef.current[ticket.id] = ticket.updatedAt;
-      });
+      const lastActive = localStorage.getItem("helpdesk_last_active");
 
       await Promise.all(
         data.map(async (ticket) => {
-          if (latestCommentIdRef.current[ticket.id] !== undefined) return;
           try {
             const commentData = await getComments(ticket.id);
             const snapshot = getLatestCommentSnapshot(commentData);
-            latestCommentIdRef.current[ticket.id] = snapshot?.id ?? null;
+            latestCommentIdRef.current[ticket.id] = snapshot?.id ?? -1;
+
+            // ✅ Check for missed messages while logged out
+            if (lastActive) {
+              const missedComments = commentData.filter(
+                (c) =>
+                  new Date(c.createdAt) > new Date(lastActive) &&
+                  String(c.commentedBy.id) !== String(activeUserId),
+              );
+              missedComments.forEach((c) => {
+                appendNotification({
+                  id: `ticket-${ticket.id}-comment-${c.id}`,
+                  ticketId: ticket.id,
+                  ticketNumber: ticket.ticketNumber,
+                  title: ticket.title,
+                  description: `${c.commentedBy.name}: ${c.message.slice(0, 80)}`,
+                  createdAt: c.createdAt,
+                });
+              });
+            }
           } catch {
-            latestCommentIdRef.current[ticket.id] = null;
+            latestCommentIdRef.current[ticket.id] = -1;
           }
         }),
       );
+
+      // ✅ Clear last_active after processing missed notifications
+      localStorage.removeItem("helpdesk_last_active");
 
       isSeededRef.current = true;
     } catch (err) {
@@ -452,6 +464,7 @@ export default function HelpDeskPage() {
   // ── Handlers ──────────────────────────────────────────────────────────────
 
   const handleLogout = () => {
+    localStorage.setItem("helpdesk_last_active", new Date().toISOString());
     logout();
     window.location.replace("/");
   };

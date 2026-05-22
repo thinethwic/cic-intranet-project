@@ -71,15 +71,7 @@ const SEGMENTS = [
   "AISA_VET",
 ];
 const TYPES = ["All", "PDF", "DOCS", "XLSX"] as const;
-const CATEGORIES = [
-  "All",
-  "HR",
-  "FINANCE",
-  "IT",
-  "OPERATIONS",
-  "LEGAL",
-  "GENERAL",
-];
+const CATEGORIES = ["All", "HR", "FINANCE", "OPERATION"];
 const ACCESS_OPTIONS = ["PUBLIC", "PRIVATE"];
 
 function FilterDropdown({
@@ -143,7 +135,7 @@ export default function AdminDocumentsPage() {
   // Upload form state
   const [newTitle, setNewTitle] = useState("");
   const [newType, setNewType] = useState<"PDF" | "DOCS" | "XLSX">("PDF");
-  const [newCategory, setNewCategory] = useState("GENERAL");
+  const [newCategory, setNewCategory] = useState("HR");
   const [newSegment, setNewSegment] = useState("CIC_FEEDS");
   const [newAccess, setNewAccess] = useState("PUBLIC");
   const [newIsPinned, setNewIsPinned] = useState(false);
@@ -172,10 +164,7 @@ export default function AdminDocumentsPage() {
     } catch (err) {
       console.error("Failed to fetch documents", err);
       setError(
-        getUserFriendlyErrorMessage(
-          err,
-          "Unable to load documents right now.",
-        ),
+        getUserFriendlyErrorMessage(err, "Unable to load documents right now."),
       );
     } finally {
       setLoading(false);
@@ -687,14 +676,7 @@ export default function AdminDocumentsPage() {
                   Category
                 </Label>
                 <FilterDropdown
-                  options={[
-                    "HR",
-                    "FINANCE",
-                    "IT",
-                    "OPERATIONS",
-                    "LEGAL",
-                    "GENERAL",
-                  ]}
+                  options={["HR", "FINANCE", "OPERATION"]}
                   value={newCategory}
                   onChange={setNewCategory}
                   className="w-full"
@@ -832,14 +814,7 @@ export default function AdminDocumentsPage() {
                     Category
                   </Label>
                   <FilterDropdown
-                    options={[
-                      "HR",
-                      "FINANCE",
-                      "IT",
-                      "OPERATIONS",
-                      "LEGAL",
-                      "GENERAL",
-                    ]}
+                    options={["HR", "FINANCE", "OPERATION"]}
                     value={editDoc.category}
                     onChange={(v) => setEditDoc({ ...editDoc, category: v })}
                     className="w-full"

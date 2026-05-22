@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ElementType } from "react";
 import {
   AlertCircle,
+  BarChart2,
   Bell,
   Building2,
   Check,
@@ -61,6 +62,9 @@ import { getAdminUser } from "@/lib/api/authHeaders";
 import { AdminPagination } from "./admin-components";
 import { getUserFriendlyErrorMessage } from "@/lib/api/apiUtils";
 import InlineErrorAlert from "@/components/shared/InlineErrorAlert";
+import ReportDialog from "../components/ReportDialog";
+
+import logo from "@/assets/Logo.jpg";
 
 // ── Configs ─────────────────────────────────────────────────────────────────
 
@@ -264,37 +268,15 @@ export default function AdminTicketsPage() {
   const adminDepartment = currentViewer?.department ?? null;
   const activeUserId = currentViewer?.userId ?? null;
 
-  // ── Ticket visibility logic ──────────────────────────────────────────────
-  //
-  //  SUPER_ADMIN  (isAdmin = false) → sees ALL tickets across every segment
-  //               and department. No filtering applied.
-  //
-  //  ADMIN + department = "IT"     → sees IT-category tickets from EVERY
-  //               segment. The IT function is centralised under CIC Feeds,
-  //               so an IT admin is not segment-scoped for IT tickets.
-  //
-  //  ADMIN + department ≠ "IT"     → sees only tickets where BOTH
-  //               segment === adminSegment  AND
-  //               department (case-insensitive) === adminDepartment
-  //               This keeps HR, Finance, Facilities etc. within their
-  //               own business unit.
-  //
-  // The function below is used both in the filtered useMemo AND in the
-  // polling seed so notifications are consistent with what the admin sees.
-  //
   const isITAdmin = isAdmin && adminDepartment?.toUpperCase() === "IT";
 
   const isTicketVisibleToViewer = (ticket: Ticket): boolean => {
-    // Super admin sees everything
     if (!isAdmin) return true;
 
     if (isITAdmin) {
-      // IT admin sees ALL IT-category tickets regardless of which segment
-      // raised them. Non-IT tickets are not their concern.
       return ticket.category?.toUpperCase() === "IT";
     }
 
-    // All other admins: segment AND department must both match
     const segmentMatch = !adminSegment || ticket.segment === adminSegment;
     const deptMatch =
       !adminDepartment ||
@@ -330,15 +312,13 @@ export default function AdminTicketsPage() {
     try {
       const stored = localStorage.getItem("helpdesk_notifications");
       if (!stored) return [];
-      const parsed: NotificationItem[] = JSON.parse(stored);
-      const fiveMinutesAgo = Date.now() - 5 * 60 * 1000;
-      return parsed.filter(
-        (n) => new Date(n.createdAt).getTime() > fiveMinutesAgo,
-      );
+      return JSON.parse(stored) as NotificationItem[];
     } catch {
       return [];
     }
   });
+
+  const [reportOpen, setReportOpen] = useState(false);
 
   useEffect(() => {
     try {
@@ -443,7 +423,6 @@ export default function AdminTicketsPage() {
           if (!knownTicketIdsRef.current.has(ticket.id)) {
             knownTicketIdsRef.current.add(ticket.id);
 
-            // Only notify for tickets this admin is scoped to see
             if (!isTicketVisibleToViewer(ticket)) continue;
 
             appendNotification({
@@ -480,9 +459,8 @@ export default function AdminTicketsPage() {
       const data = await getAllTickets();
       setTickets(data);
       knownTicketIdsRef.current = new Set(data.map((t) => t.id));
-      isSeededRef.current = true;
 
-      // Seed latest comment IDs only for tickets this admin can see
+      const lastActive = localStorage.getItem("helpdesk_last_active");
       const scopedTickets = data.filter(isTicketVisibleToViewer);
 
       await Promise.all(
@@ -490,13 +468,32 @@ export default function AdminTicketsPage() {
           try {
             const commentData = await adminGetComments(t.id);
             const snapshot = getLatestCommentSnapshot(commentData);
-            latestCommentIdRef.current[t.id] = snapshot?.id ?? null;
+            latestCommentIdRef.current[t.id] = snapshot?.id ?? -1;
+
+            if (lastActive) {
+              const missed = commentData.filter(
+                (c) =>
+                  new Date(c.createdAt) > new Date(lastActive) &&
+                  String(c.commentedBy.id) !== String(activeUserId),
+              );
+              missed.forEach((c) => {
+                appendNotification({
+                  id: `ticket-${t.id}-comment-${c.id}`,
+                  ticketId: t.id,
+                  ticketNumber: t.ticketNumber,
+                  title: t.title,
+                  description: `${c.commentedBy.name}: ${c.message.slice(0, 80)}`,
+                  createdAt: c.createdAt,
+                });
+              });
+            }
           } catch {
-            latestCommentIdRef.current[t.id] = null;
+            latestCommentIdRef.current[t.id] = -1;
           }
         }),
       );
 
+      localStorage.removeItem("helpdesk_last_active");
       isSeededRef.current = true;
     } catch (err) {
       console.error("Failed to fetch tickets", err);
@@ -583,10 +580,8 @@ export default function AdminTicketsPage() {
     const q = search.toLowerCase();
     return tickets
       .filter((ticket) => {
-        // Apply viewer-level routing scope first
         if (!isTicketVisibleToViewer(ticket)) return false;
 
-        // Then apply the UI filter controls (search box, dropdowns)
         return (
           (ticket.title.toLowerCase().includes(q) ||
             ticket.ticketNumber.toLowerCase().includes(q) ||
@@ -594,8 +589,6 @@ export default function AdminTicketsPage() {
             (ticket.department ?? "").toLowerCase().includes(q)) &&
           (statusFilter === "All" || ticket.status === statusFilter) &&
           (priorityFilter === "All" || ticket.priority === priorityFilter) &&
-          // Segment filter is only relevant for super admins browsing across
-          // segments; IT admins already see all segments for IT tickets.
           (!isAdmin
             ? segmentFilter === "All" || ticket.segment === segmentFilter
             : true)
@@ -806,7 +799,6 @@ export default function AdminTicketsPage() {
             {(adminSegment || adminDepartment) && (
               <p className="text-xs text-slate-500 mt-0.5">
                 {isITAdmin ? (
-                  // IT admin sees tickets across all segments — reflect that
                   <>
                     You're managing{" "}
                     <span className="font-medium text-blue-700">IT</span>{" "}
@@ -838,7 +830,6 @@ export default function AdminTicketsPage() {
           </div>
           <div className="hidden sm:flex items-center gap-2">
             {isITAdmin ? (
-              // IT admin badge — shows cross-segment scope
               <div className="flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-medium text-blue-700">
                 <ShieldCheck className="h-4 w-4" />
                 IT · All Locations
@@ -889,95 +880,108 @@ export default function AdminTicketsPage() {
           </p>
         </div>
 
-        <DropdownMenu>
-          <DropdownMenuTrigger>
-            <Button
-              variant="outline"
-              size="icon"
-              className="relative h-10 w-10 rounded-xl"
-            >
-              <Bell className="h-4 w-4" />
-              {unreadNotificationCount > 0 && (
-                <span className="absolute right-2 top-2 h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-white" />
-              )}
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-80 p-0">
-            <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-              <div>
-                <p className="text-sm font-medium text-slate-900">
-                  Notifications
-                </p>
-                <p className="text-xs text-slate-400">
-                  {unreadNotificationCount} unread
-                </p>
-              </div>
-              {notifications.length > 0 && (
-                <button
-                  type="button"
-                  onClick={markAllNotificationsRead}
-                  className="text-xs text-blue-600 hover:text-blue-800"
-                >
-                  Mark all read
-                </button>
-              )}
-            </div>
-            <div className="max-h-80 overflow-y-auto">
-              {notifications.length === 0 ? (
-                <div className="px-4 py-6 text-sm text-slate-400">
-                  No notifications yet
+        {/* ── Top-right actions: Report + Bell ── */}
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-10 gap-2 rounded-xl text-sm"
+            onClick={() => setReportOpen(true)}
+          >
+            <BarChart2 className="h-4 w-4" />
+            Report
+          </Button>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger>
+              <Button
+                variant="outline"
+                size="icon"
+                className="relative h-10 w-10 rounded-xl"
+              >
+                <Bell className="h-4 w-4" />
+                {unreadNotificationCount > 0 && (
+                  <span className="absolute right-2 top-2 h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-white" />
+                )}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-80 p-0">
+              <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+                <div>
+                  <p className="text-sm font-medium text-slate-900">
+                    Notifications
+                  </p>
+                  <p className="text-xs text-slate-400">
+                    {unreadNotificationCount} unread
+                  </p>
                 </div>
-              ) : (
-                notifications.map((notification) => (
+                {notifications.length > 0 && (
                   <button
-                    key={notification.id}
                     type="button"
-                    onClick={() => {
-                      markNotificationRead(notification.id);
-                      if (notification.id.startsWith("ticket-new-")) {
-                        setHighlightedTicketId(notification.ticketId);
-                        setTimeout(() => {
-                          highlightedRowRef.current?.scrollIntoView({
-                            behavior: "smooth",
-                            block: "center",
-                          });
-                        }, 100);
-                        setTimeout(() => setHighlightedTicketId(null), 3000);
-                      } else {
-                        const ticket = tickets.find(
-                          (item) => item.id === notification.ticketId,
-                        );
-                        if (ticket) openDetails(ticket);
-                      }
-                    }}
-                    className="flex w-full items-start gap-3 border-b border-slate-100 px-4 py-3 text-left hover:bg-slate-50"
+                    onClick={markAllNotificationsRead}
+                    className="text-xs text-blue-600 hover:text-blue-800"
                   >
-                    <div className="relative mt-1">
-                      <Bell className="h-4 w-4 text-slate-400" />
-                      {notification.unread && (
-                        <span className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full bg-red-500" />
-                      )}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium text-slate-900">
-                        {notification.ticketNumber}
-                      </p>
-                      <p className="truncate text-xs text-slate-500">
-                        {notification.title}
-                      </p>
-                      <p className="mt-1 line-clamp-2 text-xs text-slate-400">
-                        {notification.description}
-                      </p>
-                      <p className="mt-1 text-[11px] text-slate-400">
-                        {fmtDateTime(notification.createdAt)}
-                      </p>
-                    </div>
+                    Mark all read
                   </button>
-                ))
-              )}
-            </div>
-          </DropdownMenuContent>
-        </DropdownMenu>
+                )}
+              </div>
+              <div className="max-h-80 overflow-y-auto">
+                {notifications.length === 0 ? (
+                  <div className="px-4 py-6 text-sm text-slate-400">
+                    No notifications yet
+                  </div>
+                ) : (
+                  notifications.map((notification) => (
+                    <button
+                      key={notification.id}
+                      type="button"
+                      onClick={() => {
+                        markNotificationRead(notification.id);
+                        if (notification.id.startsWith("ticket-new-")) {
+                          setHighlightedTicketId(notification.ticketId);
+                          setTimeout(() => {
+                            highlightedRowRef.current?.scrollIntoView({
+                              behavior: "smooth",
+                              block: "center",
+                            });
+                          }, 100);
+                          setTimeout(() => setHighlightedTicketId(null), 3000);
+                        } else {
+                          const ticket = tickets.find(
+                            (item) => item.id === notification.ticketId,
+                          );
+                          if (ticket) openDetails(ticket);
+                        }
+                      }}
+                      className="flex w-full items-start gap-3 border-b border-slate-100 px-4 py-3 text-left hover:bg-slate-50"
+                    >
+                      <div className="relative mt-1">
+                        <Bell className="h-4 w-4 text-slate-400" />
+                        {notification.unread && (
+                          <span className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full bg-red-500" />
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium text-slate-900">
+                          {notification.ticketNumber}
+                        </p>
+                        <p className="truncate text-xs text-slate-500">
+                          {notification.title}
+                        </p>
+                        <p className="mt-1 line-clamp-2 text-xs text-slate-400">
+                          {notification.description}
+                        </p>
+                        <p className="mt-1 text-[11px] text-slate-400">
+                          {fmtDateTime(notification.createdAt)}
+                        </p>
+                      </div>
+                    </button>
+                  ))
+                )}
+              </div>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
 
       {/* ── Page-level alert ── */}
@@ -1311,6 +1315,14 @@ export default function AdminTicketsPage() {
           setPage(1);
           setPageSize(nextSize);
         }}
+      />
+
+      <ReportDialog
+        open={reportOpen}
+        onClose={() => setReportOpen(false)}
+        tickets={filtered}
+        adminName={currentViewer?.name}
+        logoUrl={logo}
       />
 
       {/* ── Ticket Detail Dialog ── */}

@@ -4,9 +4,10 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Wheat, Pill, Bird, Syringe } from "lucide-react";
 import { Link } from "react-router-dom";
 
-import slide1 from "../../assets/slide1.png";
-import slide2 from "../../assets/slide2.png";
+import slide1 from "../../assets/chicken_farm.png";
+import slide2 from "../../assets/Mask-group5.avif";
 import slide3 from "../../assets/Mask-group3.avif";
+import slide4 from "../../assets/poulry image.png";
 
 interface Slide {
   title: string;
@@ -21,14 +22,22 @@ const slides: Slide[] = [
     image: slide1,
   },
   {
-    title: "Quality You Can Trust",
-    subtitle: "Delivering excellence in animal nutrition since 1964",
+    title: "Premium Poultry Excellence",
+    subtitle:
+      "Delivering fresh, safe, and trusted poultry products across Sri Lanka",
     image: slide2,
   },
   {
-    title: "Innovation in Industry",
-    subtitle: "Empowering farmers with cutting-edge solutions",
+    title: "Trusted Veterinary Care",
+    subtitle:
+      "Innovative healthcare solutions for stronger and healthier animals",
     image: slide3,
+  },
+  {
+    title: "Advanced Animal Feed Solutions",
+    subtitle:
+      "High-quality nutrition for healthier and more productive livestock",
+    image: slide4,
   },
 ];
 
@@ -59,7 +68,7 @@ export default function HeroSection() {
   }, []);
 
   return (
-    <section className="relative w-full min-h-[480px] md:min-h-[600px] overflow-hidden flex flex-col">
+    <section className="relative w-full min-h-[480px] md:min-h-[700px] overflow-hidden flex flex-col">
       {/* Background slides — no overlays */}
       {slides.map((slide, i) => (
         <div
@@ -82,13 +91,13 @@ export default function HeroSection() {
       <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 px-14 md:px-16">
         <h1
           key={currentSlide}
-          className="text-2xl sm:text-3xl md:text-5xl font-bold text-white text-center animate-fade-in leading-tight drop-shadow-xl"
+          className="text-3xl sm:text-4xl md:text-7xl font-bold text-white text-center animate-fade-in leading-tight drop-shadow-xl"
         >
           {slides[currentSlide].title}
         </h1>
         <p
           key={`sub-${currentSlide}`}
-          className="text-white text-sm sm:text-base md:text-lg text-center animate-fade-in drop-shadow-lg font-medium"
+          className="text-white text-sm sm:text-base md:text-xl text-center animate-fade-in drop-shadow-lg font-medium"
         >
           {slides[currentSlide].subtitle}
         </p>
