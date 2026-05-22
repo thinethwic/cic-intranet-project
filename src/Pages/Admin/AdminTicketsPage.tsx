@@ -308,9 +308,11 @@ export default function AdminTicketsPage() {
   const [highlightedTicketId, setHighlightedTicketId] = useState<number | null>(
     null,
   );
+  const notifKey = `helpdesk_notifications_${activeUserId ?? "guest"}`;
+
   const [notifications, setNotifications] = useState<NotificationItem[]>(() => {
     try {
-      const stored = localStorage.getItem("helpdesk_notifications");
+      const stored = localStorage.getItem(notifKey);
       if (!stored) return [];
       return JSON.parse(stored) as NotificationItem[];
     } catch {
@@ -322,14 +324,11 @@ export default function AdminTicketsPage() {
 
   useEffect(() => {
     try {
-      localStorage.setItem(
-        "helpdesk_notifications",
-        JSON.stringify(notifications),
-      );
+      localStorage.setItem(notifKey, JSON.stringify(notifications));
     } catch {
       // silent
     }
-  }, [notifications]);
+  }, [notifications, notifKey]);
 
   const getConversationOwnerId = (entries: Comment[]): number | null => {
     if (entries.length === 0) return null;
