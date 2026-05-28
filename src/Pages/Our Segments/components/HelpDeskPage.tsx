@@ -26,7 +26,10 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import {
+  RichDescriptionEditor,
+  type AttachedImage,
+} from "@/Pages/Our Segments/components/RichDescriptionEditor";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Dialog,
@@ -252,6 +255,7 @@ export default function HelpDeskPage() {
   };
 
   // ── Form ──────────────────────────────────────────────────────────────────
+  // In makeEmptyForm()
   const makeEmptyForm = () => ({
     title: "",
     description: "",
@@ -259,6 +263,7 @@ export default function HelpDeskPage() {
     priority: "MEDIUM" as TicketPriority,
     segment: currentSegment ?? "",
     department: currentUser?.department ?? (null as string | null),
+    attachments: [] as AttachedImage[], // ← add this
   });
 
   const [form, setForm] = useState(makeEmptyForm);
@@ -480,6 +485,15 @@ export default function HelpDeskPage() {
         priority: form.priority,
         segment: form.segment,
         department: form.department?.trim() || null,
+        attachments:
+          form.attachments.length > 0
+            ? JSON.stringify(
+                form.attachments.map((a) => ({
+                  name: a.name,
+                  dataUrl: a.dataUrl,
+                })),
+              )
+            : null,
       });
       await fetchMyTickets();
       setForm(makeEmptyForm());
@@ -619,7 +633,14 @@ export default function HelpDeskPage() {
   if (!currentSegment) {
     return <Navigate to="/" replace />;
   }
-
+  const parseAttachments = (raw?: string | null): string[] => {
+    if (!raw) return [];
+    try {
+      return JSON.parse(raw) as string[];
+    } catch {
+      return [];
+    }
+  };
   // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div className="bg-white">
@@ -1088,16 +1109,26 @@ export default function HelpDeskPage() {
                   <Label className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
                     Description <span className="text-red-500">*</span>
                   </Label>
-                  <Textarea
-                    placeholder="Describe the issue, impact, and any details the support team should know..."
+                  <RichDescriptionEditor
                     value={form.description}
-                    onChange={(e) =>
+                    onChange={(text) =>
+                      setForm((prev) => ({ ...prev, description: text }))
+                    }
+                    attachments={form.attachments}
+                    onAttach={(img) =>
                       setForm((prev) => ({
                         ...prev,
-                        description: e.target.value,
+                        attachments: [...prev.attachments, img],
                       }))
                     }
-                    className="h-32 resize-none rounded-2xl border-slate-200 bg-slate-50/70 shadow-none focus-visible:ring-blue-200"
+                    onDetach={(id) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        attachments: prev.attachments.filter(
+                          (a) => a.id !== id,
+                        ),
+                      }))
+                    }
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -1322,6 +1353,45 @@ export default function HelpDeskPage() {
                         </p>
                       </CardContent>
                     </Card>
+
+                    {/* ── Attachments ── */}
+                    {(() => {
+                      const urls = parseAttachments(selectedTicket.attachments);
+                      if (urls.length === 0) return null;
+                      return (
+                        <Card className="border border-slate-200/80 bg-white shadow-sm">
+                          <CardContent className="p-4">
+                            <p className="mb-3 text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+                              Attachments ({urls.length})
+                            </p>
+                            <div className="flex flex-wrap gap-2">
+                              {urls.map((url, i) => (
+                                <a
+                                  key={i}
+                                  href={url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="group flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 p-1.5 pr-3 hover:border-blue-200 hover:bg-blue-50 transition-colors"
+                                >
+                                  <div className="h-10 w-10 shrink-0 overflow-hidden rounded-lg border border-slate-200 bg-white">
+                                    <img
+                                      src={url}
+                                      alt={`attachment-${i}`}
+                                      className="h-full w-full object-cover"
+                                    />
+                                  </div>
+                                  <span className="max-w-[120px] truncate text-xs font-medium text-slate-600 group-hover:text-blue-700">
+                                    {url
+                                      .substring(url.lastIndexOf("/") + 1)
+                                      .replace(/^\d+_/, "")}
+                                  </span>
+                                </a>
+                              ))}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })()}
 
                     {/* Conversation */}
                     <div className="space-y-3">

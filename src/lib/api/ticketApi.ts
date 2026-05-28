@@ -19,6 +19,7 @@ export interface CreateTicketPayload {
     priority: TicketPriority;
     segment: string,
     department: string | null;
+    attachments: string | null;
 }
 
 export interface UpdateTicketPayload {

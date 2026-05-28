@@ -781,6 +781,15 @@ export default function AdminTicketsPage() {
     };
   };
 
+  const parseAttachments = (raw?: string | null): string[] => {
+    if (!raw) return [];
+    try {
+      return JSON.parse(raw) as string[];
+    } catch {
+      return [];
+    }
+  };
+
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
@@ -1413,6 +1422,7 @@ export default function AdminTicketsPage() {
                     ref={commentsContainerRef}
                     className="flex-1 space-y-5 overflow-y-auto px-6 py-4"
                   >
+                    {/* Description */}
                     <div className="rounded-2xl bg-slate-50 p-4">
                       <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
                         Description
@@ -1422,6 +1432,44 @@ export default function AdminTicketsPage() {
                       </p>
                     </div>
 
+                    {/* ── Attachments ── */}
+                    {(() => {
+                      const urls = parseAttachments(selectedTicket.attachments);
+                      if (urls.length === 0) return null;
+                      return (
+                        <div className="rounded-2xl bg-slate-50 p-4">
+                          <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                            Attachments ({urls.length})
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            {urls.map((url, i) => (
+                              <a
+                                key={i}
+                                href={url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="group flex items-center gap-2 rounded-xl border border-slate-200 bg-white p-1.5 pr-3 hover:border-blue-200 hover:bg-blue-50 transition-colors"
+                              >
+                                <div className="h-10 w-10 shrink-0 overflow-hidden rounded-lg border border-slate-200 bg-slate-100">
+                                  <img
+                                    src={url}
+                                    alt={`attachment-${i}`}
+                                    className="h-full w-full object-cover"
+                                  />
+                                </div>
+                                <span className="max-w-[120px] truncate text-xs font-medium text-slate-600 group-hover:text-blue-700">
+                                  {url
+                                    .substring(url.lastIndexOf("/") + 1)
+                                    .replace(/^\d+_/, "")}
+                                </span>
+                              </a>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })()}
+
+                    {/* Quick Status Update */}
                     <div className="space-y-2">
                       <Label className="text-xs font-semibold uppercase tracking-wide text-slate-400">
                         Quick Status Update
