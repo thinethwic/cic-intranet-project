@@ -243,9 +243,8 @@ function CategoryForm({
     setForm((p) => ({
       ...p,
       name,
-      // Auto-fill catCode only if it still matches the previous auto-generated value
       ...(p.cat_code === "" || p.cat_code === autoCode(p.name)
-        ? { catCode: autoCode(name) }
+        ? { cat_code: autoCode(name) } // ✅ was: catCode
         : {}),
     }));
   };
@@ -277,7 +276,9 @@ function CategoryForm({
           onChange={(e) =>
             setForm((p) => ({
               ...p,
-              catCode: e.target.value.toUpperCase().replace(/[^A-Z0-9_-]/g, ""),
+              cat_code: e.target.value
+                .toUpperCase()
+                .replace(/[^A-Z0-9_-]/g, ""), // ✅ was: catCode
             }))
           }
           autoComplete="off"
