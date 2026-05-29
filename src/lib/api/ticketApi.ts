@@ -331,11 +331,10 @@ export async function adminGetCategories(): Promise<TicketCategory[]> {
 export async function adminCreateCategory(
     data: Omit<TicketCategory, "id" | "active">
 ): Promise<TicketCategory> {
-    const { cat_code, ...rest } = data;
     const res = await apiFetch(`${BASE_URL}/api/v1/admin/ticket-categories`, {
         method: "POST",
         headers: { ...authHeaders(), "Content-Type": "application/json" },
-        body: JSON.stringify({ ...rest, catCode: cat_code }),  // ✅ remap for Spring
+        body: JSON.stringify(data),  // ✅ send as-is, cat_code matches @JsonAlias
     });
     if (!res.ok) throw new Error("Failed to create category");
     return res.json();
@@ -345,11 +344,10 @@ export async function adminUpdateCategory(
     id: number,
     data: Partial<TicketCategory>
 ): Promise<TicketCategory> {
-    const { cat_code, ...rest } = data;
     const res = await apiFetch(`${BASE_URL}/api/v1/admin/ticket-categories/${id}`, {
         method: "PUT",
         headers: { ...authHeaders(), "Content-Type": "application/json" },
-        body: JSON.stringify({ ...rest, ...(cat_code !== undefined && { catCode: cat_code }) }),  // ✅
+        body: JSON.stringify(data),  // ✅ send as-is
     });
     if (!res.ok) throw new Error("Failed to update category");
     return res.json();
