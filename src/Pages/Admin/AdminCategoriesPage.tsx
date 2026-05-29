@@ -86,7 +86,7 @@ const SEGMENT_MAP = Object.fromEntries(
   SEGMENT_OPTIONS.map((s) => [s.value, s]),
 );
 
-const EMPTY_CAT_FORM = { name: "", catCode: "", segment: "", department: "" };
+const EMPTY_CAT_FORM = { name: "", cat_code: "", segment: "", department: "" };
 const EMPTY_DEPT_FORM = {
   name: "",
   code: "",
@@ -244,7 +244,7 @@ function CategoryForm({
       ...p,
       name,
       // Auto-fill catCode only if it still matches the previous auto-generated value
-      ...(p.catCode === "" || p.catCode === autoCode(p.name)
+      ...(p.cat_code === "" || p.cat_code === autoCode(p.name)
         ? { catCode: autoCode(name) }
         : {}),
     }));
@@ -273,7 +273,7 @@ function CategoryForm({
         </Label>
         <Input
           placeholder="e.g. NETWORK_ISSUE"
-          value={form.catCode}
+          value={form.cat_code}
           onChange={(e) =>
             setForm((p) => ({
               ...p,
@@ -500,7 +500,7 @@ function CategoriesTab() {
     return categories.filter((cat) => {
       const matchSearch =
         cat.name.toLowerCase().includes(q) ||
-        (cat.catCode ?? "").toLowerCase().includes(q) ||
+        (cat.cat_code ?? "").toLowerCase().includes(q) ||
         (cat.department ?? "").toLowerCase().includes(q) ||
         (cat.segment ?? "").toLowerCase().includes(q);
       const matchSegment =
@@ -554,13 +554,13 @@ function CategoriesTab() {
   ];
 
   const handleCreate = async () => {
-    if (!form.name.trim() || !form.catCode.trim()) return;
+    if (!form.name.trim() || !form.cat_code.trim()) return;
     try {
       setSaving(true);
       setError("");
       await adminCreateCategory({
         name: form.name.trim(),
-        catCode: form.catCode.trim().toUpperCase(),
+        cat_code: form.cat_code.trim().toUpperCase(),
         segment: form.segment || null,
         department: form.department.trim() || null,
       });
@@ -580,13 +580,13 @@ function CategoriesTab() {
   };
 
   const handleEdit = async () => {
-    if (!editItem || !form.name.trim() || !form.catCode.trim()) return;
+    if (!editItem || !form.name.trim() || !form.cat_code.trim()) return;
     try {
       setSaving(true);
       setError("");
       await adminUpdateCategory(editItem.id, {
         name: form.name.trim(),
-        catCode: form.catCode.trim().toUpperCase(),
+        cat_code: form.cat_code.trim().toUpperCase(),
         segment: form.segment || null,
         department: form.department.trim() || null,
         active: editItem.active,
@@ -646,7 +646,7 @@ function CategoriesTab() {
     setEditItem(cat);
     setForm({
       name: cat.name,
-      catCode: cat.catCode ?? "",
+      cat_code: cat.cat_code ?? "",
       segment: cat.segment ?? "",
       department: cat.department ?? "",
     });
@@ -768,9 +768,9 @@ function CategoriesTab() {
                       {cat.name}
                     </TableCell>
                     <TableCell className="py-3.5">
-                      {cat.catCode ? (
+                      {cat.cat_code ? (
                         <span className="font-mono text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded">
-                          {cat.catCode}
+                          {cat.cat_code}
                         </span>
                       ) : (
                         <span className="text-xs text-slate-300">—</span>
@@ -873,7 +873,7 @@ function CategoriesTab() {
             </Button>
             <Button
               onClick={handleCreate}
-              disabled={!form.name.trim() || !form.catCode.trim() || saving}
+              disabled={!form.name.trim() || !form.cat_code.trim() || saving}
               className="bg-blue-900 text-white hover:bg-blue-800"
             >
               {saving ? "Saving..." : "Save"}
@@ -911,7 +911,7 @@ function CategoriesTab() {
             </Button>
             <Button
               onClick={handleEdit}
-              disabled={!form.name.trim() || !form.catCode.trim() || saving}
+              disabled={!form.name.trim() || !form.cat_code.trim() || saving}
               className="bg-blue-900 text-white hover:bg-blue-800"
             >
               {saving ? "Saving..." : "Save Changes"}
