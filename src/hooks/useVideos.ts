@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import type { video as Video } from "@/types";
 
 const BASE_IMAGE_URL =
-    import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+    import.meta.env.VITE_API_BASE_URL;
 
 const BASE_URL = `${BASE_IMAGE_URL}/api/v1`;
 

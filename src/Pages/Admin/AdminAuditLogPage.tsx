@@ -34,7 +34,7 @@ import { AdminPagination } from "./admin-components";
 import { getUserFriendlyErrorMessage } from "@/lib/api/apiUtils";
 import InlineErrorAlert from "@/components/shared/InlineErrorAlert";
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 const API = `${BASE_URL}/api/v1/audit-logs`;
 
 // ── Types ─────────────────────────────────────────────────────────────────────

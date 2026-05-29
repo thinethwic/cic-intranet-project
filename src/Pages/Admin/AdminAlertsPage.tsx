@@ -41,7 +41,7 @@ import { getUserFriendlyErrorMessage } from "@/lib/api/apiUtils";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 const PAGE_SIZE_OPTIONS = [8, 12, 24];
 const SEVERITY_OPTIONS: AlertSeverity[] = ["critical", "warning", "info"];
 
@@ -411,7 +411,10 @@ export default function AdminAlertsPage() {
   const pageError =
     error ||
     (fetchError
-      ? getUserFriendlyErrorMessage(fetchError, "Unable to load alerts right now.")
+      ? getUserFriendlyErrorMessage(
+          fetchError,
+          "Unable to load alerts right now.",
+        )
       : "");
 
   // ── Filters ───────────────────────────────────────────────────────────────
@@ -477,7 +480,10 @@ export default function AdminAlertsPage() {
     } catch (err) {
       console.error("Failed to create alert", err);
       setError(
-        getUserFriendlyErrorMessage(err, "Unable to create the alert right now."),
+        getUserFriendlyErrorMessage(
+          err,
+          "Unable to create the alert right now.",
+        ),
       );
     } finally {
       setSaving(false);
@@ -521,7 +527,10 @@ export default function AdminAlertsPage() {
         throw new Error("Failed to update alert");
       }
       if (editFlyerFile) {
-        const flyerUpdated = await updateFlyer(Number(editItem.id), editFlyerFile);
+        const flyerUpdated = await updateFlyer(
+          Number(editItem.id),
+          editFlyerFile,
+        );
         if (!flyerUpdated) {
           throw new Error("Failed to update alert flyer");
         }
@@ -531,7 +540,10 @@ export default function AdminAlertsPage() {
     } catch (err) {
       console.error("Failed to update alert", err);
       setError(
-        getUserFriendlyErrorMessage(err, "Unable to update the alert right now."),
+        getUserFriendlyErrorMessage(
+          err,
+          "Unable to update the alert right now.",
+        ),
       );
     } finally {
       setSaving(false);
@@ -552,7 +564,10 @@ export default function AdminAlertsPage() {
     } catch (err) {
       console.error("Failed to delete alert", err);
       setError(
-        getUserFriendlyErrorMessage(err, "Unable to delete the alert right now."),
+        getUserFriendlyErrorMessage(
+          err,
+          "Unable to delete the alert right now.",
+        ),
       );
     }
   };

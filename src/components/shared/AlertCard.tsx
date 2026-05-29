@@ -22,7 +22,7 @@ export type { Alert, AlertSeverity };
 // Constants
 // ---------------------------------------------------------------------------
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 const MIN_ZOOM = 1;
 const MAX_ZOOM = 5;

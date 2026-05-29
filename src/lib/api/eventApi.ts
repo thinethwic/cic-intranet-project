@@ -3,7 +3,7 @@
 import type { Event } from "@/types";
 import { apiFetch } from "./apiFetch";
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 const API = `${BASE_URL}/api/v1`;
 
 export const getAllEvents = async (page = 0, size = 100): Promise<Event[]> => {

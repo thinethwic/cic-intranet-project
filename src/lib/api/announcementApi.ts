@@ -1,7 +1,7 @@
 import type { Announcement } from "@/types";
 import { authHeaders } from "./authHeaders";
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 // announcementApi.ts
 export const getAllAnnouncements = async (page = 0, size = 100): Promise<Announcement[]> => {
