@@ -208,7 +208,7 @@ export const logout = async (redirectTo = "/"): Promise<void> => {
   // Call backend to record the logout audit log
   if (token && !isTokenExpired(token)) {
     try {
-      await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/public/auth/logout`, {
+      await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/v1/auth/logout`, {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${token}`,
