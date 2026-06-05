@@ -3,6 +3,9 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
+# Install typescript globally first
+RUN npm install -g typescript vite
+
 COPY package*.json ./
 RUN npm install --include=dev
 
