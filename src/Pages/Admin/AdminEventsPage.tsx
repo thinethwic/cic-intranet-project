@@ -56,6 +56,7 @@ import { useSearchParams } from "react-router-dom";
 import { getAdminUser } from "@/lib/api/authHeaders";
 import InlineErrorAlert from "@/components/shared/InlineErrorAlert";
 import { getUserFriendlyErrorMessage } from "@/lib/api/apiUtils";
+import { resolveFileUrl } from "@/lib/api/fileUtils";
 
 const SEGMENT_OPTIONS = [
   "All",
@@ -383,7 +384,7 @@ function EventsTab() {
               <div className="flex items-center gap-3">
                 {event.image ? (
                   <img
-                    src={event.image}
+                    src={resolveFileUrl(event.image)}
                     alt=""
                     className="h-12 w-12 rounded-2xl object-cover"
                   />
@@ -479,7 +480,7 @@ function EventsTab() {
               <label className="flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-200 p-4 transition-colors hover:border-blue-400 hover:bg-blue-50/40">
                 {imagePreview ? (
                   <img
-                    src={imagePreview}
+                    src={resolveFileUrl(imagePreview)}
                     className="mb-2 h-32 w-full rounded-lg object-cover"
                   />
                 ) : (

@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useNewsById, useNews } from "@/hooks/useNews";
 import NotFoundPage from "./shared/NotFoundPage";
+import { resolveFileUrl } from "@/lib/api/fileUtils";
 
 // ── Helpers ───────────────────────────────────────────
 const fmtDate = (d: string) => {
@@ -139,7 +140,7 @@ export default function NewsDetailPage() {
         {news.image && (
           <div className="rounded-2xl overflow-hidden mb-8">
             <img
-              src={news.image}
+              src={resolveFileUrl(news.image)}
               alt={news.title}
               className="w-full object-cover max-h-[460px]"
             />

@@ -46,6 +46,15 @@ const ALLOWED_IMAGE_TYPES = [
   "image/gif",
 ];
 
+// Add this after all imports
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
+
+const resolveImageUrl = (url: string | null | undefined): string => {
+  if (!url) return "";
+  if (/^https?:\/\//.test(url)) return url;
+  return `${BASE_URL}${url.startsWith("/") ? "" : "/"}${url}`;
+};
+
 export default function AdminGalleryPage() {
   const PAGE_SIZE = 6;
   const [items, setItems] = useState<Gallery[]>([]);
@@ -121,7 +130,7 @@ export default function AdminGalleryPage() {
     setEditError("");
     setDescription(item.description ?? "");
     setSelectedFile(null);
-    setImagePreview(item.image ? `${item.image}` : null);
+    setImagePreview(item.image ? resolveImageUrl(item.image) : null);
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -293,7 +302,7 @@ export default function AdminGalleryPage() {
             <AdminCard key={item.id} className="overflow-hidden">
               {item.image ? (
                 <img
-                  src={item.image}
+                  src={resolveImageUrl(item.image)}
                   alt={item.description}
                   className="aspect-video w-full object-cover"
                 />
@@ -353,7 +362,7 @@ export default function AdminGalleryPage() {
           </DialogHeader>
           {preview && (
             <img
-              src={preview.image}
+              src={resolveImageUrl(preview.image)}
               alt={preview.description}
               className="max-h-[70vh] w-full rounded-2xl object-cover"
             />

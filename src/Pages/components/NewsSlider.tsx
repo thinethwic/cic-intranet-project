@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import HotNewsCard from "@/components/HotnewsCrad";
+import { resolveFileUrl } from "@/lib/api/fileUtils";
 
 interface NewsItem {
   id: number;
@@ -90,7 +91,7 @@ export default function NewsSlider({
                 id={item.id}
                 title={item.title}
                 description={item.description}
-                image={item.image}
+                image={resolveFileUrl(item.image)}
                 date={item.date}
                 category={item.category}
               />

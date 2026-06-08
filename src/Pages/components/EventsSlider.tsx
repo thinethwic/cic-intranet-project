@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import EventCard from "@/components/EventCard";
 import type { Event } from "@/types"; // ✅ import your type
+import { resolveFileUrl } from "@/lib/api/fileUtils";
 
 const VISIBLE_COUNT = 3;
 const INTERVAL = 3500;
@@ -85,7 +86,7 @@ export default function EventsSlider({ events }: Props) {
               }}
             >
               <EventCard
-                image={event.image}
+                image={resolveFileUrl(event.image)}
                 title={event.title}
                 date={event.date}
                 time={event.time}

@@ -8,9 +8,17 @@ interface GalleryImage {
   description: string;
 }
 
-// ✅ Replace with
+// ✅ After — works with both local and GCS URLs
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
+
+const resolveImageUrl = (url: string | null | undefined): string => {
+  if (!url) return "";
+  if (url.startsWith("http://") || url.startsWith("https://")) return url;
+  return `${BASE_URL}${url}`;
+};
+
 const mapGalleryToImage = (gallery: Gallery): GalleryImage => ({
-  key: gallery.image, // GCS URL is already absolute
+  key: resolveImageUrl(gallery.image),
   description: gallery.description,
 });
 

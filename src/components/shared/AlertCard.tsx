@@ -35,7 +35,7 @@ const ZOOM_STEP = 0.3;
 function resolveImageUrl(path?: string | null): string {
   if (!path) return "";
   if (/^https?:\/\//.test(path)) return path; // ✅ GCS URL — used as-is
-  return `${BASE_URL}${path.startsWith("/") ? "" : "/"}${path}`; // old local path fallback
+  return `${BASE_URL}${path.startsWith("/") ? "" : "/"}${path}`; // local path
 }
 
 function getSeverity(alert: Alert): AlertSeverity {

@@ -65,6 +65,7 @@ import InlineErrorAlert from "@/components/shared/InlineErrorAlert";
 import ReportDialog from "../components/ReportDialog";
 
 import logo from "@/assets/Logo.jpg";
+import { resolveFileUrl } from "@/lib/api/fileUtils";
 
 // ── Configs ─────────────────────────────────────────────────────────────────
 
@@ -1445,14 +1446,14 @@ export default function AdminTicketsPage() {
                             {urls.map((url, i) => (
                               <a
                                 key={i}
-                                href={url}
+                                href={resolveFileUrl(url)}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="group flex items-center gap-2 rounded-xl border border-slate-200 bg-white p-1.5 pr-3 hover:border-blue-200 hover:bg-blue-50 transition-colors"
                               >
                                 <div className="h-10 w-10 shrink-0 overflow-hidden rounded-lg border border-slate-200 bg-slate-100">
                                   <img
-                                    src={url}
+                                    src={resolveFileUrl(url)}
                                     alt={`attachment-${i}`}
                                     className="h-full w-full object-cover"
                                   />

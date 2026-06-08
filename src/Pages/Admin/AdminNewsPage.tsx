@@ -43,6 +43,7 @@ import {
 import { getAdminUser } from "@/lib/api/authHeaders";
 import { getUserFriendlyErrorMessage } from "@/lib/api/apiUtils";
 import InlineErrorAlert from "@/components/shared/InlineErrorAlert";
+import { resolveFileUrl } from "@/lib/api/fileUtils";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -402,7 +403,7 @@ export default function AdminNewsPage() {
       isHot: item.isHot,
     });
     setEditImageFile(null);
-    setEditImagePreview(item.image ?? null);
+    setEditImagePreview(item.image ? resolveFileUrl(item.image) : null);
   };
 
   // ── Save Edit ─────────────────────────────────────────────
@@ -553,7 +554,7 @@ export default function AdminNewsPage() {
               >
                 {item.image ? (
                   <img
-                    src={item.image}
+                    src={resolveFileUrl(item.image)}
                     alt={item.title}
                     className="w-full h-44 object-cover block"
                   />

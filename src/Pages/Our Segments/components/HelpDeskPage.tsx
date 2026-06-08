@@ -60,6 +60,7 @@ import { decryptSegment } from "@/utils/segmentEncryption";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import logo from "@/assets/Logo.jpg";
 import { AdminPagination } from "@/Pages/Admin/admin-components";
+import { resolveFileUrl } from "@/lib/api/fileUtils";
 
 const PRIORITIES: TicketPriority[] = ["LOW", "MEDIUM", "HIGH", "CRITICAL"];
 
@@ -1368,14 +1369,14 @@ export default function HelpDeskPage() {
                               {urls.map((url, i) => (
                                 <a
                                   key={i}
-                                  href={url}
+                                  href={resolveFileUrl(url)}
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   className="group flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 p-1.5 pr-3 hover:border-blue-200 hover:bg-blue-50 transition-colors"
                                 >
                                   <div className="h-10 w-10 shrink-0 overflow-hidden rounded-lg border border-slate-200 bg-white">
                                     <img
-                                      src={url}
+                                      src={resolveFileUrl(url)}
                                       alt={`attachment-${i}`}
                                       className="h-full w-full object-cover"
                                     />
