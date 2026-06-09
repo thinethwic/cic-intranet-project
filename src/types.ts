@@ -17,6 +17,7 @@ export interface Ticket {
     updatedAt: string;
     resolvedAt?: string;
     attachments?: string | null;
+    submittedByName: string;
 }
 
 export interface TicketComment {

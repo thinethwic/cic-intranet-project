@@ -16,6 +16,7 @@ import {
   Send,
   ShieldCheck,
   TicketIcon,
+  User,
   UserCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -147,6 +148,7 @@ const EMPTY_EDIT_FORM = {
   status: "OPEN" as TicketStatus,
   department: "",
   assignedToId: null as number | null,
+  submittedByName: "",
 };
 
 const getLatestCommentSnapshot = (entries: Comment[]) => {
@@ -176,11 +178,13 @@ function FilterDropdown({
   value,
   onChange,
   className,
+  disabled,
 }: {
   options: string[];
   value: string;
   onChange: (value: string) => void;
   className?: string;
+  disabled?: boolean;
 }) {
   const isActive = value !== options[0];
   return (
@@ -188,9 +192,10 @@ function FilterDropdown({
       <DropdownMenuTrigger>
         <Button
           variant="outline"
+          disabled={disabled}
           className={`h-9 min-w-[130px] justify-between gap-2 text-sm font-normal ${
             isActive ? "border-blue-500 text-blue-600" : ""
-          } ${className ?? ""}`}
+          } ${className ?? ""} ${disabled ? "opacity-60 cursor-not-allowed" : ""}`}
         >
           <span>{value === "IN_PROGRESS" ? "In Progress" : value}</span>
           <ChevronDown className="h-3.5 w-3.5 opacity-50" />
@@ -200,6 +205,7 @@ function FilterDropdown({
         {options.map((option) => (
           <DropdownMenuItem
             key={option}
+            disabled={disabled}
             onClick={() => onChange(option)}
             className="flex cursor-pointer items-center justify-between text-sm"
           >
@@ -435,7 +441,7 @@ export default function AdminTicketsPage() {
               ticketId: ticket.id,
               ticketNumber: ticket.ticketNumber,
               title: ticket.title,
-              description: `New ticket submitted by ${ticket.submittedBy.name}${
+              description: `New ticket submitted by ${ticket.submittedByName}${
                 ticket.department ? ` · ${ticket.department}` : ""
               }${isITAdmin ? ` · ${ticket.segment ?? ""}` : ""}`,
               createdAt: ticket.createdAt,
@@ -590,7 +596,7 @@ export default function AdminTicketsPage() {
         return (
           (ticket.title.toLowerCase().includes(q) ||
             ticket.ticketNumber.toLowerCase().includes(q) ||
-            ticket.submittedBy.name.toLowerCase().includes(q) ||
+            (ticket.submittedByName ?? "").toLowerCase().includes(q) ||
             (ticket.department ?? "").toLowerCase().includes(q)) &&
           (statusFilter === "All" || ticket.status === statusFilter) &&
           (priorityFilter === "All" || ticket.priority === priorityFilter) &&
@@ -690,6 +696,7 @@ export default function AdminTicketsPage() {
       status: ticket.status,
       department: ticket.department ?? "",
       assignedToId: ticket.assignedTo?.id ?? null,
+      submittedByName: ticket.submittedByName,
     });
 
     setEditCategories([]);
@@ -1275,7 +1282,7 @@ export default function AdminTicketsPage() {
                         </Badge>
                       </TableCell>
                       <TableCell className="py-3.5 text-sm text-slate-600">
-                        {ticket.submittedBy.name}
+                        {ticket.submittedByName}
                       </TableCell>
                       <TableCell className="py-3.5">
                         {ticket.assignedTo ? (
@@ -1681,7 +1688,7 @@ export default function AdminTicketsPage() {
           if (!open) setEditTicket(null);
         }}
       >
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="sm:max-w-lg max-h-[90vh] flex flex-col overflow-hidden">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Edit3 className="h-4 w-4 text-blue-600" /> Edit ticket
@@ -1690,7 +1697,7 @@ export default function AdminTicketsPage() {
               Update ticket details, assignment, and workflow status.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4">
+          <div className="grid gap-4 max-h-[70vh] overflow-y-auto mr-[-25px] pr-[25px]">
             <div className="space-y-1.5">
               <Label className="text-xs font-medium text-slate-600">
                 Title
@@ -1731,12 +1738,33 @@ export default function AdminTicketsPage() {
                       department: e.target.value,
                     }))
                   }
+                  disabled
                   placeholder="e.g. Sales, Engineering, Operations"
                   className="pl-9"
                 />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-slate-600">
+                Submitted By
+              </Label>
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <Input
+                  value={editForm.submittedByName}
+                  onChange={(e) =>
+                    setEditForm((prev) => ({
+                      ...prev,
+                      submittedByName: e.target.value,
+                    }))
+                  }
+                  disabled
+                  placeholder="e.g. Sales, Engineering, Operations"
+                  className="pl-9"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label className="text-xs font-medium text-slate-600">
                   Category
@@ -1767,6 +1795,7 @@ export default function AdminTicketsPage() {
                       priority: value as TicketPriority,
                     }))
                   }
+                  disabled
                   className="w-full"
                 />
               </div>

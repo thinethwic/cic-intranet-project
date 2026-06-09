@@ -12,7 +12,16 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
-import { BarChart2, Download, FileText, Printer, X } from "lucide-react";
+import {
+  BarChart2,
+  Download,
+  FileText,
+  Printer,
+  X,
+  Search,
+  ChevronDown,
+  User,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -37,7 +46,7 @@ interface ReportDialogProps {
   onClose: () => void;
   tickets: Ticket[];
   adminName?: string;
-  logoUrl?: string; // ← add this
+  logoUrl?: string;
 }
 
 type GroupBy = "status" | "priority" | "category" | "department" | "segment";
@@ -45,10 +54,11 @@ type GroupBy = "status" | "priority" | "category" | "department" | "segment";
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const PRESET_RANGES = [
-  { label: "Last 7 days", days: 7 },
-  { label: "Last 30 days", days: 30 },
-  { label: "Last 90 days", days: 90 },
-  { label: "All time", days: 0 },
+  { label: "Today", days: 1 },
+  { label: "7 days", days: 7 },
+  { label: "30 days", days: 30 },
+  { label: "90 days", days: 90 },
+  { label: "All", days: 0 },
 ] as const;
 
 const GROUP_OPTIONS: { value: GroupBy; label: string }[] = [
@@ -59,14 +69,11 @@ const GROUP_OPTIONS: { value: GroupBy; label: string }[] = [
   { value: "segment", label: "Segment" },
 ];
 
-// Colour palettes for charts
 const CHART_COLORS: Record<string, string> = {
-  // status
   OPEN: "#3b82f6",
   IN_PROGRESS: "#f59e0b",
   RESOLVED: "#10b981",
   UNRESOLVED: "#94a3b8",
-  // priority
   LOW: "#94a3b8",
   MEDIUM: "#3b82f6",
   HIGH: "#f59e0b",
@@ -116,7 +123,6 @@ const groupTickets = (tickets: Ticket[], by: GroupBy) => {
     .sort((a, b) => b.value - a.value);
 };
 
-// Bucket tickets into daily counts over a date range
 const dailyTimeline = (tickets: Ticket[], from: Date, to: Date) => {
   const map: Record<string, number> = {};
   const cursor = new Date(from);
@@ -137,8 +143,6 @@ const dailyTimeline = (tickets: Ticket[], from: Date, to: Date) => {
   }));
 };
 
-// ── Summary stat helpers ──────────────────────────────────────────────────────
-
 const avgResolutionDays = (tickets: Ticket[]) => {
   const resolved = tickets.filter(
     (t) => t.status === "RESOLVED" && t.updatedAt,
@@ -152,7 +156,169 @@ const avgResolutionDays = (tickets: Ticket[]) => {
   return (total / resolved.length / 86_400_000).toFixed(1);
 };
 
-// ── Sub-components ────────────────────────────────────────────────────────────
+// ── SearchableSubmitterDropdown ───────────────────────────────────────────────
+
+function SearchableSubmitterDropdown({
+  names,
+  value,
+  onChange,
+}: {
+  names: string[];
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const filtered = useMemo(
+    () => names.filter((n) => n.toLowerCase().includes(search.toLowerCase())),
+    [names, search],
+  );
+
+  const displayLabel = value === "all" ? "All submitters" : value;
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => {
+          setOpen((o) => !o);
+          setTimeout(() => inputRef.current?.focus(), 50);
+        }}
+        className="flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs text-slate-600 hover:border-slate-300 hover:bg-slate-50 transition-colors focus:outline-none focus:ring-1 focus:ring-blue-500"
+      >
+        <User className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+        <span className="max-w-[140px] truncate">{displayLabel}</span>
+        <ChevronDown
+          className={`h-3 w-3 text-slate-400 shrink-0 transition-transform ${open ? "rotate-180" : ""}`}
+        />
+      </button>
+
+      {open && (
+        <>
+          <div
+            className="fixed inset-0 z-40"
+            onClick={() => {
+              setOpen(false);
+              setSearch("");
+            }}
+          />
+          <div className="absolute right-0 top-10 z-50 w-56 rounded-lg border border-slate-200 bg-white shadow-lg overflow-hidden">
+            <div className="flex items-center gap-2 border-b border-slate-100 px-3 py-2">
+              <Search className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+              <input
+                ref={inputRef}
+                type="text"
+                placeholder="Search submitter..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="flex-1 text-xs text-slate-700 placeholder-slate-400 bg-transparent focus:outline-none"
+              />
+              {search && (
+                <button
+                  type="button"
+                  onClick={() => setSearch("")}
+                  className="text-slate-300 hover:text-slate-500"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              )}
+            </div>
+            <div className="max-h-48 overflow-y-auto py-1">
+              <button
+                type="button"
+                onClick={() => {
+                  onChange("all");
+                  setOpen(false);
+                  setSearch("");
+                }}
+                className={`w-full text-left px-3 py-1.5 text-xs transition-colors ${
+                  value === "all"
+                    ? "bg-blue-50 text-blue-700 font-medium"
+                    : "text-slate-600 hover:bg-slate-50"
+                }`}
+              >
+                All submitters
+              </button>
+              {filtered.length === 0 ? (
+                <p className="px-3 py-3 text-xs text-slate-400 text-center">
+                  No results
+                </p>
+              ) : (
+                filtered.map((name) => (
+                  <button
+                    key={name}
+                    type="button"
+                    onClick={() => {
+                      onChange(name);
+                      setOpen(false);
+                      setSearch("");
+                    }}
+                    className={`w-full text-left px-3 py-1.5 text-xs transition-colors ${
+                      value === name
+                        ? "bg-blue-50 text-blue-700 font-medium"
+                        : "text-slate-600 hover:bg-slate-50"
+                    }`}
+                  >
+                    {name}
+                  </button>
+                ))
+              )}
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+// ── FilterToolbar (shared between desktop header & mobile) ────────────────────
+
+function FilterToolbar({
+  rangeDays,
+  setRangeDays,
+  submitterNames,
+  submittedByFilter,
+  setSubmittedByFilter,
+}: {
+  rangeDays: number;
+  setRangeDays: (d: number) => void;
+  submitterNames: string[];
+  submittedByFilter: string;
+  setSubmittedByFilter: (v: string) => void;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3 flex-wrap">
+      {/* Date range pills */}
+      <div className="flex items-center gap-1 rounded-lg bg-slate-100 p-1">
+        {PRESET_RANGES.map((r) => (
+          <button
+            key={r.days}
+            type="button"
+            onClick={() => setRangeDays(r.days)}
+            className={`rounded-md px-3 py-1 text-xs font-medium transition-colors whitespace-nowrap ${
+              rangeDays === r.days
+                ? "bg-blue-600 text-white shadow-sm"
+                : "text-slate-500 hover:text-slate-800"
+            }`}
+          >
+            {r.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Submitter dropdown */}
+      <SearchableSubmitterDropdown
+        names={submitterNames}
+        value={submittedByFilter}
+        onChange={setSubmittedByFilter}
+      />
+    </div>
+  );
+}
+
+// ── StatCard ──────────────────────────────────────────────────────────────────
 
 function StatCard({
   label,
@@ -181,28 +347,63 @@ export default function ReportDialog({
   onClose,
   tickets,
   adminName,
-  logoUrl, // ← add this
+  logoUrl,
 }: ReportDialogProps) {
   const printRef = useRef<HTMLDivElement>(null);
   const [rangeDays, setRangeDays] = useState<number>(30);
   const [groupBy, setGroupBy] = useState<GroupBy>("status");
   const [printing, setPrinting] = useState(false);
+  const [submittedByFilter, setSubmittedByFilter] = useState<string>("all");
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const itemsPerPage = 10;
 
   // ── Date range ───────────────────────────────────────────────────────────
   const { from, to, rangeLabel, inRange } = useMemo(() => {
-    const to = new Date();
-    const from =
-      rangeDays === 0
-        ? new Date(
-            Math.min(...tickets.map((t) => new Date(t.createdAt).getTime())) ||
-              Date.now(),
-          )
-        : new Date(Date.now() - rangeDays * 86_400_000);
+    const now = new Date();
+    let from: Date, to: Date;
+
+    if (rangeDays === 0) {
+      from = new Date(
+        Math.min(...tickets.map((t) => new Date(t.createdAt).getTime())) ||
+          Date.now(),
+      );
+      to = now;
+    } else if (rangeDays === 1) {
+      // Today: from midnight to end of day (fixes timezone issue)
+      from = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate(),
+        0,
+        0,
+        0,
+        0,
+      );
+      to = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate(),
+        23,
+        59,
+        59,
+        999,
+      );
+    } else {
+      // Last N days
+      from = new Date(Date.now() - rangeDays * 86_400_000);
+      from.setHours(0, 0, 0, 0);
+      to = now;
+    }
+
     return {
       from,
       to,
       rangeLabel:
-        rangeDays === 0 ? "All time" : `${fmtDate(from)} – ${fmtDate(to)}`,
+        rangeDays === 0
+          ? "All time"
+          : rangeDays === 1
+            ? `Today · ${fmtDate(to)}`
+            : `${fmtDate(from)} – ${fmtDate(to)}`,
       inRange: (t: Ticket) => {
         const d = new Date(t.createdAt).getTime();
         return d >= from.getTime() && d <= to.getTime();
@@ -210,25 +411,71 @@ export default function ReportDialog({
     };
   }, [rangeDays, tickets]);
 
+  // ── Submitter names ──────────────────────────────────────────────────────
+  const submitterNames = useMemo(
+    () => [...new Set(tickets.map((t) => t.submittedByName))].sort(),
+    [tickets],
+  );
+
   // ── Filtered tickets ─────────────────────────────────────────────────────
   const rangeTickets = useMemo(
     () => tickets.filter(inRange),
     [tickets, inRange],
   );
 
+  const filteredTickets = useMemo(
+    () =>
+      submittedByFilter === "all"
+        ? rangeTickets
+        : rangeTickets.filter((t) => t.submittedByName === submittedByFilter),
+    [rangeTickets, submittedByFilter],
+  );
+
+  // ── Pagination ───────────────────────────────────────────────────────────
+  const paginationData = useMemo(() => {
+    const totalTickets = filteredTickets.length;
+    const totalPages = Math.ceil(totalTickets / itemsPerPage);
+    const validPage = Math.min(currentPage, totalPages || 1);
+    const startIdx = (validPage - 1) * itemsPerPage;
+    const endIdx = startIdx + itemsPerPage;
+    const paginatedTickets = filteredTickets
+      .slice()
+      .sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      )
+      .slice(startIdx, endIdx);
+
+    return {
+      totalTickets,
+      totalPages,
+      currentPage: validPage,
+      startIdx,
+      endIdx,
+      paginatedTickets,
+    };
+  }, [filteredTickets, currentPage]);
+
+  // Reset page when filters change
+  useMemo(() => {
+    setCurrentPage(1);
+  }, [submittedByFilter, rangeDays]);
+
   // ── KPIs ─────────────────────────────────────────────────────────────────
   const kpis = useMemo(() => {
-    const total = rangeTickets.length;
-    const open = rangeTickets.filter((t) => t.status === "OPEN").length;
-    const inProgress = rangeTickets.filter(
+    const total = filteredTickets.length;
+    const open = filteredTickets.filter((t) => t.status === "OPEN").length;
+    const inProgress = filteredTickets.filter(
       (t) => t.status === "IN_PROGRESS",
     ).length;
-    const resolved = rangeTickets.filter((t) => t.status === "RESOLVED").length;
-    const critical = rangeTickets.filter(
+    const resolved = filteredTickets.filter(
+      (t) => t.status === "RESOLVED",
+    ).length;
+    const critical = filteredTickets.filter(
       (t) => t.priority === "CRITICAL",
     ).length;
     const resolutionRate = total ? Math.round((resolved / total) * 100) : 0;
-    const avgDays = avgResolutionDays(rangeTickets);
+    const avgDays = avgResolutionDays(filteredTickets);
     return {
       total,
       open,
@@ -238,23 +485,20 @@ export default function ReportDialog({
       resolutionRate,
       avgDays,
     };
-  }, [rangeTickets]);
+  }, [filteredTickets]);
 
   // ── Chart data ────────────────────────────────────────────────────────────
   const groupData = useMemo(
-    () => groupTickets(rangeTickets, groupBy),
-    [rangeTickets, groupBy],
+    () => groupTickets(filteredTickets, groupBy),
+    [filteredTickets, groupBy],
   );
-
   const timeline = useMemo(
-    () => dailyTimeline(rangeTickets, from, to),
-    [rangeTickets, from, to],
+    () => dailyTimeline(filteredTickets, from, to),
+    [filteredTickets, from, to],
   );
-
-  // Only show timeline when it won't be too noisy (≤ 90 days)
   const showTimeline = rangeDays > 0 && rangeDays <= 90;
 
-  // ── Export ────────────────────────────────────────────────────────────────
+  // ── Export CSV ────────────────────────────────────────────────────────────
   const exportCSV = () => {
     const headers = [
       "Ticket #",
@@ -269,7 +513,7 @@ export default function ReportDialog({
       "Created At",
       "Updated At",
     ];
-    const rows = rangeTickets.map((t) => [
+    const rows = filteredTickets.map((t) => [
       t.ticketNumber,
       `"${t.title.replace(/"/g, '""')}"`,
       t.status,
@@ -277,7 +521,7 @@ export default function ReportDialog({
       t.category ?? "",
       t.department ?? "",
       t.segment ?? "",
-      t.submittedBy.name,
+      t.submittedByName,
       t.assignedTo?.name ?? "",
       t.createdAt,
       t.updatedAt,
@@ -292,13 +536,11 @@ export default function ReportDialog({
     URL.revokeObjectURL(url);
   };
 
+  // ── Print / PDF ───────────────────────────────────────────────────────────
   const printReport = useCallback(async () => {
     if (printing) return;
-
     try {
       setPrinting(true);
-
-      // ── Group breakdown rows ────────────────────────────────────────────
       const maxGroupVal = Math.max(...groupData.map((d) => d.value), 1);
       const groupRows = groupData
         .map((d, i) => {
@@ -307,21 +549,15 @@ export default function ReportDialog({
             ? Math.round((d.value / kpis.total) * 100)
             : 0;
           const color = colorFor(d.name, i);
-          return `
-        <tr>
+          return `<tr>
           <td class="td-label">${d.name}</td>
-          <td class="td-bar">
-            <div class="bar-track">
-              <div class="bar-fill" style="width:${barPct}%;background:${color}"></div>
-            </div>
-          </td>
+          <td class="td-bar"><div class="bar-track"><div class="bar-fill" style="width:${barPct}%;background:${color}"></div></div></td>
           <td class="td-num">${d.value}</td>
           <td class="td-pct">${tickPct}%</td>
         </tr>`;
         })
         .join("");
 
-      // ── Status pill rows ────────────────────────────────────────────────
       const STATUS_LIST = [
         "OPEN",
         "IN_PROGRESS",
@@ -329,21 +565,14 @@ export default function ReportDialog({
         "UNRESOLVED",
       ] as const;
       const statusPills = STATUS_LIST.map((s) => {
-        const count = rangeTickets.filter((t) => t.status === s).length;
+        const count = filteredTickets.filter((t) => t.status === s).length;
         const pct = kpis.total ? Math.round((count / kpis.total) * 100) : 0;
         const color = colorFor(s, 0);
         const label = s === "IN_PROGRESS" ? "In Progress" : s;
-        return `
-        <div class="pill">
-          <span class="dot" style="background:${color}"></span>
-          <span class="pill-label">${label}</span>
-          <span class="pill-count">${count}</span>
-          <span class="pill-pct">(${pct}%)</span>
-        </div>`;
+        return `<div class="pill"><span class="dot" style="background:${color}"></span><span class="pill-label">${label}</span><span class="pill-count">${count}</span><span class="pill-pct">(${pct}%)</span></div>`;
       }).join("");
 
-      // ── Ticket table rows ───────────────────────────────────────────────
-      const ticketRows = rangeTickets
+      const ticketRows = filteredTickets
         .slice()
         .sort(
           (a, b) =>
@@ -359,264 +588,76 @@ export default function ReportDialog({
             month: "short",
             year: "numeric",
           });
-          return `
-          <tr>
-            <td style="padding:7px 10px">
-              <div style="font-family:monospace;font-size:9px;color:#94a3b8;margin-bottom:2px">${t.ticketNumber}</div>
-              <div style="font-size:11px;color:#1e293b;font-weight:500;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${t.title}</div>
-            </td>
-            <td style="padding:7px 10px">
-              <span class="badge" style="border-color:${sc}55;color:${sc};background:${sc}15">${statusLabel}</span>
-            </td>
-            <td style="padding:7px 10px">
-              <span class="badge" style="border-color:${pc}55;color:${pc};background:${pc}15">${t.priority}</span>
-            </td>
-            <td style="padding:7px 10px;font-size:11px;color:#475569">${t.category ?? "—"}</td>
-            <td style="padding:7px 10px;font-size:11px;color:#475569">${t.department ?? "—"}</td>
-            <td style="padding:7px 10px;font-size:11px;color:#475569">${t.submittedBy.name}</td>
-            <td style="padding:7px 10px;font-size:11px;color:#64748b">${created}</td>
-          </tr>`;
+          return `<tr>
+          <td style="padding:7px 10px"><div style="font-family:monospace;font-size:9px;color:#94a3b8;margin-bottom:2px">${t.ticketNumber}</div><div style="font-size:11px;color:#1e293b;font-weight:500;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${t.title}</div></td>
+          <td style="padding:7px 10px"><span class="badge" style="border-color:${sc}55;color:${sc};background:${sc}15">${statusLabel}</span></td>
+          <td style="padding:7px 10px"><span class="badge" style="border-color:${pc}55;color:${pc};background:${pc}15">${t.priority}</span></td>
+          <td style="padding:7px 10px;font-size:11px;color:#475569">${t.category ?? "—"}</td>
+          <td style="padding:7px 10px;font-size:11px;color:#475569">${t.department ?? "—"}</td>
+          <td style="padding:7px 10px;font-size:11px;color:#475569">${t.submittedByName}</td>
+          <td style="padding:7px 10px;font-size:11px;color:#64748b">${created}</td>
+        </tr>`;
         })
         .join("");
 
-      // ── Logo HTML ───────────────────────────────────────────────────────
       const logoHtml = logoUrl
         ? `<img src="${logoUrl}" alt="Company logo" style="height:55px;max-width:140px;object-fit:contain;display:block" />`
         : `<span style="font-size:18px;font-weight:800;color:#fff;letter-spacing:-0.5px">${adminName ?? "Report"}</span>`;
 
-      // ── Full HTML document ──────────────────────────────────────────────
-      const html = `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8"/>
-  <title>Ticket Report – ${rangeLabel}</title>
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+      const submitterLine =
+        submittedByFilter !== "all"
+          ? `<div class="report-sub">Submitter: ${submittedByFilter}</div>`
+          : "";
 
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
-      color: #1e293b;
-      background: #fff;
-      font-size: 12px;
-      line-height: 1.5;
-    }
-
-    /* ── Corporate header bar ── */
-    .header {
-      background: #1e3a5f;
-      padding: 18px 32px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-    .header-right {
-      text-align: right;
-    }
-    .header-right .report-title {
-      font-size: 16px;
-      font-weight: 700;
-      color: #fff;
-    }
-    .header-right .report-range {
-      font-size: 11px;
-      color: #93c5fd;
-      margin-top: 2px;
-    }
-
-    /* ── Page body ── */
-    .body { padding: 24px 32px 32px; }
-
-    /* ── Section divider ── */
-    .section-title {
-      font-size: 9px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      color: #94a3b8;
-      margin-bottom: 10px;
-      padding-bottom: 5px;
-      border-bottom: 1px solid #e2e8f0;
-    }
-    .section { margin-bottom: 22px; }
-
-    /* ── KPI grid ── */
-    .kpis {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 10px;
-      margin-bottom: 22px;
-    }
-    .kpi {
-      border: 1px solid #e2e8f0;
-      border-radius: 8px;
-      padding: 14px 16px;
-      border-top: 3px solid #1e3a5f;
-    }
-    .kpi-label { font-size: 9px; color: #64748b; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
-    .kpi-value { font-size: 26px; font-weight: 800; line-height: 1; }
-    .kpi-sub   { font-size: 9px; color: #94a3b8; margin-top: 4px; }
-
-    /* ── Status pills ── */
-    .pills { display: flex; flex-wrap: wrap; gap: 8px; }
-    .pill {
-      display: flex; align-items: center; gap: 6px;
-      padding: 5px 12px;
-      border: 1px solid #e2e8f0;
-      border-radius: 20px;
-      background: #f8fafc;
-    }
-    .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
-    .pill-label { font-size: 11px; color: #475569; }
-    .pill-count { font-size: 11px; font-weight: 700; color: #1e293b; }
-    .pill-pct   { font-size: 10px; color: #94a3b8; }
-
-    /* ── Breakdown bars ── */
-    .bar-track { background: #f1f5f9; border-radius: 4px; height: 12px; overflow: hidden; width: 200px; }
-    .bar-fill  { height: 100%; border-radius: 4px; }
-    .td-label  { padding: 5px 8px; font-size: 11px; color: #475569; width: 130px; font-weight: 500; }
-    .td-bar    { padding: 5px 8px; }
-    .td-num    { padding: 5px 8px; font-size: 11px; font-weight: 700; color: #1e293b; width: 40px; }
-    .td-pct    { padding: 5px 8px; font-size: 10px; color: #94a3b8; width: 45px; }
-
-    /* ── Ticket table ── */
-    .ticket-table { width: 100%; border-collapse: collapse; }
-    .ticket-table thead tr { background: #f8fafc; border-top: 2px solid #1e3a5f; }
-    .ticket-table th {
-      text-align: left;
-      font-size: 9px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.07em;
-      color: #64748b;
-      padding: 8px 10px;
-      border-bottom: 1px solid #e2e8f0;
-    }
-    .ticket-table tbody tr { border-bottom: 1px solid #f1f5f9; }
-    .ticket-table tbody tr:last-child { border-bottom: none; }
-    .ticket-table tbody tr:nth-child(even) { background: #fafbfc; }
-
-    .badge {
-      display: inline-block;
-      font-size: 9px;
-      font-weight: 600;
-      padding: 2px 7px;
-      border-radius: 4px;
-      border: 1px solid;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-    }
-
-    /* ── Footer ── */
-    .footer {
-      border-top: 1px solid #e2e8f0;
-      margin-top: 24px;
-      padding-top: 12px;
-      display: flex;
-      justify-content: space-between;
-      font-size: 9px;
-      color: #94a3b8;
-    }
-
-    /* ── Print overrides ── */
-    @media print {
-      body { font-size: 11px; }
-      .header { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-      .kpi { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-      .bar-fill { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-      .dot { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-      .badge { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-      .ticket-table thead tr { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-      .ticket-table tbody tr:nth-child(even) { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    }
-  </style>
-</head>
-<body>
-
-  <!-- Corporate header bar -->
-  <div class="header">
-    ${logoHtml}
-    <div class="header-right">
-      <div class="report-title">Ticket Report</div>
-      <div class="report-range">${rangeLabel}</div>
-    </div>
-  </div>
-
+      const html = `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"/><title>Ticket Report – ${rangeLabel}</title>
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;color:#1e293b;background:#fff;font-size:12px;line-height:1.5}
+  .header{background:#1e3a5f;padding:18px 32px;display:flex;align-items:center;justify-content:space-between}
+  .header-right{text-align:right}.report-title{font-size:16px;font-weight:700;color:#fff}
+  .report-range{font-size:11px;color:#93c5fd;margin-top:2px}.report-sub{font-size:10px;color:#7dd3fc;margin-top:1px}
+  .body{padding:24px 32px 32px}
+  .section-title{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#94a3b8;margin-bottom:10px;padding-bottom:5px;border-bottom:1px solid #e2e8f0}
+  .section{margin-bottom:22px}
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:22px}
+  .kpi{border:1px solid #e2e8f0;border-radius:8px;padding:14px 16px;border-top:3px solid #1e3a5f}
+  .kpi-label{font-size:9px;color:#64748b;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+  .kpi-value{font-size:26px;font-weight:800;line-height:1}.kpi-sub{font-size:9px;color:#94a3b8;margin-top:4px}
+  .pills{display:flex;flex-wrap:wrap;gap:8px}
+  .pill{display:flex;align-items:center;gap:6px;padding:5px 12px;border:1px solid #e2e8f0;border-radius:20px;background:#f8fafc}
+  .dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex-shrink:0}
+  .pill-label{font-size:11px;color:#475569}.pill-count{font-size:11px;font-weight:700;color:#1e293b}.pill-pct{font-size:10px;color:#94a3b8}
+  .bar-track{background:#f1f5f9;border-radius:4px;height:12px;overflow:hidden;width:200px}
+  .bar-fill{height:100%;border-radius:4px}
+  .td-label{padding:5px 8px;font-size:11px;color:#475569;width:130px;font-weight:500}
+  .td-bar{padding:5px 8px}.td-num{padding:5px 8px;font-size:11px;font-weight:700;color:#1e293b;width:40px}.td-pct{padding:5px 8px;font-size:10px;color:#94a3b8;width:45px}
+  .ticket-table{width:100%;border-collapse:collapse}
+  .ticket-table thead tr{background:#f8fafc;border-top:2px solid #1e3a5f}
+  .ticket-table th{text-align:left;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#64748b;padding:8px 10px;border-bottom:1px solid #e2e8f0}
+  .ticket-table tbody tr{border-bottom:1px solid #f1f5f9}.ticket-table tbody tr:last-child{border-bottom:none}
+  .ticket-table tbody tr:nth-child(even){background:#fafbfc}
+  .badge{display:inline-block;font-size:9px;font-weight:600;padding:2px 7px;border-radius:4px;border:1px solid;text-transform:uppercase;letter-spacing:.04em}
+  .footer{border-top:1px solid #e2e8f0;margin-top:24px;padding-top:12px;display:flex;justify-content:space-between;font-size:9px;color:#94a3b8}
+  @media print{body{font-size:11px}.header,.kpi,.bar-fill,.dot,.badge,.ticket-table thead tr,.ticket-table tbody tr:nth-child(even){-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+</style></head><body>
+  <div class="header">${logoHtml}<div class="header-right"><div class="report-title">Ticket Report</div><div class="report-range">${rangeLabel}</div>${submitterLine}</div></div>
   <div class="body">
-
-    <!-- KPI cards -->
     <div class="kpis">
-      <div class="kpi">
-        <div class="kpi-label">Total Tickets</div>
-        <div class="kpi-value" style="color:#1e293b">${kpis.total}</div>
-      </div>
-      <div class="kpi">
-        <div class="kpi-label">Resolution Rate</div>
-        <div class="kpi-value" style="color:#10b981">${kpis.resolutionRate}%</div>
-        <div class="kpi-sub">${kpis.resolved} resolved</div>
-      </div>
-      <div class="kpi">
-        <div class="kpi-label">Avg. Resolution</div>
-        <div class="kpi-value" style="color:#3b82f6">${kpis.avgDays ? `${kpis.avgDays}d` : "—"}</div>
-        <div class="kpi-sub">days to close</div>
-      </div>
-      <div class="kpi">
-        <div class="kpi-label">Critical Tickets</div>
-        <div class="kpi-value" style="color:#ef4444">${kpis.critical}</div>
-        <div class="kpi-sub">${kpis.open} still open</div>
-      </div>
+      <div class="kpi"><div class="kpi-label">Total Tickets</div><div class="kpi-value" style="color:#1e293b">${kpis.total}</div></div>
+      <div class="kpi"><div class="kpi-label">Resolution Rate</div><div class="kpi-value" style="color:#10b981">${kpis.resolutionRate}%</div><div class="kpi-sub">${kpis.resolved} resolved</div></div>
+      <div class="kpi"><div class="kpi-label">Avg. Resolution</div><div class="kpi-value" style="color:#3b82f6">${kpis.avgDays ? `${kpis.avgDays}d` : "—"}</div><div class="kpi-sub">days to close</div></div>
+      <div class="kpi"><div class="kpi-label">Critical Tickets</div><div class="kpi-value" style="color:#ef4444">${kpis.critical}</div><div class="kpi-sub">${kpis.open} still open</div></div>
     </div>
-
-    <!-- Status breakdown -->
+    <div class="section"><div class="section-title">Status Breakdown</div><div class="pills">${statusPills}</div></div>
+    <div class="section"><div class="section-title">Breakdown by ${groupBy.charAt(0).toUpperCase() + groupBy.slice(1)}</div><table><tbody>${groupRows}</tbody></table></div>
     <div class="section">
-      <div class="section-title">Status Breakdown</div>
-      <div class="pills">${statusPills}</div>
+      <div class="section-title">Ticket List <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#cbd5e1;margin-left:6px">${filteredTickets.length} ticket${filteredTickets.length !== 1 ? "s" : ""}</span></div>
+      <table class="ticket-table"><thead><tr>${["Ticket", "Status", "Priority", "Category", "Dept.", "Submitted By", "Created"].map((h) => `<th>${h}</th>`).join("")}</tr></thead><tbody>${ticketRows}</tbody></table>
     </div>
-
-    <!-- Group breakdown chart -->
-    <div class="section">
-      <div class="section-title">Breakdown by ${groupBy.charAt(0).toUpperCase() + groupBy.slice(1)}</div>
-      <table><tbody>${groupRows}</tbody></table>
-    </div>
-
-    <!-- Ticket list -->
-    <div class="section">
-      <div class="section-title">
-        Ticket List
-        <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#cbd5e1;margin-left:6px">
-          ${rangeTickets.length} ticket${rangeTickets.length !== 1 ? "s" : ""}
-        </span>
-      </div>
-      <table class="ticket-table">
-        <thead>
-          <tr>
-            ${[
-              "Ticket",
-              "Status",
-              "Priority",
-              "Category",
-              "Dept.",
-              "Submitted By",
-              "Created",
-            ]
-              .map((h) => `<th>${h}</th>`)
-              .join("")}
-          </tr>
-        </thead>
-        <tbody>${ticketRows}</tbody>
-      </table>
-    </div>
-
-    <!-- Footer -->
-    <div class="footer">
-      <span>Generated ${new Date().toLocaleString("en-GB")}${adminName ? ` by ${adminName}` : ""}</span>
-      <span>Confidential</span>
-    </div>
-
+    <div class="footer"><span>Generated ${new Date().toLocaleString("en-GB")}${adminName ? ` by ${adminName}` : ""}</span><span>Confidential</span></div>
   </div>
-
-  <script>window.onload = () => { window.print(); }</script>
-</body>
-</html>`;
+  <script>window.onload=()=>{window.print()}</script>
+</body></html>`;
 
       const win = window.open("", "_blank");
       if (!win) {
@@ -637,10 +678,11 @@ export default function ReportDialog({
     rangeLabel,
     groupData,
     kpis,
-    rangeTickets,
+    filteredTickets,
     adminName,
     groupBy,
     logoUrl,
+    submittedByFilter,
   ]);
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -648,38 +690,32 @@ export default function ReportDialog({
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="flex max-h-[92vh] flex-col gap-0 p-0 sm:max-w-4xl overflow-hidden [&>button:last-child]:hidden">
         {/* ── Header ── */}
-        <DialogHeader className="shrink-0 border-b border-slate-100 px-6 py-4">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50">
+        <DialogHeader className="shrink-0 border-b border-slate-100 px-5 pt-4 pb-0">
+          {/* Row 1: icon + title + export + close — always visible */}
+          <div className="flex items-center justify-between gap-3 pb-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 shrink-0">
                 <BarChart2 className="h-4 w-4 text-blue-600" />
               </div>
-              <div>
-                <DialogTitle className="text-base">Ticket Report</DialogTitle>
-                <p className="text-xs text-slate-400 mt-0.5">{rangeLabel}</p>
+              <div className="min-w-0">
+                <DialogTitle className="text-sm font-semibold text-slate-800 leading-tight">
+                  Ticket Report
+                </DialogTitle>
+                <p className="text-[11px] text-slate-400 mt-0.5 truncate">
+                  {rangeLabel}
+                  {submittedByFilter !== "all" && (
+                    <span className="ml-1.5 inline-flex items-center gap-1 rounded-full bg-blue-50 px-1.5 py-0.5 text-[10px] font-medium text-blue-600">
+                      <User className="h-2.5 w-2.5 shrink-0" />
+                      <span className="truncate max-w-[80px]">
+                        {submittedByFilter}
+                      </span>
+                    </span>
+                  )}
+                </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
-              {/* Date range pills */}
-              <div className="hidden sm:flex items-center gap-1 rounded-lg border border-slate-200 p-1">
-                {PRESET_RANGES.map((r) => (
-                  <button
-                    key={r.days}
-                    type="button"
-                    onClick={() => setRangeDays(r.days)}
-                    className={`rounded-md px-3 py-1 text-xs font-medium transition-colors ${
-                      rangeDays === r.days
-                        ? "bg-blue-600 text-white"
-                        : "text-slate-500 hover:text-slate-800"
-                    }`}
-                  >
-                    {r.label}
-                  </button>
-                ))}
-              </div>
-
-              {/* Export menu */}
+            <div className="flex items-center gap-2 shrink-0">
               <DropdownMenu>
                 <DropdownMenuTrigger>
                   <Button
@@ -688,7 +724,7 @@ export default function ReportDialog({
                     className="h-8 gap-1.5 text-xs"
                   >
                     <Download className="h-3.5 w-3.5" />
-                    Export
+                    <span className="hidden sm:inline">Export</span>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
@@ -709,7 +745,6 @@ export default function ReportDialog({
                 </DropdownMenuContent>
               </DropdownMenu>
 
-              {/* Explicit close button */}
               <Button
                 variant="ghost"
                 size="icon"
@@ -721,31 +756,24 @@ export default function ReportDialog({
               </Button>
             </div>
           </div>
+
+          {/* Row 2: filter toolbar — single source of truth for ALL screen sizes */}
+          <div className="border-t border-slate-100 py-2.5">
+            <FilterToolbar
+              rangeDays={rangeDays}
+              setRangeDays={setRangeDays}
+              submitterNames={submitterNames}
+              submittedByFilter={submittedByFilter}
+              setSubmittedByFilter={setSubmittedByFilter}
+            />
+          </div>
         </DialogHeader>
 
-        {/* ── Scrollable body ── */}
+        {/* ── Scrollable body — NO duplicate range picker here ── */}
         <div
           ref={printRef}
-          className="flex-1 overflow-y-auto px-6 py-5 space-y-6 print:overflow-visible"
+          className="flex-1 overflow-y-auto px-5 py-5 space-y-6 print:overflow-visible"
         >
-          {/* Mobile range picker */}
-          <div className="flex sm:hidden items-center gap-1 rounded-lg border border-slate-200 p-1 w-full">
-            {PRESET_RANGES.map((r) => (
-              <button
-                key={r.days}
-                type="button"
-                onClick={() => setRangeDays(r.days)}
-                className={`flex-1 rounded-md py-1 text-xs font-medium transition-colors ${
-                  rangeDays === r.days
-                    ? "bg-blue-600 text-white"
-                    : "text-slate-500 hover:text-slate-800"
-                }`}
-              >
-                {r.label}
-              </button>
-            ))}
-          </div>
-
           {/* ── KPI cards ── */}
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <StatCard
@@ -774,10 +802,12 @@ export default function ReportDialog({
           </div>
 
           {/* ── Status breakdown row ── */}
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap gap-2">
             {(["OPEN", "IN_PROGRESS", "RESOLVED", "UNRESOLVED"] as const).map(
               (s) => {
-                const count = rangeTickets.filter((t) => t.status === s).length;
+                const count = filteredTickets.filter(
+                  (t) => t.status === s,
+                ).length;
                 const pct = kpis.total
                   ? Math.round((count / kpis.total) * 100)
                   : 0;
@@ -787,7 +817,7 @@ export default function ReportDialog({
                     className="flex items-center gap-2 rounded-lg border border-slate-100 bg-white px-3 py-2"
                   >
                     <span
-                      className="h-2.5 w-2.5 rounded-full"
+                      className="h-2.5 w-2.5 rounded-full shrink-0"
                       style={{ background: colorFor(s, 0) }}
                     />
                     <span className="text-xs text-slate-500">
@@ -807,13 +837,12 @@ export default function ReportDialog({
           <div
             className={`grid gap-5 ${showTimeline ? "grid-cols-1 lg:grid-cols-2" : "grid-cols-1"}`}
           >
-            {/* Group-by bar/pie chart */}
+            {/* Group-by chart */}
             <div className="rounded-xl border border-slate-100 bg-white p-4 space-y-3 min-w-0">
               <div className="flex flex-col gap-2">
                 <Label className="text-xs font-semibold uppercase tracking-wide text-slate-400">
                   Breakdown
                 </Label>
-                {/* Group-by toggle — wraps on narrow panels */}
                 <div className="flex flex-wrap items-center gap-1">
                   {GROUP_OPTIONS.map((g) => (
                     <button
@@ -837,7 +866,6 @@ export default function ReportDialog({
                   No data for this range
                 </p>
               ) : groupData.length <= 5 ? (
-                // Pie chart for ≤ 5 groups
                 <ResponsiveContainer width="100%" height={220}>
                   <PieChart>
                     <Pie
@@ -879,7 +907,6 @@ export default function ReportDialog({
                   </PieChart>
                 </ResponsiveContainer>
               ) : (
-                // Horizontal bar chart for > 5 groups
                 <ResponsiveContainer
                   width="100%"
                   height={Math.max(200, groupData.length * 36)}
@@ -919,7 +946,7 @@ export default function ReportDialog({
               )}
             </div>
 
-            {/* Timeline chart — only for 7/30/90 day ranges */}
+            {/* Timeline chart */}
             {showTimeline && (
               <div className="rounded-xl border border-slate-100 bg-white p-4 space-y-3 min-w-0">
                 <Label className="text-xs font-semibold uppercase tracking-wide text-slate-400">
@@ -969,8 +996,8 @@ export default function ReportDialog({
                 Ticket list
               </Label>
               <span className="text-xs text-slate-400">
-                {rangeTickets.length} ticket
-                {rangeTickets.length !== 1 ? "s" : ""}
+                {paginationData.totalTickets} ticket
+                {paginationData.totalTickets !== 1 ? "s" : ""}
               </span>
             </div>
             <div className="overflow-x-auto">
@@ -996,7 +1023,7 @@ export default function ReportDialog({
                   </tr>
                 </thead>
                 <tbody>
-                  {rangeTickets.length === 0 ? (
+                  {paginationData.totalTickets === 0 ? (
                     <tr>
                       <td
                         colSpan={7}
@@ -1006,79 +1033,116 @@ export default function ReportDialog({
                       </td>
                     </tr>
                   ) : (
-                    rangeTickets
-                      .slice()
-                      .sort(
-                        (a, b) =>
-                          new Date(b.createdAt).getTime() -
-                          new Date(a.createdAt).getTime(),
-                      )
-                      .map((t) => (
-                        <tr
-                          key={t.id}
-                          className="border-t border-slate-50 hover:bg-slate-50/60"
-                        >
-                          <td className="px-4 py-2.5">
-                            <span className="font-mono text-[10px] text-slate-400 block">
-                              {t.ticketNumber}
-                            </span>
-                            <span className="text-slate-700 font-medium truncate block max-w-[180px]">
-                              {t.title}
-                            </span>
-                          </td>
-                          <td className="px-4 py-2.5">
-                            <Badge
-                              variant="outline"
-                              className="text-[10px] px-1.5"
-                              style={{
-                                borderColor: `${colorFor(t.status, 0)}44`,
-                                color: colorFor(t.status, 0),
-                                background: `${colorFor(t.status, 0)}12`,
-                              }}
-                            >
-                              {t.status === "IN_PROGRESS"
-                                ? "In Progress"
-                                : t.status}
-                            </Badge>
-                          </td>
-                          <td className="px-4 py-2.5">
-                            <Badge
-                              variant="outline"
-                              className="text-[10px] px-1.5"
-                              style={{
-                                borderColor: `${colorFor(t.priority, 0)}44`,
-                                color: colorFor(t.priority, 0),
-                                background: `${colorFor(t.priority, 0)}12`,
-                              }}
-                            >
-                              {t.priority}
-                            </Badge>
-                          </td>
-                          <td className="px-4 py-2.5 text-slate-600">
-                            {t.category ?? "—"}
-                          </td>
-                          <td className="px-4 py-2.5 text-slate-600">
-                            {t.department ?? "—"}
-                          </td>
-                          <td className="px-4 py-2.5 text-slate-600">
-                            {t.submittedBy.name}
-                          </td>
-                          <td className="px-4 py-2.5 text-slate-400">
-                            {new Date(t.createdAt).toLocaleDateString("en-GB", {
-                              day: "numeric",
-                              month: "short",
-                              year: "numeric",
-                            })}
-                          </td>
-                        </tr>
-                      ))
+                    paginationData.paginatedTickets.map((t) => (
+                      <tr
+                        key={t.id}
+                        className="border-t border-slate-50 hover:bg-slate-50/60"
+                      >
+                        <td className="px-4 py-2.5">
+                          <span className="font-mono text-[10px] text-slate-400 block">
+                            {t.ticketNumber}
+                          </span>
+                          <span className="text-slate-700 font-medium truncate block max-w-[180px]">
+                            {t.title}
+                          </span>
+                        </td>
+                        <td className="px-4 py-2.5">
+                          <Badge
+                            variant="outline"
+                            className="text-[10px] px-1.5"
+                            style={{
+                              borderColor: `${colorFor(t.status, 0)}44`,
+                              color: colorFor(t.status, 0),
+                              background: `${colorFor(t.status, 0)}12`,
+                            }}
+                          >
+                            {t.status === "IN_PROGRESS"
+                              ? "In Progress"
+                              : t.status}
+                          </Badge>
+                        </td>
+                        <td className="px-4 py-2.5">
+                          <Badge
+                            variant="outline"
+                            className="text-[10px] px-1.5"
+                            style={{
+                              borderColor: `${colorFor(t.priority, 0)}44`,
+                              color: colorFor(t.priority, 0),
+                              background: `${colorFor(t.priority, 0)}12`,
+                            }}
+                          >
+                            {t.priority}
+                          </Badge>
+                        </td>
+                        <td className="px-4 py-2.5 text-slate-600">
+                          {t.category ?? "—"}
+                        </td>
+                        <td className="px-4 py-2.5 text-slate-600">
+                          {t.department ?? "—"}
+                        </td>
+                        <td className="px-4 py-2.5 text-slate-600">
+                          {t.submittedByName}
+                        </td>
+                        <td className="px-4 py-2.5 text-slate-400">
+                          {new Date(t.createdAt).toLocaleDateString("en-GB", {
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                          })}
+                        </td>
+                      </tr>
+                    ))
                   )}
                 </tbody>
               </table>
             </div>
+
+            {/* Pagination controls */}
+            {paginationData.totalPages > 1 && (
+              <div className="px-4 py-3 border-t border-slate-100 flex items-center justify-between">
+                <span className="text-xs text-slate-400">
+                  Showing{" "}
+                  {paginationData.totalTickets === 0
+                    ? 0
+                    : paginationData.startIdx + 1}
+                  –
+                  {Math.min(paginationData.endIdx, paginationData.totalTickets)}{" "}
+                  of {paginationData.totalTickets}
+                </span>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 px-3 text-xs"
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    disabled={paginationData.currentPage === 1}
+                  >
+                    ← Prev
+                  </Button>
+                  <span className="text-xs text-slate-500 min-w-12 text-center">
+                    {paginationData.currentPage} / {paginationData.totalPages}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 px-3 text-xs"
+                    onClick={() =>
+                      setCurrentPage((p) =>
+                        Math.min(paginationData.totalPages, p + 1),
+                      )
+                    }
+                    disabled={
+                      paginationData.currentPage === paginationData.totalPages
+                    }
+                  >
+                    Next →
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* ── Print footer ── */}
+          {/* Print footer */}
           <div className="hidden print:block text-xs text-slate-400 pt-4 border-t border-slate-200">
             Generated {new Date().toLocaleString("en-GB")}
             {adminName ? ` by ${adminName}` : ""}

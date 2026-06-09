@@ -264,7 +264,8 @@ export default function HelpDeskPage() {
     priority: "MEDIUM" as TicketPriority,
     segment: currentSegment ?? "",
     department: currentUser?.department ?? (null as string | null),
-    attachments: [] as AttachedImage[], // ← add this
+    attachments: [] as AttachedImage[],
+    submittedByName: "", // ← add this
   });
 
   const [form, setForm] = useState(makeEmptyForm);
@@ -486,6 +487,7 @@ export default function HelpDeskPage() {
         priority: form.priority,
         segment: form.segment,
         department: form.department?.trim() || null,
+        submittedByName: form.submittedByName.trim(), // ← add this
         attachments:
           form.attachments.length > 0
             ? JSON.stringify(
@@ -1026,6 +1028,15 @@ export default function HelpDeskPage() {
                                     {ticket.department}
                                   </Badge>
                                 )}
+                                {ticket.submittedByName && (
+                                  <Badge
+                                    variant="outline"
+                                    className="rounded-full px-2.5 text-[10px] bg-slate-50 text-blue-500 border-blue-200"
+                                  >
+                                    <Users className="h-3.5 w-3.5" />
+                                    {ticket.submittedByName}
+                                  </Badge>
+                                )}
                               </div>
                               <p className="text-base font-semibold text-slate-900 transition-colors group-hover:text-blue-900">
                                 {ticket.title}
@@ -1132,6 +1143,31 @@ export default function HelpDeskPage() {
                     }
                   />
                 </div>
+                <div className="space-y-1.5 sm:col-span-2">
+                  <Label className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                    Submitted By <span className="text-red-500">*</span>
+                  </Label>
+                  <div className="relative">
+                    <Users className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                    <Input
+                      placeholder="Your full name"
+                      value={form.submittedByName}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        const formatted =
+                          val.length > 0
+                            ? val.charAt(0).toUpperCase() +
+                              val.slice(1).toLowerCase()
+                            : "";
+                        setForm((prev) => ({
+                          ...prev,
+                          submittedByName: formatted,
+                        }));
+                      }}
+                      className="h-11 rounded-2xl border-slate-200 bg-slate-50/70 pl-9 shadow-none focus-visible:ring-blue-200"
+                    />
+                  </div>
+                </div>
                 <div className="space-y-1.5">
                   <Label className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
                     Category
@@ -1222,7 +1258,10 @@ export default function HelpDeskPage() {
               <Button
                 onClick={handleCreate}
                 disabled={
-                  !form.title.trim() || !form.description.trim() || saving
+                  !form.title.trim() ||
+                  !form.description.trim() ||
+                  !form.submittedByName.trim() ||
+                  saving
                 }
                 className="rounded-2xl bg-blue-900 text-white hover:bg-blue-800"
               >

@@ -91,7 +91,7 @@ const EMPTY_FORM = {
   name: "",
   email: "",
   password: "",
-  currentPassword: "",
+  confirmPassword: "", // ← add
   role: "AUTHORIZED" as "SUPER_ADMIN" | "ADMIN" | "AUTHORIZED" | "SERVICE",
   active: true,
   segment: "",
@@ -482,7 +482,7 @@ export default function AdminUsersPage() {
       name: user.name,
       email: user.email,
       password: "",
-      currentPassword: "",
+      confirmPassword: "", // ← add
       role: user.role,
       active: user.active,
       segment: user.segment ?? "",
@@ -495,14 +495,14 @@ export default function AdminUsersPage() {
     if (!editUser) return;
 
     if (editForm.password.trim()) {
-      if (!editForm.currentPassword.trim()) {
-        setEditError("Please enter the current password to set a new one.");
-        return;
-      }
       if (getPasswordStrength(editForm.password).score < 2) {
         setEditError(
           "New password is too weak. Use at least 8 characters with mixed case or numbers.",
         );
+        return;
+      }
+      if (editForm.password !== editForm.confirmPassword) {
+        setEditError("Passwords do not match.");
         return;
       }
     }
@@ -521,7 +521,7 @@ export default function AdminUsersPage() {
       };
       if (editForm.password.trim()) {
         payload.password = editForm.password;
-        payload.currentPassword = editForm.currentPassword;
+        // currentPassword intentionally omitted — admin privilege
       }
       const res = await fetch(`${API}/${editUser.id}`, {
         method: "PUT",
@@ -1138,7 +1138,6 @@ export default function AdminUsersPage() {
 
             {/* ── Password reset section ── */}
             <div className="rounded-lg border border-slate-200 bg-slate-50/60 p-3.5 space-y-3">
-              {/* Section header */}
               <div className="flex items-center gap-2">
                 <div className="w-6 h-6 rounded-md bg-slate-200 flex items-center justify-center">
                   <KeyRound className="w-3.5 h-3.5 text-slate-500" />
@@ -1153,34 +1152,6 @@ export default function AdminUsersPage() {
                 </div>
               </div>
 
-              {/* Current password — only shown when new password has input */}
-              <div className="space-y-1.5">
-                <Label className="text-xs font-medium text-slate-600">
-                  Current password
-                  {editForm.password.trim() && (
-                    <span className="text-red-400 ml-0.5">*</span>
-                  )}
-                </Label>
-                <PasswordInput
-                  value={editForm.currentPassword}
-                  onChange={(v) =>
-                    setEditForm((p) => ({ ...p, currentPassword: v }))
-                  }
-                  placeholder={
-                    editForm.password.trim()
-                      ? "Required to set a new password"
-                      : "Enter current password"
-                  }
-                  autoComplete="current-password"
-                />
-                {editForm.password.trim() &&
-                  !editForm.currentPassword.trim() && (
-                    <p className="text-[11px] text-amber-500 flex items-center gap-1">
-                      <span>⚠</span> Current password is required
-                    </p>
-                  )}
-              </div>
-
               {/* New password */}
               <div className="space-y-1.5">
                 <Label className="text-xs font-medium text-slate-600">
@@ -1188,12 +1159,47 @@ export default function AdminUsersPage() {
                 </Label>
                 <PasswordInput
                   value={editForm.password}
-                  onChange={(v) => setEditForm((p) => ({ ...p, password: v }))}
+                  onChange={(v) =>
+                    setEditForm((p) => ({
+                      ...p,
+                      password: v,
+                      confirmPassword: "",
+                    }))
+                  }
                   placeholder="Enter new password"
                   autoComplete="new-password"
                 />
                 <PasswordStrengthBar password={editForm.password} />
               </div>
+
+              {/* Confirm new password — only shown once user starts typing */}
+              {editForm.password.trim() && (
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-medium text-slate-600">
+                    Confirm new password <span className="text-red-400">*</span>
+                  </Label>
+                  <PasswordInput
+                    value={editForm.confirmPassword}
+                    onChange={(v) =>
+                      setEditForm((p) => ({ ...p, confirmPassword: v }))
+                    }
+                    placeholder="Re-enter new password"
+                    autoComplete="new-password"
+                  />
+                  {editForm.confirmPassword &&
+                    editForm.password !== editForm.confirmPassword && (
+                      <p className="text-[11px] text-red-500 flex items-center gap-1">
+                        <span>⚠</span> Passwords do not match
+                      </p>
+                    )}
+                  {editForm.confirmPassword &&
+                    editForm.password === editForm.confirmPassword && (
+                      <p className="text-[11px] text-emerald-600 flex items-center gap-1">
+                        <span>✓</span> Passwords match
+                      </p>
+                    )}
+                </div>
+              )}
             </div>
 
             <div className="space-y-1.5">
@@ -1263,7 +1269,11 @@ export default function AdminUsersPage() {
             </Button>
             <Button
               onClick={handleSaveEdit}
-              disabled={saving}
+              disabled={
+                saving ||
+                (editForm.password.trim() !== "" &&
+                  editForm.password !== editForm.confirmPassword)
+              }
               className="bg-blue-600 hover:bg-blue-700 text-white"
             >
               {saving ? "Saving..." : "Save changes"}

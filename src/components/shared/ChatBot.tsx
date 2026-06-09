@@ -52,7 +52,7 @@ export default function ChatBot() {
     setLoading(true);
 
     try {
-      const res = await fetch("http://localhost:8080/api/chat", {
+      const res = await fetch("http://localhost:808/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: messageText }),
@@ -67,7 +67,7 @@ export default function ChatBot() {
       setMessages((prev) => [
         ...prev,
         {
-          text: "Sorry, I couldn't connect to the server. Please try again.",
+          text: "Sorry, chat service is temporarily unavailable. Please try again later. If you have any inquiries, please contact us directly at info@cicfeeds.lk or 011-5389800 | 011-4830990-3. Thank you.",
           sender: "bot",
           timestamp: getTime(),
         },

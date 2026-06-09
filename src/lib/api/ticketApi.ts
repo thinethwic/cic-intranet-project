@@ -20,6 +20,7 @@ export interface CreateTicketPayload {
     segment: string,
     department: string | null;
     attachments: string | null;
+    submittedByName: string;
 }
 
 export interface UpdateTicketPayload {
