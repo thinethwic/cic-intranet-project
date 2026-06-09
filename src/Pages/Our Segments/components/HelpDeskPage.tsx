@@ -1150,7 +1150,7 @@ export default function HelpDeskPage() {
                   <div className="relative">
                     <Users className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                     <Input
-                      placeholder="Your full name"
+                      placeholder="Your name"
                       value={form.submittedByName}
                       onChange={(e) => {
                         const val = e.target.value;
