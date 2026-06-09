@@ -350,6 +350,11 @@ export default function AdminTicketsPage() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
+  const [pendingStatus, setPendingStatus] = useState<{
+    ticketId: number;
+    status: TicketStatus;
+  } | null>(null);
+
   // ── Refs ─────────────────────────────────────────────────────────────────
   const commentsEndRef = useRef<HTMLDivElement>(null);
   const commentsContainerRef = useRef<HTMLDivElement>(null);
@@ -712,6 +717,10 @@ export default function AdminTicketsPage() {
   };
 
   const handleStatusUpdate = async (ticketId: number, status: TicketStatus) => {
+    if (status === "RESOLVED" || status === "UNRESOLVED") {
+      setPendingStatus({ ticketId, status });
+      return;
+    }
     try {
       const updated = await adminUpdateTicket(ticketId, { status });
       setTickets((prev) =>
@@ -720,6 +729,23 @@ export default function AdminTicketsPage() {
       if (selectedTicket?.id === updated.id) setSelectedTicket(updated);
     } catch (err) {
       console.error("Failed to update status", err);
+    }
+  };
+
+  const confirmStatusUpdate = async () => {
+    if (!pendingStatus) return;
+    try {
+      const updated = await adminUpdateTicket(pendingStatus.ticketId, {
+        status: pendingStatus.status,
+      });
+      setTickets((prev) =>
+        prev.map((t) => (t.id === updated.id ? updated : t)),
+      );
+      if (selectedTicket?.id === updated.id) setSelectedTicket(updated);
+    } catch (err) {
+      console.error("Failed to update status", err);
+    } finally {
+      setPendingStatus(null);
     }
   };
 
@@ -1495,7 +1521,7 @@ export default function AdminTicketsPage() {
                                     : "border-slate-200 bg-white text-slate-500 hover:border-blue-300 hover:text-blue-600"
                               }`}
                             >
-                              {value === "IN_PROGRESS" ? "In Progress" : value}
+                              {STATUS_CONFIG[value].label}
                             </button>
                           );
                         })}
@@ -1809,6 +1835,57 @@ export default function AdminTicketsPage() {
               className="bg-blue-600 text-white hover:bg-blue-700"
             >
               {saving ? "Saving..." : "Save changes"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      {/* ── Status Confirmation Dialog ──────────────────────────────────────── */}
+      <Dialog
+        open={!!pendingStatus}
+        onOpenChange={(o) => {
+          if (!o) setPendingStatus(null);
+        }}
+      >
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <div
+              className={`w-10 h-10 rounded-full flex items-center justify-center mb-2 ${
+                pendingStatus?.status === "RESOLVED"
+                  ? "bg-emerald-50"
+                  : "bg-slate-100"
+              }`}
+            >
+              {pendingStatus?.status === "RESOLVED" ? (
+                <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+              ) : (
+                <AlertCircle className="w-5 h-5 text-slate-500" />
+              )}
+            </div>
+            <DialogTitle>
+              Mark as{" "}
+              {pendingStatus?.status === "RESOLVED" ? "Resolved" : "Unresolved"}
+              ?
+            </DialogTitle>
+            <DialogDescription>
+              {pendingStatus?.status === "RESOLVED"
+                ? "This ticket will be closed. The conversation and editing will be permanently disabled."
+                : "This ticket will be marked as unresolved and closed. The conversation and editing will be permanently disabled."}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPendingStatus(null)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={confirmStatusUpdate}
+              className={
+                pendingStatus?.status === "RESOLVED"
+                  ? "bg-emerald-600 hover:bg-emerald-700 text-white"
+                  : "bg-slate-600 hover:bg-slate-700 text-white"
+              }
+            >
+              Yes, mark as{" "}
+              {pendingStatus?.status === "RESOLVED" ? "Resolved" : "Unresolved"}
             </Button>
           </DialogFooter>
         </DialogContent>

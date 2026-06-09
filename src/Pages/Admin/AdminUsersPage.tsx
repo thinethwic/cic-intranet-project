@@ -338,6 +338,8 @@ export default function AdminUsersPage() {
   const [editDepts, setEditDepts] = useState<Department[]>([]);
   const [editDeptsLoading, setEditDeptsLoading] = useState(false);
 
+  const [toggleUser, setToggleUser] = useState<User | null>(null);
+
   useEffect(() => {
     if (!createForm.segment) {
       setCreateDepts([]);
@@ -568,20 +570,25 @@ export default function AdminUsersPage() {
   };
 
   // ── Toggle active ─────────────────────────────────────────
-  const toggleActive = async (user: User) => {
+  const toggleActive = (user: User) => {
+    setToggleUser(user);
+  };
+
+  const confirmToggleActive = async () => {
+    if (!toggleUser) return;
     try {
       setPageError("");
-      await fetch(`${API}/${user.id}`, {
+      await fetch(`${API}/${toggleUser.id}`, {
         method: "PUT",
         headers: { ...authHeaders(), "Content-Type": "application/json" },
         body: JSON.stringify({
-          username: user.username,
-          name: user.name,
-          email: user.email,
-          role: user.role,
-          active: !user.active,
-          segment: user.segment ?? undefined,
-          department: user.department ?? undefined,
+          username: toggleUser.username,
+          name: toggleUser.name,
+          email: toggleUser.email,
+          role: toggleUser.role,
+          active: !toggleUser.active,
+          segment: toggleUser.segment ?? undefined,
+          department: toggleUser.department ?? undefined,
         }),
       });
       await fetchUsers();
@@ -593,6 +600,8 @@ export default function AdminUsersPage() {
           "Unable to update the user's active status.",
         ),
       );
+    } finally {
+      setToggleUser(null);
     }
   };
 
@@ -1303,6 +1312,53 @@ export default function AdminUsersPage() {
               disabled={saving}
             >
               {saving ? "Deleting..." : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Toggle Active Confirmation Dialog ──────────────────────────────── */}
+      <Dialog
+        open={!!toggleUser}
+        onOpenChange={(o) => {
+          if (!o) setToggleUser(null);
+        }}
+      >
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <div
+              className={`w-10 h-10 rounded-full flex items-center justify-center mb-2 ${
+                toggleUser?.active ? "bg-red-50" : "bg-emerald-50"
+              }`}
+            >
+              {toggleUser?.active ? (
+                <UserX className="w-5 h-5 text-red-600" />
+              ) : (
+                <UserCheck className="w-5 h-5 text-emerald-600" />
+              )}
+            </div>
+            <DialogTitle>
+              {toggleUser?.active ? "Deactivate account?" : "Activate account?"}
+            </DialogTitle>
+            <DialogDescription>
+              {toggleUser?.active
+                ? `"${toggleUser?.name}" will no longer be able to log in. You can reactivate them at any time.`
+                : `"${toggleUser?.name}" will be able to log in again.`}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setToggleUser(null)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={confirmToggleActive}
+              className={
+                toggleUser?.active
+                  ? "bg-red-600 hover:bg-red-700 text-white"
+                  : "bg-emerald-600 hover:bg-emerald-700 text-white"
+              }
+            >
+              {toggleUser?.active ? "Yes, deactivate" : "Yes, activate"}
             </Button>
           </DialogFooter>
         </DialogContent>
