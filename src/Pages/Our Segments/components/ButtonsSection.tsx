@@ -17,7 +17,7 @@ export default function ButtonsSection({ segment }: ButtonsSectionProps) {
     {
       label: "Asset Management",
       icon: BriefcaseBusiness,
-      link: "https://cicinventory.netlify.app/",
+      link: "http://192.168.120.10:81/",
     },
   ];
 
