@@ -47,16 +47,57 @@
     --radius-3xl: calc(var(--radius) * 2.2);
     --radius-4xl: calc(var(--radius) * 2.6);
     --custom-colour: oklch(37.9% 0.146 265.522);
+
+    /* ── CIC Brand Color Utilities ─────────────────── */
+    --color-cic-50:  var(--cic-50);
+    --color-cic-100: var(--cic-100);
+    --color-cic-200: var(--cic-200);
+    --color-cic-300: var(--cic-300);
+    --color-cic-400: var(--cic-400);
+    --color-cic-500: var(--cic-500);
+    --color-cic-600: var(--cic-600);
+    --color-cic-700: var(--cic-700);
+    --color-cic-800: var(--cic-800);
+    --color-cic-900: var(--cic-900);
+
+    /* ── Status Badge Utilities ─────────────────────── */
+    --color-status-open-bg:         var(--status-open-bg);
+    --color-status-open-fg:         var(--status-open-fg);
+    --color-status-open-border:     var(--status-open-border);
+    --color-status-progress-bg:     var(--status-progress-bg);
+    --color-status-progress-fg:     var(--status-progress-fg);
+    --color-status-progress-border: var(--status-progress-border);
+    --color-status-resolved-bg:     var(--status-resolved-bg);
+    --color-status-resolved-fg:     var(--status-resolved-fg);
+    --color-status-resolved-border: var(--status-resolved-border);
+    --color-status-closed-bg:       var(--status-closed-bg);
+    --color-status-closed-fg:       var(--status-closed-fg);
+    --color-status-closed-border:   var(--status-closed-border);
+    --color-status-critical-bg:     var(--status-critical-bg);
+    --color-status-critical-fg:     var(--status-critical-fg);
+    --color-status-critical-border: var(--status-critical-border);
+
+    /* ── Surface Elevation Utilities ───────────────── */
+    --color-surface-base:     var(--surface-base);
+    --color-surface-subtle:   var(--surface-subtle);
+    --color-surface-muted:    var(--surface-muted);
+    --color-surface-emphasis: var(--surface-emphasis);
+
+    /* ── Named Shadow Tokens ────────────────────────── */
+    --shadow-card:       0 1px 3px 0 oklch(0 0 0 / 0.07), 0 1px 2px -1px oklch(0 0 0 / 0.06);
+    --shadow-card-hover: 0 4px 12px 0 oklch(0 0 0 / 0.10), 0 2px 4px -2px oklch(0 0 0 / 0.07);
+    --shadow-modal:      0 20px 25px -5px oklch(0 0 0 / 0.12), 0 8px 10px -6px oklch(0 0 0 / 0.07);
+    --shadow-dropdown:   0 4px 6px -1px oklch(0 0 0 / 0.08), 0 2px 4px -2px oklch(0 0 0 / 0.05);
 }
 
 :root {
-    --background: oklch(1 0 0);
+    --background: oklch(0.984 0.004 264);
     --foreground: oklch(0.153 0.006 107.1);
     --card: oklch(1 0 0);
     --card-foreground: oklch(0.153 0.006 107.1);
     --popover: oklch(1 0 0);
     --popover-foreground: oklch(0.153 0.006 107.1);
-    --primary: oklch(0.488 0.243 264.376);
+    --primary: oklch(0.456 0.200 264);
     --primary-foreground: oklch(0.97 0.014 254.604);
     --secondary: oklch(0.967 0.001 286.375);
     --secondary-foreground: oklch(0.21 0.006 285.885);
@@ -82,6 +123,41 @@
     --sidebar-accent-foreground: oklch(0.228 0.013 107.4);
     --sidebar-border: oklch(0.93 0.007 106.5);
     --sidebar-ring: oklch(0.737 0.021 106.9);
+
+    /* ── CIC Brand Blues ────────────────────────────── */
+    --cic-50:  oklch(0.972 0.016 264);
+    --cic-100: oklch(0.930 0.036 264);
+    --cic-200: oklch(0.862 0.072 264);
+    --cic-300: oklch(0.760 0.115 264);
+    --cic-400: oklch(0.638 0.148 264);
+    --cic-500: oklch(0.520 0.188 264);
+    --cic-600: oklch(0.456 0.200 264);
+    --cic-700: oklch(0.416 0.168 264);
+    --cic-800: oklch(0.380 0.148 264);
+    --cic-900: oklch(0.342 0.128 264);
+
+    /* ── Status Semantic Colors ─────────────────────── */
+    --status-open-bg:          oklch(0.960 0.030 264);
+    --status-open-fg:          oklch(0.380 0.148 264);
+    --status-open-border:      oklch(0.862 0.072 264);
+    --status-progress-bg:      oklch(0.978 0.044 85);
+    --status-progress-fg:      oklch(0.550 0.162 85);
+    --status-progress-border:  oklch(0.900 0.090 85);
+    --status-resolved-bg:      oklch(0.962 0.036 155);
+    --status-resolved-fg:      oklch(0.430 0.142 155);
+    --status-resolved-border:  oklch(0.880 0.078 155);
+    --status-closed-bg:        oklch(0.960 0.006 264);
+    --status-closed-fg:        oklch(0.450 0.018 264);
+    --status-closed-border:    oklch(0.890 0.012 264);
+    --status-critical-bg:      oklch(0.964 0.035 27);
+    --status-critical-fg:      oklch(0.450 0.180 27);
+    --status-critical-border:  oklch(0.876 0.076 27);
+
+    /* ── Surface Elevation ──────────────────────────── */
+    --surface-base:     oklch(1 0 0);
+    --surface-subtle:   oklch(0.984 0.004 264);
+    --surface-muted:    oklch(0.962 0.007 264);
+    --surface-emphasis: oklch(0.940 0.010 264);
 }
 
 .dark {

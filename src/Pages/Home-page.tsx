@@ -65,7 +65,7 @@ function FeaturedNewsSkeleton() {
           {Array.from({ length: 3 }).map((_, i) => (
             <div key={i}>
               <div className="flex gap-4 py-4">
-                <Skeleton className="w-28 h-20 rounded-md flex-shrink-0 bg-white" />
+                <Skeleton className="w-28 h-20 rounded-md shrink-0 bg-white" />
                 <div className="flex-1 space-y-2">
                   <Skeleton className="h-4 w-full bg-white" />
                   <Skeleton className="h-4 w-2/3 bg-white" />
@@ -153,13 +153,13 @@ function VideoSkeleton() {
 
 function AnnouncementsSkeleton() {
   return (
-    <div className="divide-y divide-blue-800">
+    <div className="divide-y divide-slate-100">
       {Array.from({ length: 4 }).map((_, i) => (
         <div key={i} className="flex items-center gap-3 px-4 py-3">
-          <Skeleton className="w-16 h-14 rounded-lg flex-shrink-0 bg-blue-700/60" />
+          <Skeleton className="w-16 h-14 rounded-lg shrink-0 bg-slate-100" />
           <div className="flex-1 space-y-2">
-            <Skeleton className="h-4 w-full bg-blue-700/60" />
-            <Skeleton className="h-3 w-2/3 bg-blue-700/60" />
+            <Skeleton className="h-4 w-full bg-slate-100" />
+            <Skeleton className="h-3 w-2/3 bg-slate-100" />
           </div>
         </div>
       ))}
@@ -172,7 +172,7 @@ function PinnedDocsSkeleton() {
     <div className="divide-y divide-slate-100">
       {Array.from({ length: 5 }).map((_, i) => (
         <div key={i} className="flex items-center gap-3 px-4 py-3">
-          <Skeleton className="w-9 h-9 rounded-lg flex-shrink-0" />
+          <Skeleton className="w-9 h-9 rounded-lg shrink-0" />
           <div className="flex-1 space-y-2">
             <Skeleton className="h-4 w-3/4" />
             <Skeleton className="h-3 w-1/3" />
@@ -449,7 +449,7 @@ function HomePage() {
       <HeroSection />
 
       {/* News + Alert */}
-      <section className="bg-[#0E4E96] max-w-full mx-auto px-2 py-4">
+      <section className="bg-cic-800 max-w-full mx-auto px-2 py-4">
         <div className="flex flex-col md:flex-row gap-3">
           <div className="w-full md:w-3/4">
             {newsLoading ? (
@@ -482,10 +482,10 @@ function HomePage() {
           {/* ── LEFT: Upcoming Events + Calendar ─────────────────────────── */}
           <div className="flex flex-col gap-4">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-blue-900 flex items-center justify-center flex-shrink-0">
+              <div className="w-8 h-8 rounded-lg bg-cic-900 flex items-center justify-center shrink-0">
                 <CalendarDays className="w-4 h-4 text-white" />
               </div>
-              <h2 className="text-xl sm:text-3xl font-bold text-blue-900 tracking-tight">
+              <h2 className="text-xl sm:text-2xl font-bold text-cic-900 tracking-tight">
                 Upcoming Events
               </h2>
             </div>
@@ -494,11 +494,11 @@ function HomePage() {
               {/* Events list */}
               <div className="flex-1 min-w-0 flex flex-col min-h-[200px] sm:h-full">
                 <div className="bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col h-full overflow-hidden">
-                  <div className="px-4 py-3 border-b border-slate-100 bg-slate-50/80 flex-shrink-0">
+                  <div className="px-4 py-3 border-b border-slate-100 bg-slate-50/80 shrink-0">
                     <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest">
                       Events
                     </p>
-                    <p className="text-[11px] text-slate-400 mt-0.5">
+                    <p className="text-xs text-slate-400 mt-0.5">
                       {date?.toLocaleDateString("en-GB", {
                         weekday: "long",
                         day: "numeric",
@@ -509,7 +509,7 @@ function HomePage() {
                   <div className="overflow-y-auto flex-1 p-3 space-y-2">
                     {eventsLoading ? (
                       <div className="h-full flex items-center justify-center py-8">
-                        <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                        <div className="w-5 h-5 border-2 border-cic-600 border-t-transparent rounded-full animate-spin" />
                       </div>
                     ) : filteredEvents.length > 0 ? (
                       filteredEvents.map((event) => {
@@ -543,7 +543,7 @@ function HomePage() {
               </div>
 
               {/* Calendar */}
-              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-3 w-full sm:w-[260px] sm:flex-shrink-0">
+              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-3 w-full sm:w-[260px] sm:shrink-0">
                 <Calendar
                   mode="single"
                   selected={date}
@@ -554,7 +554,7 @@ function HomePage() {
                   }}
                   modifiersClassNames={{
                     hasEvent:
-                      "bg-blue-100 text-blue-800 rounded-full font-bold",
+                      "bg-cic-100 text-cic-800 rounded-full font-bold",
                   }}
                   classNames={{
                     month: "w-full",
@@ -562,8 +562,8 @@ function HomePage() {
                     weekdays: "w-full",
                     week: "w-full",
                     day: "flex-1 text-center",
-                    day_selected: "bg-blue-900 text-white rounded-full",
-                    day_today: "font-bold text-blue-900",
+                    day_selected: "bg-cic-900 text-white rounded-full",
+                    day_today: "font-bold text-cic-900",
                   }}
                 />
               </div>
@@ -574,10 +574,10 @@ function HomePage() {
           <div className="flex flex-col gap-4">
             <div className="flex items-center justify-between flex-wrap gap-3">
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-blue-900 flex items-center justify-center flex-shrink-0">
+                <div className="w-8 h-8 rounded-lg bg-cic-900 flex items-center justify-center shrink-0">
                   <FileText className="w-4 h-4 text-white" />
                 </div>
-                <h2 className="text-xl sm:text-3xl font-bold text-blue-900 tracking-tight">
+                <h2 className="text-xl sm:text-2xl font-bold text-cic-900 tracking-tight">
                   Document Center
                 </h2>
               </div>
@@ -586,7 +586,7 @@ function HomePage() {
                   onClick={() => setShowPrivate(false)}
                   className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border transition-all ${
                     !showPrivate
-                      ? "bg-blue-900 text-white border-blue-900 shadow-sm"
+                      ? "bg-cic-900 text-white border-cic-900 shadow-sm"
                       : "bg-white text-slate-500 border-slate-200 hover:border-slate-300"
                   }`}
                 >
@@ -628,10 +628,10 @@ function HomePage() {
                     <button
                       key={tab}
                       onClick={() => setActiveTab(tab)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all whitespace-nowrap flex-shrink-0 ${
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all whitespace-nowrap shrink-0 ${
                         activeTab === tab
-                          ? "bg-blue-900 text-white border-blue-900 shadow-sm"
-                          : "bg-white text-slate-500 border-slate-200 hover:border-blue-200 hover:text-blue-700"
+                          ? "bg-cic-900 text-white border-cic-900 shadow-sm"
+                          : "bg-white text-slate-500 border-slate-200 hover:border-cic-200 hover:text-cic-700"
                       }`}
                     >
                       {tab}
@@ -644,7 +644,7 @@ function HomePage() {
             {/* Document grid with pagination */}
             {docsLoading ? (
               <div className="py-12 flex flex-col items-center gap-3">
-                <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                <div className="w-6 h-6 border-2 border-cic-600 border-t-transparent rounded-full animate-spin" />
                 <p className="text-sm text-slate-400">Loading documents...</p>
               </div>
             ) : (
@@ -659,7 +659,7 @@ function HomePage() {
       </section>
 
       {/* ── Announcements (left) + Pinned For You (center) + Top Management (right) ── */}
-      <section className="bg-[#0E4E96] max-w-full mx-auto px-6 sm:px-8 py-4 sm:py-4">
+      <section className="bg-cic-800 max-w-full mx-auto px-6 sm:px-8 py-4 sm:py-4">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
           {/* ── LEFT: Announcements ───────────────────────────────────────── */}
           <div
@@ -674,14 +674,14 @@ function HomePage() {
             }}
           >
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-[#0E4E96] flex items-center justify-center flex-shrink-0">
+              <div className="w-8 h-8 rounded-lg bg-cic-900 flex items-center justify-center shrink-0">
                 <Bell className="w-4 h-4 text-white" />
               </div>
               <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
                 Announcements
               </h2>
               {announcements.length > 0 && (
-                <span className="text-[11px] font-semibold bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
+                <span className="text-xs font-semibold bg-cic-100 text-cic-700 px-2 py-0.5 rounded-full">
                   {announcements.length}
                 </span>
               )}
@@ -692,40 +692,40 @@ function HomePage() {
                 <AnnouncementsSkeleton />
               ) : announcements.length === 0 ? (
                 <div className="px-5 py-10 flex flex-col items-center justify-center gap-2">
-                  <Bell className="w-8 h-8 text-blue-300" />
-                  <p className="text-sm text-blue-200">
+                  <Bell className="w-8 h-8 text-slate-300" />
+                  <p className="text-sm text-slate-400">
                     No announcements at this time
                   </p>
                 </div>
               ) : (
-                <div className="divide-y divide-blue-800">
+                <div className="divide-y divide-slate-100">
                   {(showAllAnnouncements
                     ? announcements
                     : announcements.slice(0, 4)
                   ).map((a) => (
                     <div
                       key={a.id}
-                      className="flex items-center gap-3 px-4 py-3 hover:bg-blue-50 transition-colors cursor-pointer"
+                      className="flex items-center gap-3 px-4 py-3 hover:bg-cic-50 transition-colors cursor-pointer"
                     >
                       {/* Thumbnail */}
                       {a.image ? (
                         <img
                           src={a.image}
                           alt={a.title}
-                          className="w-16 h-14 rounded-lg object-cover flex-shrink-0"
+                          className="w-16 h-14 rounded-lg object-cover shrink-0"
                         />
                       ) : (
-                        <div className="w-16 h-14 rounded-lg bg-white flex items-center justify-center flex-shrink-0">
-                          <Bell className="w-5 h-5 text-[#0E4E96]" />
+                        <div className="w-16 h-14 rounded-lg bg-white flex items-center justify-center shrink-0">
+                          <Bell className="w-5 h-5 text-cic-800" />
                         </div>
                       )}
                       {/* Text */}
                       <div className="min-w-0">
-                        <p className="text-sm font-semibold text-[#0E4E96] leading-snug line-clamp-2">
+                        <p className="text-sm font-semibold text-cic-800 leading-snug line-clamp-2">
                           {a.title}
                         </p>
                         {(a.time || a.location) && (
-                          <p className="text-xs text-blue-200 mt-0.5">
+                          <p className="text-xs text-slate-500 mt-0.5">
                             {[a.time, a.location].filter(Boolean).join(" · ")}
                           </p>
                         )}
@@ -739,7 +739,7 @@ function HomePage() {
               {announcements.length > 4 && (
                 <button
                   onClick={() => setShowAllAnnouncements((prev) => !prev)}
-                  className="w-full py-2.5 text-xs font-semibold text-blue-200 hover:text-white hover:bg-blue-800 transition-colors flex items-center justify-center gap-1 border-t border-blue-800"
+                  className="w-full py-2.5 text-xs font-semibold text-cic-700 hover:text-cic-900 hover:bg-cic-50 transition-colors flex items-center justify-center gap-1 border-t border-slate-100"
                 >
                   {showAllAnnouncements ? (
                     <>
@@ -768,7 +768,7 @@ function HomePage() {
             }}
           >
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-amber-500 flex items-center justify-center flex-shrink-0">
+              <div className="w-8 h-8 rounded-lg bg-amber-500 flex items-center justify-center shrink-0">
                 <Pin className="w-4 h-4 text-white" />
               </div>
               <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
@@ -777,6 +777,11 @@ function HomePage() {
             </div>
 
             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+              <div className="px-4 py-3 border-b border-slate-100 bg-slate-50/80">
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest">
+                  Pinned Documents
+                </p>
+              </div>
               {docsLoading ? (
                 <PinnedDocsSkeleton />
               ) : pinnedDocs.length === 0 ? (
@@ -789,7 +794,7 @@ function HomePage() {
                   {pinnedDocs.slice(0, 5).map((doc) => (
                     <div
                       key={doc.id}
-                      className="px-4 py-3 hover:bg-slate-50 transition-colors"
+                      className="px-4 py-3 hover:bg-cic-50 transition-colors cursor-pointer"
                     >
                       <PinnedCard title={doc.title} category={doc.category} />
                     </div>
@@ -812,15 +817,15 @@ function HomePage() {
             }}
           >
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center flex-shrink-0">
-                <Users className="w-4 h-4 text-blue-900" />
+              <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center shrink-0">
+                <Users className="w-4 h-4 text-cic-900" />
               </div>
               <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
                 Top Management
               </h2>
             </div>
 
-            <div className="bg-[#f7f7f7] rounded-2xl overflow-hidden shadow-sm">
+            <div className="bg-surface-muted rounded-2xl overflow-hidden shadow-sm">
               <TopManagementCarousel />
             </div>
           </div>
@@ -829,8 +834,8 @@ function HomePage() {
 
       {/* Birthdays */}
       <section className="max-w-full mx-auto px-6 sm:px-8 py-4 sm:py-4">
-        <h2 className="text-4xl font-bold text-blue-900 mb-6">Birthdays</h2>
-        <div className="w-12 h-0.5 bg-blue-900 rounded mb-5" />
+        <h2 className="text-2xl sm:text-3xl font-bold text-cic-900 mb-4">Birthdays</h2>
+        <div className="w-12 h-0.5 bg-cic-900 rounded mb-5" />
         {membersLoading ? (
           <BirthdaySkeleton />
         ) : membersError ? (
@@ -858,16 +863,16 @@ function HomePage() {
           style={{ gridTemplateColumns: "1fr 350px" }}
         >
           <div>
-            <h2 className="text-4xl font-bold text-blue-900 mb-6">
+            <h2 className="text-2xl sm:text-3xl font-bold text-cic-900 mb-4">
               Welcome to CIC Feeds Group
             </h2>
-            <div className="w-12 h-0.5 bg-blue-900 rounded mb-5" />
+            <div className="w-12 h-0.5 bg-cic-900 rounded mb-5" />
             {membersLoading ? (
               <CarouselSkeleton />
             ) : membersError ? (
               <InlineErrorAlert message={membersError} />
             ) : recentMembers.length === 0 ? (
-              <p className="text-sm text-gray-400 py-6 text-center">
+              <p className="text-sm text-slate-400 py-6 text-center">
                 No new members
               </p>
             ) : (
@@ -881,7 +886,7 @@ function HomePage() {
       </section>
 
       {/* ── Vision / Mission ──────────────────────────────────────────────── */}
-      <section className="bg-[#0E4E96] max-w-full mx-auto px-2 py-4">
+      <section className="bg-cic-800 max-w-full mx-auto px-2 py-4">
         <div className="rounded-tr-[80px] rounded-bl-[80px] overflow-hidden relative">
           {/* ── VISION ─────────────────────────────────────────────────────── */}
           <div
@@ -897,8 +902,12 @@ function HomePage() {
           >
             {/* Left — Text */}
             <div className="px-10 py-12 md:py-16">
-              <h2 className="text-4xl font-bold text-white mb-5">OUR Vision</h2>
-              <p className="text-blue-100 leading-relaxed text-sm font-medium">
+              <span className="inline-block text-xs font-semibold text-cic-300 uppercase tracking-[0.15em] mb-3">
+                Who We Are
+              </span>
+              <h2 className="text-2xl sm:text-3xl font-bold text-white mb-3">OUR Vision</h2>
+              <div className="w-10 h-0.5 bg-cic-300/60 rounded mb-5" />
+              <p className="text-cic-100 leading-relaxed text-sm font-medium">
                 To raise living standards around the country by delivering
                 increased value to producers and consumers while optimizing
                 benefits to our customers, shareholders, employees and other
@@ -919,7 +928,7 @@ function HomePage() {
               }}
             >
               {/* Back image — offset top-right */}
-              <div className="absolute top-4 right-4 w-60 h-50 rounded-2xl overflow-hidden opacity-60 z-0">
+              <div className="absolute top-4 right-4 w-60 h-50 rounded-2xl overflow-hidden opacity-40 z-0">
                 <img
                   src={visionImg}
                   className="w-full h-full object-cover"
@@ -927,7 +936,7 @@ function HomePage() {
                 />
               </div>
               {/* Front image — offset bottom-left */}
-              <div className="absolute bottom-4 right-16 w-70 h-50 rounded-2xl overflow-hidden z-10 shadow-xl">
+              <div className="absolute bottom-4 right-16 w-70 h-50 rounded-2xl overflow-hidden z-10 shadow-2xl ring-2 ring-white/10">
                 <img
                   src={visionImg}
                   className="w-full h-full object-cover"
@@ -938,7 +947,15 @@ function HomePage() {
           </div>
 
           {/* Divider */}
-          <div className="mx-10 h-px bg-blue-700" />
+          <div className="flex items-center gap-3 mx-10">
+            <div className="flex-1 h-px bg-cic-700/50" />
+            <div className="flex gap-1.5">
+              <div className="w-1 h-1 rounded-full bg-cic-400/50" />
+              <div className="w-1.5 h-1.5 rounded-full bg-cic-300/60" />
+              <div className="w-1 h-1 rounded-full bg-cic-400/50" />
+            </div>
+            <div className="flex-1 h-px bg-cic-700/50" />
+          </div>
 
           {/* ── MISSION ────────────────────────────────────────────────────── */}
           <div
@@ -965,7 +982,7 @@ function HomePage() {
               }}
             >
               {/* Back image — offset top-left */}
-              <div className="absolute top-4 left-4 w-60 h-50 rounded-2xl overflow-hidden opacity-60 z-0">
+              <div className="absolute top-4 left-4 w-60 h-50 rounded-2xl overflow-hidden opacity-40 z-0">
                 <img
                   src={missionImg}
                   className="w-full h-full object-cover"
@@ -973,7 +990,7 @@ function HomePage() {
                 />
               </div>
               {/* Front image — offset bottom-right */}
-              <div className="absolute bottom-4 left-16 w-70 h-50 rounded-2xl overflow-hidden z-10 shadow-xl">
+              <div className="absolute bottom-4 left-16 w-70 h-50 rounded-2xl overflow-hidden z-10 shadow-2xl ring-2 ring-white/10">
                 <img
                   src={missionImg}
                   className="w-full h-full object-cover"
@@ -984,10 +1001,14 @@ function HomePage() {
 
             {/* Right — Text */}
             <div className="px-10 py-12 md:py-16 order-1 md:order-2 text-right">
-              <h2 className="text-4xl font-bold text-white mb-5">
+              <span className="inline-block text-xs font-semibold text-cic-300 uppercase tracking-[0.15em] mb-3">
+                Our Purpose
+              </span>
+              <h2 className="text-2xl sm:text-3xl font-bold text-white mb-3">
                 OUR Mission
               </h2>
-              <p className="text-blue-100 leading-relaxed text-sm font-medium">
+              <div className="w-10 h-0.5 bg-cic-300/60 rounded mb-5 ml-auto" />
+              <p className="text-cic-100 leading-relaxed text-sm font-medium">
                 To become the national leader in providing products, services
                 and expertise for the growth and care of livestock by
                 understanding, creating and communicating superior value for our
@@ -1002,8 +1023,8 @@ function HomePage() {
 
       {/* Videos */}
       <section className="max-w-full mx-auto px-6 sm:px-8 py-4 sm:py-4">
-        <h2 className="text-4xl font-bold text-blue-900 mb-6">Video</h2>
-        <div className="w-12 h-0.5 bg-blue-900 rounded mb-5" />
+        <h2 className="text-2xl sm:text-3xl font-bold text-cic-900 mb-4">Video</h2>
+        <div className="w-12 h-0.5 bg-cic-900 rounded mb-5" />
         {videosLoading ? (
           <VideoSkeleton />
         ) : videosError ? (
@@ -1070,12 +1091,12 @@ function HomePage() {
             <div className="flex justify-center pt-3 pb-1 sm:hidden">
               <div className="w-10 h-1 bg-slate-200 rounded-full" />
             </div>
-            <div className="bg-gradient-to-br from-blue-900 to-blue-800 px-6 py-5">
+            <div className="bg-linear-to-br from-cic-900 to-cic-800 px-6 py-5">
               <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center mb-3">
                 <LockIcon className="w-5 h-5 text-white" />
               </div>
               <p className="font-semibold text-white">Private Access</p>
-              <p className="text-xs text-blue-200 mt-0.5">
+              <p className="text-xs text-cic-200 mt-0.5">
                 Enter your credentials to continue
               </p>
             </div>
@@ -1086,7 +1107,7 @@ function HomePage() {
                 </label>
                 <input
                   placeholder="your@email.com"
-                  className="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition-all"
+                  className="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-cic-500/30 focus:border-cic-400 transition-all"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                 />
@@ -1098,7 +1119,7 @@ function HomePage() {
                 <input
                   type="password"
                   placeholder="••••••••"
-                  className="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition-all"
+                  className="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-cic-500/30 focus:border-cic-400 transition-all"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                 />
@@ -1124,7 +1145,7 @@ function HomePage() {
               <button
                 onClick={handleAuthorizedLogin}
                 disabled={authLoading}
-                className="flex-1 bg-blue-900 hover:bg-blue-800 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors disabled:opacity-50"
+                className="flex-1 bg-cic-900 hover:bg-cic-800 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors disabled:opacity-50"
               >
                 {authLoading ? "Signing in..." : "Sign in"}
               </button>

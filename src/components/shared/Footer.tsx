@@ -18,7 +18,7 @@ const segments = [
 
 export default function Footer() {
   return (
-    <footer className="bg-[#3a3a3a] text-gray-300">
+    <footer className="bg-slate-800 text-slate-300">
       <div className="max-w-full mx-auto px-6 sm:px-8 py-4 sm:py-4">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           {/* Logo */}
@@ -47,7 +47,7 @@ export default function Footer() {
                 <li key={link}>
                   <a
                     href={path}
-                    className="text-sm text-gray-300 hover:text-white transition-colors duration-200"
+                    className="text-sm text-slate-300 hover:text-white transition-colors duration-200"
                   >
                     {link}
                   </a>
@@ -63,33 +63,33 @@ export default function Footer() {
             </h3>
             <ul className="space-y-3">
               <li className="flex items-start gap-2">
-                <MapPin className="w-4 h-4 mt-0.5 text-gray-400 flex-shrink-0" />
+                <MapPin className="w-4 h-4 mt-0.5 text-slate-400 shrink-0" />
                 <p className="text-sm text-gray-300">
                   No. 252, Kurunduwatte Road, Ekala
                 </p>
               </li>
               <li className="flex items-center gap-2">
-                <Mail className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                <Mail className="w-4 h-4 text-slate-400 shrink-0" />
                 <a
                   href="mailto:info@cicfeeds.lk"
-                  className="text-sm text-blue-400 hover:text-blue-300 underline underline-offset-2 transition-colors duration-200"
+                  className="text-sm text-cic-300 hover:text-cic-100 underline underline-offset-2 transition-colors duration-200"
                 >
                   info@cicfeeds.lk
                 </a>
               </li>
               <li className="flex items-center gap-2">
-                <Phone className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                <Phone className="w-4 h-4 text-slate-400 shrink-0" />
                 <p className="text-sm text-gray-300">
                   011-5389800 | 011-4830990-3
                 </p>
               </li>
               <li className="flex items-center gap-2">
-                <Globe className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                <Globe className="w-4 h-4 text-slate-400 shrink-0" />
                 <a
                   href="https://www.cic.lk/"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-sm text-gray-300 hover:text-white transition-colors duration-200"
+                  className="text-sm text-slate-300 hover:text-white transition-colors duration-200"
                 >
                   www.cicfeeds.lk
                 </a>
@@ -107,7 +107,7 @@ export default function Footer() {
                 <li key={label}>
                   <a
                     href={path}
-                    className="text-sm text-gray-300 hover:text-white transition-colors duration-200"
+                    className="text-sm text-slate-300 hover:text-white transition-colors duration-200"
                   >
                     {label}
                   </a>
@@ -118,11 +118,11 @@ export default function Footer() {
         </div>
 
         {/* Divider */}
-        <Separator className="my-8 bg-gray-500/50" />
+        <Separator className="my-8 bg-slate-600/50" />
 
         {/* Bottom Bar */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-sm text-gray-400 text-center sm:text-left">
+          <p className="text-sm text-slate-400 text-center sm:text-left">
             Design by CIC Feeds Group IT | Copyright © 2026 CIC Feeds Group
           </p>
 
@@ -132,7 +132,7 @@ export default function Footer() {
             <a
               href="https://web.facebook.com/cicfeedsgrp"
               aria-label="Facebook"
-              className="text-gray-400 hover:text-white transition-colors duration-200"
+              className="text-slate-400 hover:text-white transition-colors duration-200"
             >
               <FaFacebook className="w-7 h-7" />
             </a>
@@ -141,7 +141,7 @@ export default function Footer() {
             <a
               href="https://youtube.com/@cicfeedsgroup"
               aria-label="X"
-              className="text-gray-400 hover:text-white transition-colors duration-200"
+              className="text-slate-400 hover:text-white transition-colors duration-200"
             >
               <FaYoutube className="w-7 h-7" />
             </a>
@@ -150,7 +150,7 @@ export default function Footer() {
             <a
               href="https://www.linkedin.com/company/cic-feeds-group"
               aria-label="LinkedIn"
-              className="text-gray-400 hover:text-white transition-colors duration-200"
+              className="text-slate-400 hover:text-white transition-colors duration-200"
             >
               <FaLinkedin className="w-7 h-7" />
             </a>

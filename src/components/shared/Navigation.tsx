@@ -57,7 +57,7 @@ export default function Navbar() {
       <nav
         onMouseEnter={() => setVisible(true)}
         onMouseLeave={() => !pinned && !isScrolled.current && setVisible(false)}
-        className={`fixed top-0 left-0 right-0 z-50 bg-white shadow-md border-b border-blue-100
+        className={`fixed top-0 left-0 right-0 z-50 bg-white shadow-card border-b border-slate-100
           transition-transform duration-300 ease-in-out
           ${visible ? "translate-y-0" : "-translate-y-full"}
         `}
@@ -96,7 +96,7 @@ export default function Navbar() {
                   <Link
                     key={dept}
                     to={`/${dept.toLowerCase()}`}
-                    className="text-gray-700 font-medium hover:text-blue-600 transition-colors flex items-center gap-1"
+                    className="text-slate-600 font-medium hover:text-cic-700 transition-colors flex items-center gap-1"
                   >
                     {dept}
                     <ChevronDown size={16} className="opacity-60" />
@@ -106,7 +106,7 @@ export default function Navbar() {
                 {/* Settings Icon */}
                 <button
                   aria-label="Settings"
-                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                  className="p-2 hover:bg-surface-muted rounded-full transition-colors"
                 >
                   <Plus size={20} className="text-gray-600" />
                 </button>
@@ -117,14 +117,14 @@ export default function Navbar() {
             <div className="relative">
               <button
                 onClick={() => setCompanyOpen(!companyOpen)}
-                className="hidden sm:flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-full hover:bg-gray-50 transition-colors"
+                className="hidden sm:flex items-center gap-2 px-4 py-2 border border-slate-200 rounded-full hover:bg-surface-subtle transition-colors"
               >
-                <span className="text-sm font-medium text-gray-700">
+                <span className="text-sm font-medium text-slate-700">
                   {selectedCompany}
                 </span>
                 <ChevronDown
                   size={18}
-                  className={`text-gray-600 transition-transform ${
+                  className={`text-slate-500 transition-transform ${
                     companyOpen ? "rotate-180" : ""
                   }`}
                 />
@@ -132,7 +132,7 @@ export default function Navbar() {
 
               {/* Dropdown */}
               {companyOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+                <div className="absolute right-0 mt-2 w-48 bg-white border border-slate-100 rounded-xl shadow-dropdown z-50">
                   {COMPANIES.map((company) => (
                     <button
                       key={company}
@@ -140,10 +140,10 @@ export default function Navbar() {
                         setSelectedCompany(company);
                         setCompanyOpen(false);
                       }}
-                      className={`w-full text-left px-4 py-2 hover:bg-blue-50 transition-colors ${
+                      className={`w-full text-left px-4 py-2 hover:bg-cic-50 transition-colors ${
                         selectedCompany === company
-                          ? "text-blue-600 font-medium bg-blue-50"
-                          : "text-gray-700"
+                          ? "text-cic-700 font-medium bg-cic-50"
+                          : "text-slate-700"
                       }`}
                     >
                       {company}

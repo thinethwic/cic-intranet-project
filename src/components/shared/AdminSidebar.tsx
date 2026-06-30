@@ -166,7 +166,7 @@ export default function AdminSidebar() {
             />
           </Link>
           <div>
-            <p className="text-sm font-semibold text-black leading-none">
+            <p className="text-sm font-semibold text-slate-100 leading-none">
               CIC Intranet
             </p>
             <p className="text-[10px] text-slate-400 mt-0.5 leading-none">
@@ -193,7 +193,7 @@ export default function AdminSidebar() {
                         className={`group flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm w-full transition-all duration-150
                           ${
                             isActive(item.path)
-                              ? "bg-blue-600 text-white shadow-md shadow-blue-600/20"
+                              ? "bg-cic-700 text-white shadow-sm shadow-cic-900/30"
                               : "text-slate-400 hover:bg-slate-800 hover:text-slate-100"
                           }`}
                       >
@@ -235,7 +235,7 @@ export default function AdminSidebar() {
                                 return `flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-colors
     ${
       active
-        ? "text-blue-400"
+        ? "text-cic-300"
         : "text-slate-500 hover:text-slate-200 hover:bg-slate-800"
     }`;
                               }}
@@ -255,7 +255,7 @@ export default function AdminSidebar() {
                         transition-all duration-150
                         ${
                           isActive(item.path)
-                            ? "bg-blue-600 text-white shadow-md shadow-blue-600/20"
+                            ? "bg-cic-700 text-white shadow-sm shadow-cic-900/30"
                             : "text-slate-400 hover:bg-slate-800 hover:text-slate-100"
                         }`}
                     >
@@ -288,7 +288,7 @@ export default function AdminSidebar() {
       <SidebarFooter className="px-4 py-4 border-t border-slate-700/60">
         <div className="flex items-center gap-3">
           <Avatar className="w-8 h-8 shrink-0">
-            <AvatarFallback className="bg-blue-500/30 text-blue-400 text-xs font-semibold">
+            <AvatarFallback className="bg-cic-800/40 text-cic-300 text-xs font-semibold">
               {initials}
             </AvatarFallback>
           </Avatar>

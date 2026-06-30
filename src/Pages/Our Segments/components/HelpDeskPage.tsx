@@ -66,7 +66,7 @@ const STATUS_CONFIG = {
   OPEN: {
     label: "Open",
     icon: Circle,
-    class: "bg-blue-50 text-blue-600 border-blue-200",
+    class: "bg-cic-50 text-cic-600 border-cic-200",
   },
   IN_PROGRESS: {
     label: "In Progress",
@@ -87,7 +87,7 @@ const STATUS_CONFIG = {
 
 const PRIORITY_CONFIG = {
   LOW: { class: "bg-slate-100 text-slate-600 border-slate-200" },
-  MEDIUM: { class: "bg-blue-50 text-blue-600 border-blue-200" },
+  MEDIUM: { class: "bg-cic-50 text-cic-600 border-cic-200" },
   HIGH: { class: "bg-amber-50 text-amber-600 border-amber-200" },
   CRITICAL: { class: "bg-red-50 text-red-600 border-red-200" },
 };
@@ -555,9 +555,9 @@ export default function HelpDeskPage() {
     }
     return {
       align: isMine ? "justify-end" : "justify-start",
-      bubble: "rounded-bl-md border-blue-200 bg-blue-50/95 text-blue-950",
-      name: "text-blue-900",
-      badge: "bg-blue-100 text-blue-700",
+      bubble: "rounded-bl-md border-cic-200 bg-cic-50/95 text-blue-950",
+      name: "text-cic-900",
+      badge: "bg-cic-100 text-cic-700",
       badgeLabel: "Admin",
     };
   };
@@ -607,8 +607,8 @@ export default function HelpDeskPage() {
       label: "Open Cases",
       value: filtered.filter((t) => t.status === "OPEN").length,
       icon: Headset,
-      iconClass: "bg-blue-50 text-blue-700",
-      valueClass: "text-blue-800",
+      iconClass: "bg-cic-50 text-cic-700",
+      valueClass: "text-cic-800",
     },
     {
       label: "In Progress",
@@ -633,7 +633,7 @@ export default function HelpDeskPage() {
   if (currentUser === undefined) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-700" />
+        <Loader2 className="h-8 w-8 animate-spin text-cic-700" />
       </div>
     );
   }
@@ -653,10 +653,10 @@ export default function HelpDeskPage() {
   };
   // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <div className="bg-white">
+    <div className="bg-surface-subtle">
       {/* ── Hero ── */}
       <section className="max-w-7xl mx-auto px-4 py-6 md:py-8">
-        <div className="rounded-[28px] border border-slate-200 bg-[linear-gradient(135deg,#f8fbff_0%,#eef5ff_45%,#ffffff_100%)] p-6 shadow-sm md:p-8">
+        <div className="rounded-3xl border border-slate-200 bg-[linear-gradient(135deg,#f8fbff_0%,#eef5ff_45%,#ffffff_100%)] p-6 shadow-card md:p-8">
           <img
             src={logo}
             alt="CIC Livestock Solutions"
@@ -668,7 +668,7 @@ export default function HelpDeskPage() {
                 <Headset className="h-3.5 w-3.5" />
                 Employee Support Center
               </div>
-              <h1 className="mt-4 text-3xl font-bold text-blue-900 md:text-4xl">
+              <h1 className="mt-4 text-3xl font-bold text-cic-900 md:text-4xl">
                 Help Desk
               </h1>
               {currentUser?.isService ? (
@@ -683,9 +683,9 @@ export default function HelpDeskPage() {
                 </p>
               )}
               <div className="mt-5 flex flex-wrap items-center gap-3">
-                <div className="rounded-full border border-blue-100 bg-white px-3 py-1.5 text-xs font-medium text-slate-600">
+                <div className="rounded-full border border-cic-100 bg-white px-3 py-1.5 text-xs font-medium text-slate-600">
                   Segment:{" "}
-                  <span className="font-semibold text-blue-900">
+                  <span className="font-semibold text-cic-900">
                     {currentSegmentLabel}
                   </span>
                 </div>
@@ -719,7 +719,7 @@ export default function HelpDeskPage() {
                   <DropdownMenuTrigger>
                     <Button
                       variant="outline"
-                      className="relative h-11 rounded-2xl border-slate-200 bg-white px-4 text-slate-600 hover:border-blue-200 hover:text-blue-700"
+                      className="relative h-11 rounded-2xl border-slate-200 bg-white px-4 text-slate-600 hover:border-cic-200 hover:text-cic-700"
                     >
                       <Bell className="h-2 w-2 justify-center" />
                       {unreadNotificationCount > 0 && (
@@ -741,7 +741,7 @@ export default function HelpDeskPage() {
                         <button
                           type="button"
                           onClick={markAllNotificationsRead}
-                          className="text-xs text-blue-600 hover:text-blue-800"
+                          className="text-xs text-cic-600 hover:text-cic-800"
                         >
                           Mark all read
                         </button>
@@ -782,7 +782,7 @@ export default function HelpDeskPage() {
                               <p className="mt-1 line-clamp-2 text-xs text-slate-400">
                                 {notification.description}
                               </p>
-                              <p className="mt-1 text-[11px] text-slate-400">
+                              <p className="mt-1 text-xs text-slate-400">
                                 {fmtDate(notification.createdAt)}
                               </p>
                             </div>
@@ -824,7 +824,7 @@ export default function HelpDeskPage() {
             return (
               <Card
                 key={s.label}
-                className="border border-slate-200 bg-white shadow-sm"
+                className="border border-slate-200 bg-white shadow-card"
               >
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between gap-3">
@@ -854,7 +854,7 @@ export default function HelpDeskPage() {
       {/* ── Filters + Ticket List ── */}
       <section className="max-w-7xl mx-auto px-4 py-6">
         <div className="grid gap-6 xl:grid-cols-[0.9fr_1.55fr]">
-          <Card className="h-fit border border-slate-200 bg-white shadow-sm">
+          <Card className="h-fit border border-slate-200 bg-white shadow-card">
             <CardContent className="space-y-5 p-5">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
@@ -871,7 +871,7 @@ export default function HelpDeskPage() {
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                   <Input
-                    className="h-11 rounded-2xl border-slate-200 bg-slate-50/70 pl-9 shadow-none focus-visible:ring-blue-200"
+                    className="h-11 rounded-2xl border-slate-200 bg-slate-50/70 pl-9 shadow-none focus-visible:ring-cic-200"
                     placeholder="Search by title or ticket number"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
@@ -888,8 +888,8 @@ export default function HelpDeskPage() {
                         onClick={() => setStatusFilter(s)}
                         className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
                           statusFilter === s
-                            ? "border-blue-900 bg-blue-900 text-white"
-                            : "border-slate-200 bg-white text-slate-500 hover:border-blue-200 hover:text-blue-700"
+                            ? "border-cic-900 bg-cic-900 text-white"
+                            : "border-slate-200 bg-white text-slate-500 hover:border-cic-200 hover:text-cic-700"
                         }`}
                       >
                         {s === "All" ? "All Statuses" : s.replace(/_/g, " ")}
@@ -906,8 +906,8 @@ export default function HelpDeskPage() {
                           onClick={() => setCategoryFilter("All")}
                           className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
                             categoryFilter === "All"
-                              ? "border-blue-900 bg-blue-900 text-white"
-                              : "border-slate-200 bg-white text-slate-500 hover:border-blue-200 hover:text-blue-700"
+                              ? "border-cic-900 bg-cic-900 text-white"
+                              : "border-slate-200 bg-white text-slate-500 hover:border-cic-200 hover:text-cic-700"
                           }`}
                         >
                           All Categories
@@ -920,8 +920,8 @@ export default function HelpDeskPage() {
                               onClick={() => setCategoryFilter(cat.name)}
                               className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
                                 categoryFilter === cat.name
-                                  ? "border-blue-900 bg-blue-900 text-white"
-                                  : "border-slate-200 bg-white text-slate-500 hover:border-blue-200 hover:text-blue-700"
+                                  ? "border-cic-900 bg-cic-900 text-white"
+                                  : "border-slate-200 bg-white text-slate-500 hover:border-cic-200 hover:text-cic-700"
                               }`}
                             >
                               <CatIcon className="h-3 w-3" />
@@ -946,16 +946,16 @@ export default function HelpDeskPage() {
                   Support requests
                 </h2>
               </div>
-              <div className="hidden items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-500 shadow-sm sm:flex">
+              <div className="hidden items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-500 shadow-card sm:flex">
                 <Circle className="h-3 w-3 fill-emerald-500 text-emerald-500" />
                 {filtered.length} records
               </div>
             </div>
 
             {loading ? (
-              <Card className="border border-slate-200 bg-white shadow-sm">
+              <Card className="border border-slate-200 bg-white shadow-card">
                 <CardContent className="flex min-h-72 flex-col items-center justify-center gap-3 text-center">
-                  <Loader2 className="h-8 w-8 animate-spin text-blue-700" />
+                  <Loader2 className="h-8 w-8 animate-spin text-cic-700" />
                   <div>
                     <p className="font-medium text-slate-700">
                       Loading tickets
@@ -967,9 +967,9 @@ export default function HelpDeskPage() {
                 </CardContent>
               </Card>
             ) : filtered.length === 0 ? (
-              <Card className="border border-dashed border-slate-200 bg-slate-50 shadow-sm">
+              <Card className="border border-dashed border-slate-200 bg-slate-50 shadow-card">
                 <CardContent className="flex min-h-72 flex-col items-center justify-center px-6 text-center">
-                  <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-3xl bg-blue-50 text-blue-400">
+                  <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-3xl bg-cic-50 text-blue-400">
                     <AlertCircle className="h-7 w-7" />
                   </div>
                   <h3 className="text-lg font-semibold text-slate-800">
@@ -992,36 +992,36 @@ export default function HelpDeskPage() {
                   return (
                     <Card
                       key={ticket.id}
-                      className="group cursor-pointer border border-slate-200 bg-white shadow-sm transition-all hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md"
+                      className="group cursor-pointer border border-slate-200 bg-white shadow-card transition-all hover:-translate-y-0.5 hover:border-cic-200 hover:shadow-card-hover"
                     >
                       <CardContent className="p-5">
                         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                           <div className="flex min-w-0 gap-4">
-                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-800 ring-1 ring-blue-100">
+                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-cic-50 text-cic-800 ring-1 ring-cic-100">
                               <CategoryIcon className="h-5 w-5" />
                             </div>
                             <div className="min-w-0">
                               <div className="mb-2 flex flex-wrap items-center gap-2">
-                                <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold tracking-[0.14em] text-slate-500">
+                                <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold tracking-[0.14em] text-slate-500">
                                   {ticket.ticketNumber}
                                 </span>
                                 <Badge
                                   variant="outline"
-                                  className={`rounded-full px-2.5 text-[10px] ${status.class}`}
+                                  className={`rounded-full px-2.5 text-xs ${status.class}`}
                                 >
                                   <StatusIcon className="mr-1 h-3 w-3" />
                                   {status.label}
                                 </Badge>
                                 <Badge
                                   variant="outline"
-                                  className={`rounded-full px-2.5 text-[10px] ${priority.class}`}
+                                  className={`rounded-full px-2.5 text-xs ${priority.class}`}
                                 >
                                   {ticket.priority}
                                 </Badge>
                                 {segment && (
                                   <Badge
                                     variant="outline"
-                                    className={`rounded-full px-2.5 text-[10px] ${segment.class}`}
+                                    className={`rounded-full px-2.5 text-xs ${segment.class}`}
                                   >
                                     {segment.label}
                                   </Badge>
@@ -1029,7 +1029,7 @@ export default function HelpDeskPage() {
                                 {ticket.department && (
                                   <Badge
                                     variant="outline"
-                                    className="rounded-full px-2.5 text-[10px] bg-slate-50 text-slate-600 border-slate-200"
+                                    className="rounded-full px-2.5 text-xs bg-slate-50 text-slate-600 border-slate-200"
                                   >
                                     <Building2 className="mr-1 h-3 w-3" />
                                     {ticket.department}
@@ -1038,14 +1038,14 @@ export default function HelpDeskPage() {
                                 {ticket.submittedByName && (
                                   <Badge
                                     variant="outline"
-                                    className="rounded-full px-2.5 text-[10px] bg-slate-50 text-blue-500 border-blue-200"
+                                    className="rounded-full px-2.5 text-xs bg-slate-50 text-cic-500 border-cic-200"
                                   >
                                     <Users className="h-3.5 w-3.5" />
                                     {ticket.submittedByName}
                                   </Badge>
                                 )}
                               </div>
-                              <p className="text-base font-semibold text-slate-900 transition-colors group-hover:text-blue-900">
+                              <p className="text-base font-semibold text-slate-900 transition-colors group-hover:text-cic-900">
                                 {ticket.title}
                               </p>
                               <p className="mt-1 line-clamp-2 text-sm leading-relaxed text-slate-500">
@@ -1060,7 +1060,7 @@ export default function HelpDeskPage() {
                             </div>
                             <button
                               onClick={() => openTicket(ticket)}
-                              className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-400 transition-colors hover:bg-blue-50 hover:text-blue-600"
+                              className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-400 transition-colors hover:bg-cic-50 hover:text-cic-600"
                             >
                               <ChevronRight className="h-4 w-4" />
                             </button>
@@ -1094,14 +1094,14 @@ export default function HelpDeskPage() {
           setShowCreate(open);
         }}
       >
-        <DialogContent className="rounded-[28px] border-0 p-0 shadow-[0_24px_80px_-36px_rgba(15,23,42,0.45)] flex flex-col max-h-[92vh] w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] sm:w-full sm:max-w-xl overflow-hidden">
-          <div className="rounded-[28px] bg-white flex flex-col min-h-0 overflow-hidden">
+        <DialogContent className="rounded-3xl border-0 p-0 shadow-[0_24px_80px_-36px_rgba(15,23,42,0.45)] flex flex-col max-h-[92vh] w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] sm:w-full sm:max-w-xl overflow-hidden">
+          <div className="rounded-3xl bg-white flex flex-col min-h-0 overflow-hidden">
             <DialogHeader>
               <div className="rounded-t-[28px] bg-linear-to-r from-slate-950 via-blue-950 to-blue-900 px-5 py-5 sm:px-6 text-white shrink-0">
                 <DialogTitle className="flex items-center gap-2 text-left text-xl text-white">
                   <Plus className="h-4 w-4" /> Submit a Ticket
                 </DialogTitle>
-                <DialogDescription className="mt-2 text-left text-blue-100/80">
+                <DialogDescription className="mt-2 text-left text-cic-100/80">
                   Describe your issue clearly and route it to the right support
                   team.
                 </DialogDescription>
@@ -1121,7 +1121,7 @@ export default function HelpDeskPage() {
                     onChange={(e) =>
                       setForm((prev) => ({ ...prev, title: e.target.value }))
                     }
-                    className="h-11 rounded-2xl border-slate-200 bg-slate-50/70 shadow-none focus-visible:ring-blue-200"
+                    className="h-11 rounded-2xl border-slate-200 bg-slate-50/70 shadow-none focus-visible:ring-cic-200"
                   />
                 </div>
                 <div className="space-y-1.5 sm:col-span-2">
@@ -1171,7 +1171,7 @@ export default function HelpDeskPage() {
                           submittedByName: formatted,
                         }));
                       }}
-                      className="h-11 rounded-2xl border-slate-200 bg-slate-50/70 pl-9 shadow-none focus-visible:ring-blue-200"
+                      className="h-11 rounded-2xl border-slate-200 bg-slate-50/70 pl-9 shadow-none focus-visible:ring-cic-200"
                     />
                   </div>
                 </div>
@@ -1234,7 +1234,7 @@ export default function HelpDeskPage() {
                         }))
                       }
                       readOnly={!!currentUser?.department}
-                      className={`h-11 rounded-2xl border-slate-200 bg-slate-50/70 pl-9 shadow-none focus-visible:ring-blue-200 ${currentUser?.department ? "cursor-default opacity-70" : ""}`}
+                      className={`h-11 rounded-2xl border-slate-200 bg-slate-50/70 pl-9 shadow-none focus-visible:ring-cic-200 ${currentUser?.department ? "cursor-default opacity-70" : ""}`}
                     />
                   </div>
                 </div>
@@ -1273,7 +1273,7 @@ export default function HelpDeskPage() {
                   !form.submittedByName.trim() ||
                   saving
                 }
-                className="rounded-2xl bg-blue-900 text-white hover:bg-blue-800"
+                className="rounded-2xl bg-cic-900 text-white hover:bg-blue-800"
               >
                 {saving ? "Submitting..." : "Submit Ticket"}
               </Button>
@@ -1303,7 +1303,7 @@ export default function HelpDeskPage() {
           }
         }}
       >
-        <DialogContent className="flex flex-col h-[92vh] w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] rounded-[28px] border-0 p-0 shadow-[0_24px_80px_-36px_rgba(15,23,42,0.45)] sm:h-[85vh] sm:max-h-[85vh] sm:w-full sm:max-w-3xl overflow-hidden">
+        <DialogContent className="flex flex-col h-[92vh] w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] rounded-3xl border-0 p-0 shadow-[0_24px_80px_-36px_rgba(15,23,42,0.45)] sm:h-[85vh] sm:max-h-[85vh] sm:w-full sm:max-w-3xl overflow-hidden">
           {selectedTicket &&
             (() => {
               const status = STATUS_CONFIG[selectedTicket.status];
@@ -1326,26 +1326,26 @@ export default function HelpDeskPage() {
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="mb-2.5 flex flex-wrap items-center gap-2">
-                          <span className="rounded-full bg-white/10 px-2.5 py-1 text-xs font-semibold text-blue-100">
+                          <span className="rounded-full bg-white/10 px-2.5 py-1 text-xs font-semibold text-cic-100">
                             {selectedTicket.ticketNumber}
                           </span>
                           <Badge
                             variant="outline"
-                            className="border-white/15 bg-white/10 px-2 text-[10px] text-white"
+                            className="border-white/15 bg-white/10 px-2 text-xs text-white"
                           >
                             <StatusIcon className="mr-1 h-3 w-3" />
                             {status.label}
                           </Badge>
                           <Badge
                             variant="outline"
-                            className="border-white/15 bg-white/10 px-2 text-[10px] text-white"
+                            className="border-white/15 bg-white/10 px-2 text-xs text-white"
                           >
                             {selectedTicket.priority}
                           </Badge>
                           {segment && (
                             <Badge
                               variant="outline"
-                              className="border-white/15 bg-white/10 px-2 text-[10px] text-white"
+                              className="border-white/15 bg-white/10 px-2 text-xs text-white"
                             >
                               {segment.label}
                             </Badge>
@@ -1353,7 +1353,7 @@ export default function HelpDeskPage() {
                           {selectedTicket.department && (
                             <Badge
                               variant="outline"
-                              className="border-white/15 bg-white/10 px-2 text-[10px] text-white"
+                              className="border-white/15 bg-white/10 px-2 text-xs text-white"
                             >
                               <Building2 className="mr-1 h-3 w-3" />
                               {selectedTicket.department}
@@ -1363,18 +1363,18 @@ export default function HelpDeskPage() {
                         <DialogTitle className="text-left text-2xl font-semibold leading-tight text-white">
                           {selectedTicket.title}
                         </DialogTitle>
-                        <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-blue-100/75">
+                        <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-cic-100/75">
                           <span className="inline-flex items-center gap-1.5">
                             <CategoryIcon className="h-3.5 w-3.5" />
                             {selectedTicket.category}
                           </span>
-                          <span className="text-blue-100/40">•</span>
+                          <span className="text-cic-100/40">•</span>
                           <span>
                             Submitted {fmtDate(selectedTicket.createdAt)}
                           </span>
                           {selectedTicket.assignedTo && (
                             <>
-                              <span className="text-blue-100/40">•</span>
+                              <span className="text-cic-100/40">•</span>
                               <span>
                                 Assigned to {selectedTicket.assignedTo.name}
                               </span>
@@ -1393,7 +1393,7 @@ export default function HelpDeskPage() {
                     className="space-y-4 bg-slate-50/80 px-6 py-5"
                   >
                     {/* Description */}
-                    <Card className="border border-slate-200/80 bg-white shadow-sm">
+                    <Card className="border border-slate-200/80 bg-white shadow-card">
                       <CardContent className="p-4">
                         <p className="mb-2 text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
                           Description
@@ -1409,7 +1409,7 @@ export default function HelpDeskPage() {
                       const urls = parseAttachments(selectedTicket.attachments);
                       if (urls.length === 0) return null;
                       return (
-                        <Card className="border border-slate-200/80 bg-white shadow-sm">
+                        <Card className="border border-slate-200/80 bg-white shadow-card">
                           <CardContent className="p-4">
                             <p className="mb-3 text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
                               Attachments ({urls.length})
@@ -1421,7 +1421,7 @@ export default function HelpDeskPage() {
                                   href={resolveFileUrl(url)}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="group flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 p-1.5 pr-3 hover:border-blue-200 hover:bg-blue-50 transition-colors"
+                                  className="group flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 p-1.5 pr-3 hover:border-cic-200 hover:bg-cic-50 transition-colors"
                                 >
                                   <div className="h-10 w-10 shrink-0 overflow-hidden rounded-lg border border-slate-200 bg-white">
                                     <img
@@ -1430,7 +1430,7 @@ export default function HelpDeskPage() {
                                       className="h-full w-full object-cover"
                                     />
                                   </div>
-                                  <span className="max-w-[120px] truncate text-xs font-medium text-slate-600 group-hover:text-blue-700">
+                                  <span className="max-w-[120px] truncate text-xs font-medium text-slate-600 group-hover:text-cic-700">
                                     {url
                                       .substring(url.lastIndexOf("/") + 1)
                                       .replace(/^\d+_/, "")}
@@ -1468,15 +1468,15 @@ export default function HelpDeskPage() {
                       </div>
 
                       {newMessageAlert && (
-                        <Alert className="rounded-2xl border-blue-200 bg-blue-50 text-blue-800">
-                          <Bell className="h-4 w-4 text-blue-600" />
+                        <Alert className="rounded-2xl border-cic-200 bg-cic-50 text-cic-800">
+                          <Bell className="h-4 w-4 text-cic-600" />
                           <AlertDescription className="flex items-center justify-between">
                             <span className="text-sm font-medium">
                               New reply received
                             </span>
                             <button
                               onClick={() => setNewMessageAlert(false)}
-                              className="ml-4 text-xs text-blue-500 underline hover:text-blue-700"
+                              className="ml-4 text-xs text-cic-500 underline hover:text-cic-700"
                             >
                               Dismiss
                             </button>
@@ -1502,7 +1502,7 @@ export default function HelpDeskPage() {
                                 className={`flex ${appearance.align}`}
                               >
                                 <div
-                                  className={`max-w-[92%] rounded-[22px] border px-4 py-3 text-sm shadow-sm sm:max-w-[78%] ${appearance.bubble}`}
+                                  className={`max-w-[92%] rounded-[22px] border px-4 py-3 text-sm shadow-card sm:max-w-[78%] ${appearance.bubble}`}
                                 >
                                   <div className="mb-2 flex flex-wrap items-center gap-2">
                                     <span
@@ -1511,11 +1511,11 @@ export default function HelpDeskPage() {
                                       {c.commentedBy.name}
                                     </span>
                                     <span
-                                      className={`rounded-full px-2 py-0.5 text-[10px] ${appearance.badge}`}
+                                      className={`rounded-full px-2 py-0.5 text-xs ${appearance.badge}`}
                                     >
                                       {appearance.badgeLabel}
                                     </span>
-                                    <span className="ml-auto text-[11px] text-slate-400">
+                                    <span className="ml-auto text-xs text-slate-400">
                                       {fmtDate(c.createdAt)}
                                     </span>
                                   </div>
@@ -1569,7 +1569,7 @@ export default function HelpDeskPage() {
                             <Button
                               onClick={handleAddComment}
                               disabled={!comment.trim()}
-                              className="h-11 rounded-2xl bg-blue-900 px-5 text-white hover:bg-blue-800 sm:shrink-0"
+                              className="h-11 rounded-2xl bg-cic-900 px-5 text-white hover:bg-blue-800 sm:shrink-0"
                             >
                               Send
                             </Button>

@@ -22,13 +22,10 @@ export default function WelcomeCard({
   });
 
   return (
-    <Card className="relative overflow-hidden rounded-[20px] border border-slate-200 bg-white p-0 shadow-sm">
+    <Card className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-0 shadow-card">
       {/* ── Curved blue avatar panel ── */}
       <div className="relative h-28 overflow-hidden">
-        <div
-          className="absolute -left-1 -top-1 h-[160px] w-[160px] bg-[#0E4E96]"
-          style={{ borderRadius: "0 0 100% 0" }}
-        />
+        <div className="absolute -left-1 -top-1 h-40 w-40 rounded-br-full bg-cic-800" />
         <div className="relative z-10 flex h-full items-center pl-5">
           {/* Simple illustrated avatar, matching the reference badge style */}
           <svg viewBox="0 0 64 64" className="h-14 w-14" aria-hidden="true">
@@ -48,7 +45,7 @@ export default function WelcomeCard({
 
       {/* ── Details ── */}
       <div className="space-y-2 px-5 pb-5 pt-4">
-        <h3 className="text-base font-bold leading-tight text-blue-900">
+        <h3 className="text-base font-bold leading-tight text-cic-900">
           {name}
         </h3>
         <p className="text-sm font-semibold text-slate-700">{role}</p>

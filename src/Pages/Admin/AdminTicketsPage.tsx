@@ -77,8 +77,8 @@ const STATUS_CONFIG: Record<
   OPEN: {
     label: "Open",
     icon: Circle,
-    className: "bg-blue-50 text-blue-700 border-blue-200",
-    pill: "bg-blue-900 text-white border-blue-900",
+    className: "bg-cic-50 text-cic-700 border-cic-200",
+    pill: "bg-cic-900 text-white border-cic-900",
   },
   IN_PROGRESS: {
     label: "In Progress",
@@ -102,7 +102,7 @@ const STATUS_CONFIG: Record<
 
 const PRIORITY_CONFIG: Record<TicketPriority, string> = {
   LOW: "bg-slate-100 text-slate-700 border-slate-200",
-  MEDIUM: "bg-blue-50 text-blue-700 border-blue-200",
+  MEDIUM: "bg-cic-50 text-cic-700 border-cic-200",
   HIGH: "bg-amber-50 text-amber-700 border-amber-200",
   CRITICAL: "bg-red-50 text-red-700 border-red-200",
 };
@@ -194,7 +194,7 @@ function FilterDropdown({
           variant="outline"
           disabled={disabled}
           className={`h-9 min-w-[130px] justify-between gap-2 text-sm font-normal ${
-            isActive ? "border-blue-500 text-blue-600" : ""
+            isActive ? "border-cic-500 text-cic-600" : ""
           } ${className ?? ""} ${disabled ? "opacity-60 cursor-not-allowed" : ""}`}
         >
           <span>{value === "IN_PROGRESS" ? "In Progress" : value}</span>
@@ -211,7 +211,7 @@ function FilterDropdown({
           >
             {option === "IN_PROGRESS" ? "In Progress" : option}
             {value === option && (
-              <Check className="h-3.5 w-3.5 text-blue-600" />
+              <Check className="h-3.5 w-3.5 text-cic-600" />
             )}
           </DropdownMenuItem>
         ))}
@@ -637,7 +637,7 @@ export default function AdminTicketsPage() {
         label: "Total tickets",
         value: loading ? "..." : filtered.length,
         icon: TicketIcon,
-        color: "bg-blue-50 text-blue-600",
+        color: "bg-cic-50 text-cic-600",
       },
       {
         label: "Open",
@@ -808,9 +808,9 @@ export default function AdminTicketsPage() {
     }
     return {
       align: isMine ? "justify-end" : "justify-start",
-      bubble: "rounded-bl-md border-blue-200 bg-blue-50/95 text-blue-950",
-      name: "text-blue-900",
-      badge: "bg-blue-100 text-blue-700",
+      bubble: "rounded-bl-md border-cic-200 bg-cic-50/95 text-blue-950",
+      name: "text-cic-900",
+      badge: "bg-cic-100 text-cic-700",
       badgeLabel: "Admin",
     };
   };
@@ -830,7 +830,7 @@ export default function AdminTicketsPage() {
     <div className="space-y-6 p-6">
       {/* ── Admin Welcome Banner ── */}
       {isAdmin && (
-        <div className="rounded-xl border border-blue-100 bg-gradient-to-r from-blue-50 to-slate-50 px-5 py-4 flex items-center justify-between gap-4">
+        <div className="rounded-xl border border-cic-100 bg-linear-to-r from-cic-50 to-slate-50 px-5 py-4 flex items-center justify-between gap-4">
           <div>
             <p className="text-xs text-slate-400 uppercase tracking-wide font-medium mb-0.5">
               Admin Portal
@@ -843,9 +843,9 @@ export default function AdminTicketsPage() {
                 {isITAdmin ? (
                   <>
                     You're managing{" "}
-                    <span className="font-medium text-blue-700">IT</span>{" "}
+                    <span className="font-medium text-cic-700">IT</span>{" "}
                     tickets across{" "}
-                    <span className="font-medium text-blue-700">
+                    <span className="font-medium text-cic-700">
                       All Locations
                     </span>
                   </>
@@ -853,7 +853,7 @@ export default function AdminTicketsPage() {
                   <>
                     You're managing tickets for{" "}
                     {adminSegment && (
-                      <span className="font-medium text-blue-700">
+                      <span className="font-medium text-cic-700">
                         {SEGMENT_CONFIG[adminSegment]?.label ?? adminSegment}
                       </span>
                     )}
@@ -861,7 +861,7 @@ export default function AdminTicketsPage() {
                       <span className="text-slate-400"> · </span>
                     )}
                     {adminDepartment && (
-                      <span className="font-medium text-blue-700">
+                      <span className="font-medium text-cic-700">
                         {adminDepartment}
                       </span>
                     )}
@@ -872,7 +872,7 @@ export default function AdminTicketsPage() {
           </div>
           <div className="hidden sm:flex items-center gap-2">
             {isITAdmin ? (
-              <div className="flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-medium text-blue-700">
+              <div className="flex items-center gap-2 rounded-lg border border-cic-200 bg-cic-50 px-3 py-2 text-xs font-medium text-cic-700">
                 <ShieldCheck className="h-4 w-4" />
                 IT · All Locations
               </div>
@@ -882,7 +882,7 @@ export default function AdminTicketsPage() {
                   <div
                     className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-medium ${
                       SEGMENT_CONFIG[adminSegment]?.className ??
-                      "bg-blue-50 text-blue-700 border-blue-200"
+                      "bg-cic-50 text-cic-700 border-cic-200"
                     }`}
                   >
                     <ShieldCheck className="h-4 w-4" />
@@ -911,11 +911,11 @@ export default function AdminTicketsPage() {
             Review, update, edit, and remove employee support requests.
             {isAdmin &&
               (isITAdmin ? (
-                <span className="ml-2 inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700 border border-blue-200">
+                <span className="ml-2 inline-flex items-center rounded-full bg-cic-50 px-2 py-0.5 text-xs font-medium text-cic-700 border border-cic-200">
                   IT · All Locations
                 </span>
               ) : adminSegment ? (
-                <span className="ml-2 inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700 border border-blue-200">
+                <span className="ml-2 inline-flex items-center rounded-full bg-cic-50 px-2 py-0.5 text-xs font-medium text-cic-700 border border-cic-200">
                   {SEGMENT_CONFIG[adminSegment]?.label ?? adminSegment}
                 </span>
               ) : null)}
@@ -961,7 +961,7 @@ export default function AdminTicketsPage() {
                   <button
                     type="button"
                     onClick={markAllNotificationsRead}
-                    className="text-xs text-blue-600 hover:text-blue-800"
+                    className="text-xs text-cic-600 hover:text-cic-800"
                   >
                     Mark all read
                   </button>
@@ -1013,7 +1013,7 @@ export default function AdminTicketsPage() {
                         <p className="mt-1 line-clamp-2 text-xs text-slate-400">
                           {notification.description}
                         </p>
-                        <p className="mt-1 text-[11px] text-slate-400">
+                        <p className="mt-1 text-xs text-slate-400">
                           {fmtDateTime(notification.createdAt)}
                         </p>
                       </div>
@@ -1028,10 +1028,10 @@ export default function AdminTicketsPage() {
 
       {/* ── Page-level alert ── */}
       {pageAlert && (
-        <Alert className="border-blue-200 bg-blue-50">
-          <Bell className="h-4 w-4 text-blue-600" />
+        <Alert className="border-cic-200 bg-cic-50">
+          <Bell className="h-4 w-4 text-cic-600" />
           <AlertDescription className="flex items-center justify-between">
-            <span className="text-sm text-blue-800">
+            <span className="text-sm text-cic-800">
               <span className="font-semibold">{pageAlert.ticketNumber}</span>
               {" — "}
               <span className="font-medium">{pageAlert.title}</span>
@@ -1055,13 +1055,13 @@ export default function AdminTicketsPage() {
                   }
                   setPageAlert(null);
                 }}
-                className="text-xs font-medium text-blue-700 underline hover:text-blue-900"
+                className="text-xs font-medium text-cic-700 underline hover:text-cic-900"
               >
                 View ticket
               </button>
               <button
                 onClick={() => setPageAlert(null)}
-                className="text-xs text-blue-500 underline hover:text-blue-700"
+                className="text-xs text-cic-500 underline hover:text-cic-700"
               >
                 Dismiss
               </button>
@@ -1108,7 +1108,7 @@ export default function AdminTicketsPage() {
               <Button
                 variant="outline"
                 className={`h-9 min-w-[130px] justify-between gap-2 text-sm font-normal ${
-                  segmentFilter !== "All" ? "border-blue-500 text-blue-600" : ""
+                  segmentFilter !== "All" ? "border-cic-500 text-cic-600" : ""
                 }`}
               >
                 <span>
@@ -1130,7 +1130,7 @@ export default function AdminTicketsPage() {
                     ? "All Segments"
                     : (SEGMENT_CONFIG[key]?.label ?? key)}
                   {segmentFilter === key && (
-                    <Check className="h-3.5 w-3.5 text-blue-600" />
+                    <Check className="h-3.5 w-3.5 text-cic-600" />
                   )}
                 </DropdownMenuItem>
               ))}
@@ -1140,7 +1140,7 @@ export default function AdminTicketsPage() {
       </div>
 
       {/* ── Tickets Table ── */}
-      <Card className="overflow-hidden border border-slate-200 shadow-sm">
+      <Card className="overflow-hidden border border-slate-200 shadow-card">
         <CardContent className="p-0">
           <Table>
             <TableHeader>
@@ -1223,13 +1223,13 @@ export default function AdminTicketsPage() {
                       }
                       className={`group border-b border-slate-100 transition-colors duration-300 hover:bg-slate-50/70 ${
                         ticket.id === highlightedTicketId
-                          ? "bg-blue-50 outline outline-2 outline-blue-300"
+                          ? "bg-cic-50 outline-2 outline-solid outline-cic-300"
                           : ""
                       }`}
                     >
                       <TableCell className="pl-5 py-3.5">
                         <div className="min-w-0">
-                          <span className="block text-[10px] font-mono text-slate-400">
+                          <span className="block text-xs font-mono text-slate-400">
                             {ticket.ticketNumber}
                           </span>
                           <p className="truncate text-sm font-medium text-slate-800">
@@ -1251,7 +1251,7 @@ export default function AdminTicketsPage() {
                         {seg ? (
                           <Badge
                             variant="outline"
-                            className={`px-2 text-[10px] ${seg.className}`}
+                            className={`px-2 text-xs ${seg.className}`}
                           >
                             {seg.label}
                           </Badge>
@@ -1267,7 +1267,7 @@ export default function AdminTicketsPage() {
                       <TableCell className="py-3.5">
                         <Badge
                           variant="outline"
-                          className={`px-2 text-[10px] ${PRIORITY_CONFIG[ticket.priority]}`}
+                          className={`px-2 text-xs ${PRIORITY_CONFIG[ticket.priority]}`}
                         >
                           {ticket.priority}
                         </Badge>
@@ -1275,7 +1275,7 @@ export default function AdminTicketsPage() {
                       <TableCell className="py-3.5">
                         <Badge
                           variant="outline"
-                          className={`px-2 text-[10px] ${status.className}`}
+                          className={`px-2 text-xs ${status.className}`}
                         >
                           <StatusIcon className="mr-1 h-3 w-3" />
                           {status.label}
@@ -1304,7 +1304,7 @@ export default function AdminTicketsPage() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-7 w-7 hover:bg-blue-50 hover:text-blue-600"
+                            className="h-7 w-7 hover:bg-cic-50 hover:text-cic-600"
                             onClick={() => openDetails(ticket)}
                             title="View ticket"
                           >
@@ -1390,26 +1390,26 @@ export default function AdminTicketsPage() {
                 <>
                   <DialogHeader className="shrink-0 border-b border-slate-100 px-6 py-4">
                     <div className="mb-1 flex flex-wrap items-center gap-2">
-                      <span className="text-[10px] font-mono text-slate-400">
+                      <span className="text-xs font-mono text-slate-400">
                         {selectedTicket.ticketNumber}
                       </span>
                       <Badge
                         variant="outline"
-                        className={`px-2 text-[10px] ${status.className}`}
+                        className={`px-2 text-xs ${status.className}`}
                       >
                         <StatusIcon className="mr-1 h-3 w-3" />
                         {status.label}
                       </Badge>
                       <Badge
                         variant="outline"
-                        className={`px-2 text-[10px] ${PRIORITY_CONFIG[selectedTicket.priority]}`}
+                        className={`px-2 text-xs ${PRIORITY_CONFIG[selectedTicket.priority]}`}
                       >
                         {selectedTicket.priority}
                       </Badge>
                       {seg && (
                         <Badge
                           variant="outline"
-                          className={`px-2 text-[10px] ${seg.className}`}
+                          className={`px-2 text-xs ${seg.className}`}
                         >
                           {seg.label}
                         </Badge>
@@ -1417,14 +1417,14 @@ export default function AdminTicketsPage() {
                       {selectedTicket.department && (
                         <Badge
                           variant="outline"
-                          className="px-2 text-[10px] bg-slate-50 text-slate-600 border-slate-200"
+                          className="px-2 text-xs bg-slate-50 text-slate-600 border-slate-200"
                         >
                           <Building2 className="mr-1 h-3 w-3" />
                           {selectedTicket.department}
                         </Badge>
                       )}
                     </div>
-                    <DialogTitle className="text-left text-blue-900">
+                    <DialogTitle className="text-left text-cic-900">
                       {selectedTicket.title}
                     </DialogTitle>
                     <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-400">
@@ -1482,7 +1482,7 @@ export default function AdminTicketsPage() {
                                 href={resolveFileUrl(url)}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="group flex items-center gap-2 rounded-xl border border-slate-200 bg-white p-1.5 pr-3 hover:border-blue-200 hover:bg-blue-50 transition-colors"
+                                className="group flex items-center gap-2 rounded-xl border border-slate-200 bg-white p-1.5 pr-3 hover:border-cic-200 hover:bg-cic-50 transition-colors"
                               >
                                 <div className="h-10 w-10 shrink-0 overflow-hidden rounded-lg border border-slate-200 bg-slate-100">
                                   <img
@@ -1491,7 +1491,7 @@ export default function AdminTicketsPage() {
                                     className="h-full w-full object-cover"
                                   />
                                 </div>
-                                <span className="max-w-[120px] truncate text-xs font-medium text-slate-600 group-hover:text-blue-700">
+                                <span className="max-w-[120px] truncate text-xs font-medium text-slate-600 group-hover:text-cic-700">
                                   {url
                                     .substring(url.lastIndexOf("/") + 1)
                                     .replace(/^\d+_/, "")}
@@ -1525,7 +1525,7 @@ export default function AdminTicketsPage() {
                                   ? config.pill
                                   : isTicketClosed
                                     ? "border-slate-100 bg-slate-50 text-slate-300 cursor-not-allowed"
-                                    : "border-slate-200 bg-white text-slate-500 hover:border-blue-300 hover:text-blue-600"
+                                    : "border-slate-200 bg-white text-slate-500 hover:border-cic-300 hover:text-cic-600"
                               }`}
                             >
                               {STATUS_CONFIG[value].label}
@@ -1573,15 +1573,15 @@ export default function AdminTicketsPage() {
                       ) : (
                         <>
                           {newMessageAlert && (
-                            <Alert className="border-blue-200 bg-blue-50">
-                              <Bell className="h-4 w-4 text-blue-600" />
+                            <Alert className="border-cic-200 bg-cic-50">
+                              <Bell className="h-4 w-4 text-cic-600" />
                               <AlertDescription className="flex items-center justify-between">
-                                <span className="text-sm font-medium text-blue-800">
+                                <span className="text-sm font-medium text-cic-800">
                                   New reply received
                                 </span>
                                 <button
                                   onClick={() => setNewMessageAlert(false)}
-                                  className="ml-4 text-xs text-blue-500 underline hover:text-blue-700"
+                                  className="ml-4 text-xs text-cic-500 underline hover:text-cic-700"
                                 >
                                   Dismiss
                                 </button>
@@ -1607,7 +1607,7 @@ export default function AdminTicketsPage() {
                                     className={`flex ${appearance.align}`}
                                   >
                                     <div
-                                      className={`max-w-[85%] rounded-[20px] border px-4 py-3 text-sm shadow-sm ${appearance.bubble}`}
+                                      className={`max-w-[85%] rounded-2xl border px-4 py-3 text-sm shadow-card ${appearance.bubble}`}
                                     >
                                       <div className="mb-1.5 flex items-center gap-2">
                                         <span
@@ -1616,11 +1616,11 @@ export default function AdminTicketsPage() {
                                           {entry.commentedBy.name}
                                         </span>
                                         <span
-                                          className={`rounded-full px-2 py-0.5 text-[10px] ${appearance.badge}`}
+                                          className={`rounded-full px-2 py-0.5 text-xs ${appearance.badge}`}
                                         >
                                           {appearance.badgeLabel}
                                         </span>
-                                        <span className="ml-auto inline-flex items-center gap-1 text-[11px] text-slate-400">
+                                        <span className="ml-auto inline-flex items-center gap-1 text-xs text-slate-400">
                                           <Clock3 className="h-3 w-3" />
                                           {fmtDateTime(entry.createdAt)}
                                         </span>
@@ -1666,7 +1666,7 @@ export default function AdminTicketsPage() {
                           <Button
                             onClick={handleAddComment}
                             disabled={!comment.trim() || sendingComment}
-                            className="shrink-0 gap-1.5 rounded-2xl bg-blue-600 text-white hover:bg-blue-700"
+                            className="shrink-0 gap-1.5 rounded-2xl bg-cic-600 text-white hover:bg-cic-700"
                           >
                             <Send className="h-3.5 w-3.5" />
                             {sendingComment ? "Sending..." : "Send"}
@@ -1691,7 +1691,7 @@ export default function AdminTicketsPage() {
         <DialogContent className="sm:max-w-lg max-h-[90vh] flex flex-col overflow-hidden">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Edit3 className="h-4 w-4 text-blue-600" /> Edit ticket
+              <Edit3 className="h-4 w-4 text-cic-600" /> Edit ticket
             </DialogTitle>
             <DialogDescription>
               Update ticket details, assignment, and workflow status.
@@ -1832,7 +1832,7 @@ export default function AdminTicketsPage() {
                         : null,
                     }))
                   }
-                  className="h-10 w-full rounded-md border border-slate-200 bg-white pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-blue-200"
+                  className="h-10 w-full rounded-md border border-slate-200 bg-white pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-cic-200"
                 >
                   {adminUsers.length === 0 ? (
                     <option value="" disabled>
@@ -1861,7 +1861,7 @@ export default function AdminTicketsPage() {
               disabled={
                 saving || !editForm.title.trim() || !editForm.description.trim()
               }
-              className="bg-blue-600 text-white hover:bg-blue-700"
+              className="bg-cic-600 text-white hover:bg-cic-700"
             >
               {saving ? "Saving..." : "Save changes"}
             </Button>

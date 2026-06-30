@@ -162,7 +162,7 @@ function getPasswordStrength(pw: string): {
     0: { label: "", color: "", textColor: "" },
     1: { label: "Weak", color: "bg-red-400", textColor: "text-red-500" },
     2: { label: "Fair", color: "bg-amber-400", textColor: "text-amber-500" },
-    3: { label: "Good", color: "bg-blue-400", textColor: "text-blue-500" },
+    3: { label: "Good", color: "bg-cic-400", textColor: "text-cic-500" },
     4: {
       label: "Strong",
       color: "bg-emerald-500",
@@ -187,7 +187,7 @@ function PasswordStrengthBar({ password }: { password: string }) {
           />
         ))}
       </div>
-      <p className={`text-[11px] font-medium ${textColor}`}>{label}</p>
+      <p className={`text-xs font-medium ${textColor}`}>{label}</p>
     </div>
   );
 }
@@ -282,7 +282,7 @@ function SegmentDeptFields({
             value={department}
             onChange={(e) => onDeptChange(e.target.value)}
             disabled={loadingDepts}
-            className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm outline-none focus:ring-2 focus:ring-blue-200 disabled:opacity-50"
+            className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm outline-none focus:ring-2 focus:ring-cic-200 disabled:opacity-50"
           >
             <option value="">
               {loadingDepts ? "Loading…" : "All Departments"}
@@ -623,7 +623,7 @@ export default function AdminUsersPage() {
       ? "bg-purple-50 text-purple-800 border-purple-200"
       : role === "SERVICE"
         ? "bg-amber-50 text-amber-800 border-amber-200"
-        : "bg-blue-50 text-blue-800 border-blue-200";
+        : "bg-cic-50 text-cic-800 border-cic-200";
 
   const ROLE_CONFIG: Record<string, { icon: LucideIcon; label: string }> = {
     SUPER_ADMIN: { icon: ShieldCheck, label: "SUPER ADMIN" },
@@ -643,7 +643,7 @@ export default function AdminUsersPage() {
         </div>
         <Button
           onClick={() => setShowCreate(true)}
-          className="bg-blue-600 hover:bg-blue-700 text-white gap-2"
+          className="bg-cic-600 hover:bg-cic-700 text-white gap-2"
         >
           <Plus className="w-4 h-4" /> Add user
         </Button>
@@ -657,7 +657,7 @@ export default function AdminUsersPage() {
           label="Total users"
           value={loading ? "..." : users.length}
           icon={Users}
-          color="bg-blue-50 text-blue-600"
+          color="bg-cic-50 text-cic-600"
         />
         <StatCard
           label="Admins"
@@ -696,7 +696,7 @@ export default function AdminUsersPage() {
           <DropdownMenuTrigger>
             <Button
               variant="outline"
-              className={`h-9 text-sm ${roleFilter !== "All" ? "border-blue-500 text-blue-600" : ""}`}
+              className={`h-9 text-sm ${roleFilter !== "All" ? "border-cic-500 text-cic-600" : ""}`}
             >
               {roleFilter === "All" ? "All roles" : roleFilter}
             </Button>
@@ -713,7 +713,7 @@ export default function AdminUsersPage() {
           <DropdownMenuTrigger>
             <Button
               variant="outline"
-              className={`h-9 text-sm ${statusFilter !== "All" ? "border-blue-500 text-blue-600" : ""}`}
+              className={`h-9 text-sm ${statusFilter !== "All" ? "border-cic-500 text-cic-600" : ""}`}
             >
               {statusFilter === "All" ? "All status" : statusFilter}
             </Button>
@@ -729,7 +729,7 @@ export default function AdminUsersPage() {
       </div>
 
       {/* Table */}
-      <Card className="border border-slate-200 shadow-sm overflow-hidden">
+      <Card className="border border-slate-200 shadow-card overflow-hidden">
         <CardContent className="p-0">
           <Table>
             <TableHeader>
@@ -794,8 +794,8 @@ export default function AdminUsersPage() {
                   >
                     <TableCell className="pl-5 py-3.5">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
-                          <span className="text-xs font-semibold text-blue-700">
+                        <div className="w-8 h-8 rounded-full bg-cic-100 flex items-center justify-center shrink-0">
+                          <span className="text-xs font-semibold text-cic-700">
                             {user.name.charAt(0).toUpperCase()}
                           </span>
                         </div>
@@ -816,7 +816,7 @@ export default function AdminUsersPage() {
                         return (
                           <Badge
                             variant="outline"
-                            className={`text-[10px] font-medium px-2 ${roleColor(user.role)}`}
+                            className={`text-xs font-medium px-2 ${roleColor(user.role)}`}
                           >
                             <Icon className="w-2.5 h-2.5 mr-1 inline" />
                             {label}
@@ -831,7 +831,7 @@ export default function AdminUsersPage() {
                             {SEGMENT_LABELS[user.segment] ?? user.segment}
                           </p>
                           {user.department && (
-                            <p className="text-[11px] text-slate-400">
+                            <p className="text-xs text-slate-400">
                               {user.department}
                             </p>
                           )}
@@ -862,7 +862,7 @@ export default function AdminUsersPage() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-7 w-7 hover:bg-blue-50 hover:text-blue-600"
+                          className="h-7 w-7 hover:bg-cic-50 hover:text-cic-600"
                           onClick={() => openEdit(user)}
                         >
                           <Pencil className="w-3.5 h-3.5" />
@@ -912,7 +912,7 @@ export default function AdminUsersPage() {
         <DialogContent className="sm:max-w-md max-h-[90vh] flex flex-col overflow-hidden">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Plus className="w-4 h-4 text-blue-600" /> Add user
+              <Plus className="w-4 h-4 text-cic-600" /> Add user
             </DialogTitle>
             <DialogDescription>
               Create a new admin or authorized user account.
@@ -1062,7 +1062,7 @@ export default function AdminUsersPage() {
                 !createForm.segment ||
                 saving
               }
-              className="bg-blue-600 hover:bg-blue-700 text-white"
+              className="bg-cic-600 hover:bg-cic-700 text-white"
             >
               {saving ? "Creating..." : "Create user"}
             </Button>
@@ -1083,7 +1083,7 @@ export default function AdminUsersPage() {
         <DialogContent className="sm:max-w-md max-h-[90vh] flex flex-col overflow-hidden">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Pencil className="w-4 h-4 text-blue-600" /> Edit user
+              <Pencil className="w-4 h-4 text-cic-600" /> Edit user
             </DialogTitle>
             <DialogDescription>
               Update user details. Leave the password section blank to keep it
@@ -1146,7 +1146,7 @@ export default function AdminUsersPage() {
                   <p className="text-xs font-semibold text-slate-700">
                     Reset Password
                   </p>
-                  <p className="text-[11px] text-slate-400">
+                  <p className="text-xs text-slate-400">
                     Leave blank to keep the current password
                   </p>
                 </div>
@@ -1188,13 +1188,13 @@ export default function AdminUsersPage() {
                   />
                   {editForm.confirmPassword &&
                     editForm.password !== editForm.confirmPassword && (
-                      <p className="text-[11px] text-red-500 flex items-center gap-1">
+                      <p className="text-xs text-red-500 flex items-center gap-1">
                         <span>⚠</span> Passwords do not match
                       </p>
                     )}
                   {editForm.confirmPassword &&
                     editForm.password === editForm.confirmPassword && (
-                      <p className="text-[11px] text-emerald-600 flex items-center gap-1">
+                      <p className="text-xs text-emerald-600 flex items-center gap-1">
                         <span>✓</span> Passwords match
                       </p>
                     )}
@@ -1274,7 +1274,7 @@ export default function AdminUsersPage() {
                 (editForm.password.trim() !== "" &&
                   editForm.password !== editForm.confirmPassword)
               }
-              className="bg-blue-600 hover:bg-blue-700 text-white"
+              className="bg-cic-600 hover:bg-cic-700 text-white"
             >
               {saving ? "Saving..." : "Save changes"}
             </Button>

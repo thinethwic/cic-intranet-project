@@ -30,7 +30,7 @@ export default function HotNewsCard({
   };
 
   return (
-    <div className="group flex flex-col overflow-hidden rounded-xl border border-slate-200 bg-white cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-400 hover:shadow-md">
+    <div className="group flex flex-col overflow-hidden rounded-xl border border-slate-200 bg-white cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-card-hover">
       {/* Image */}
       <div className="relative h-48 overflow-hidden" onClick={handleClick}>
         <img
@@ -39,7 +39,7 @@ export default function HotNewsCard({
           className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
         />
         {category && (
-          <span className="absolute top-3 left-3 rounded text-[10px] font-medium uppercase tracking-widest bg-[#0C447C] text-[#E6F1FB] px-2.5 py-1">
+          <span className="absolute top-3 left-3 rounded-md text-xs font-medium uppercase tracking-widest bg-cic-900 text-cic-100 px-2.5 py-1">
             {category}
           </span>
         )}
@@ -48,13 +48,13 @@ export default function HotNewsCard({
       {/* Body */}
       <div className="flex flex-1 flex-col px-5 pt-4 pb-5">
         {date && (
-          <p className="mb-2 text-[11px] tracking-wide text-slate-400">
+          <p className="mb-2 text-xs tracking-wide text-slate-400">
             {date}
           </p>
         )}
 
         <h3
-          className="mb-2.5 line-clamp-2 text-[17px] font-bold  text-blue-900"
+          className="mb-2.5 line-clamp-2 text-lg font-bold text-cic-900"
           onClick={handleClick}
         >
           {title}
@@ -71,7 +71,7 @@ export default function HotNewsCard({
         <div className="flex items-center justify-between">
           <button
             onClick={handleClick}
-            className="rounded text-[11px] font-medium uppercase bg-blue-900 text-[#ffffff] px-4 py-2 transition-colors hover:bg-[#0C447C]"
+            className="rounded-lg text-xs font-medium uppercase bg-cic-900 text-white px-4 py-2 transition-colors hover:bg-cic-800"
           >
             Learn More
           </button>
@@ -89,7 +89,7 @@ export default function HotNewsCard({
             >
               <path
                 d="M3 7h8M7.5 3.5L11 7l-3.5 3.5"
-                stroke="#0f172a"
+                stroke="currentColor"
                 strokeWidth="1.4"
                 strokeLinecap="round"
                 strokeLinejoin="round"

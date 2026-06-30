@@ -38,19 +38,19 @@ export default function EventCard({
   const imageSrc = image?.startsWith("http") ? image : `${BASE_URL}${image}`;
 
   return (
-    <Card className="group overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer">
+    <Card className="group overflow-hidden rounded-xl border border-slate-200 bg-white shadow-card hover:shadow-card-hover transition-all duration-300 cursor-pointer">
       <div className="relative">
         <img
           src={imageSrc}
           alt={title}
           className="h-48 w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
-        <div className="absolute top-4 left-4 bg-white rounded-lg shadow-sm border border-gray-200 w-14 text-center">
-          <div className="text-sm font-bold text-gray-900 leading-tight pt-2">
+        <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/30 to-transparent" />
+        <div className="absolute top-4 left-4 bg-white rounded-lg shadow-card border border-slate-100 w-14 text-center">
+          <div className="text-sm font-bold text-slate-900 leading-tight pt-2">
             {day}
           </div>
-          <div className="text-[10px] uppercase text-gray-500 pb-2">
+          <div className="text-xs uppercase text-slate-500 pb-2">
             {month}
           </div>
         </div>
@@ -62,16 +62,16 @@ export default function EventCard({
       </div>
 
       <CardContent className="p-4">
-        <div className="flex flex-col gap-2 text-sm text-gray-600">
+        <div className="flex flex-col gap-2 text-sm text-slate-600">
           {time && (
             <div className="flex items-center gap-2">
-              <Clock size={14} className="text-gray-400" />
+              <Clock size={14} className="text-slate-400" />
               <span>{formatTime(time)}</span> {/* ✅ AM/PM formatted */}
             </div>
           )}
           {location && (
             <div className="flex items-center gap-2">
-              <MapPin size={14} className="text-gray-400" />
+              <MapPin size={14} className="text-slate-400" />
               <span className="line-clamp-1">{location}</span>
             </div>
           )}
