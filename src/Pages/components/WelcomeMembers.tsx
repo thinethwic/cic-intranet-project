@@ -15,7 +15,8 @@ interface Props {
 }
 
 const AUTO_INTERVAL = 3000;
-const CARD_WIDTH = 240;
+const CARD_WIDTH = 260; // ✅ Changed from 240 to match min-w-65 (16.25rem = 260px)
+const GAP = 24; // ✅ Added to account for gap-6
 
 export default function WelcomeCarousel({ people }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -23,7 +24,11 @@ export default function WelcomeCarousel({ people }: Props) {
 
   const scrollToIndex = (i: number) => {
     if (!scrollRef.current) return;
-    scrollRef.current.scrollTo({ left: i * CARD_WIDTH, behavior: "smooth" });
+    // ✅ Scroll by card width + gap, ensures proper alignment
+    scrollRef.current.scrollTo({
+      left: i * (CARD_WIDTH + GAP),
+      behavior: "smooth",
+    });
     setIndex(i);
   };
 

@@ -66,15 +66,7 @@ const SEGMENT_OPTIONS = [
   "AISA_VET",
 ];
 
-const CATEGORIES = [
-  "All",
-  "HR",
-  "FINANCE",
-  "IT",
-  "OPERATIONS",
-  "LEGAL",
-  "GENERAL",
-];
+const CATEGORIES = ["All", "HR", "FINANCE", "OPERATIONS"];
 
 const TYPES = ["All", "Unread", "Read"];
 const ALLOWED_IMAGE_TYPES = [

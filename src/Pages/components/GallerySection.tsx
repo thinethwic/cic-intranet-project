@@ -50,7 +50,7 @@ export default function GallerySection() {
 
   if (loading) {
     return (
-      <section className="max-w-7xl mx-auto px-6 py-14">
+      <section className="max-w-full mx-auto px-6 sm:px-8 py-4 sm:py-4">
         <h2 className="text-4xl font-bold text-blue-900 mb-6">Gallery</h2>
         <div className="w-12 h-0.5 bg-blue-900 rounded mb-5" />
         <p className="text-sm text-gray-400">Loading gallery...</p>
@@ -60,7 +60,7 @@ export default function GallerySection() {
 
   if (error) {
     return (
-      <section className="max-w-7xl mx-auto px-6 py-14">
+      <section className="max-w-full mx-auto px-6 sm:px-8 py-4 sm:py-4">
         <h2 className="text-4xl font-bold text-blue-900 mb-6">Gallery</h2>
         <div className="w-12 h-0.5 bg-blue-900 rounded mb-5" />
         <div className="w-full min-h-55 flex flex-col items-center justify-center gap-3 border border-dashed border-red-200 rounded-2xl bg-red-50">
@@ -74,7 +74,7 @@ export default function GallerySection() {
 
   if (!images || images.length === 0) {
     return (
-      <section className="max-w-7xl mx-auto px-6 py-14">
+      <section className="max-w-full mx-auto px-6 sm:px-8 py-4 sm:py-4">
         <h2 className="text-4xl font-bold text-blue-900 mb-6">Gallery</h2>
         <div className="w-full min-h-55 flex flex-col items-center justify-center gap-3 border border-dashed border-slate-200 rounded-2xl bg-slate-50">
           <p className="text-sm font-medium text-slate-400">
@@ -96,7 +96,7 @@ export default function GallerySection() {
   const hiddenCount = rest.length - visibleRest.length;
 
   return (
-    <section className="max-w-7xl mx-auto px-2 py-4">
+    <section className="max-w-full mx-auto px-6 sm:px-8 py-4 sm:py-4">
       <h2 className="text-4xl font-bold text-blue-900 mb-6">Gallery</h2>
       <div className="w-12 h-0.5 bg-blue-900 rounded mb-5" />
 

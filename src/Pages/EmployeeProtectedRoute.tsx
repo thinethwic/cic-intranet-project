@@ -1,9 +1,6 @@
 import { Navigate, Outlet, useLocation } from "react-router-dom";
-import { decryptSegment } from "@/utils/segmentEncryption";
-import { mapPathToSegment } from "@/utils/segmentMapper";
 import {
   buildAdminLoginUrl,
-  clearAdminSession,
   getAdminSession,
   getUserRoleFromPayload,
   type JwtPayload,
@@ -29,21 +26,15 @@ export default function EmployeeProtectedRoute() {
     return <Navigate to="/unauthorized" replace />;
   }
 
-  // Segment check — skip for SUPER_ADMIN and ADMIN
-  if (!ADMIN_ROLES.includes(role)) {
-    const searchParams = new URLSearchParams(location.search);
-    const encryptedParam = searchParams.get("s");
-    const decryptedParam = encryptedParam
-      ? decryptSegment(encryptedParam)
-      : null;
-    const pathSegment = mapPathToSegment(location.pathname.slice(1));
-    const currentSegment = decryptedParam ?? pathSegment ?? null;
-
-    if (!payload.location || payload.location !== currentSegment) {
-      clearAdminSession();
-      return <Navigate to={loginUrl} replace />;
-    }
-  }
+  // ✅ Segment is no longer validated against the URL here. The help desk
+  // (and other employee pages) now resolve their own segment from the
+  // logged-in user's session/profile internally, so there's nothing in the
+  // URL to compare against anymore. Keeping a URL-based check here would
+  // incorrectly clear valid sessions whenever the page isn't under a
+  // segment-specific path (e.g. a generic /helpdesk route).
+  //
+  // This route guard's job now is purely: is there a valid session, and
+  // does the role have permission to be here.
 
   return <Outlet />;
 }

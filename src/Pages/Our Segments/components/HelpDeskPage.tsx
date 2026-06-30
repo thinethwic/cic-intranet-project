@@ -20,7 +20,7 @@ import {
   LogOut,
   Bell,
 } from "lucide-react";
-import { Navigate, useLocation, useSearchParams } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -54,9 +54,7 @@ import {
   type Comment,
   type TicketCategory,
 } from "@/lib/api/ticketApi";
-import { mapPathToSegment } from "@/utils/segmentMapper";
 import { getAdminUser, logout } from "@/lib/api/authHeaders";
-import { decryptSegment } from "@/utils/segmentEncryption";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import logo from "@/assets/Logo.jpg";
 import { AdminPagination } from "@/Pages/Admin/admin-components";
@@ -170,19 +168,14 @@ export default function HelpDeskPage() {
   const TICKET_PAGE_SIZE = 8;
   const [page, setPage] = useState(1);
 
-  const { pathname } = useLocation();
   const currentUser = useCurrentUser();
-  const [searchParams] = useSearchParams();
 
-  const pathSegment = mapPathToSegment(pathname.slice(1));
-  const encryptedParam = searchParams.get("s");
-  const decryptedParam = encryptedParam ? decryptSegment(encryptedParam) : null;
-
-  const currentSegment = isKnownSegment(decryptedParam)
-    ? decryptedParam
-    : pathSegment && isKnownSegment(pathSegment)
-      ? pathSegment
-      : undefined;
+  // ✅ No more URL-path / query-param based segment detection — the help desk
+  // now lives on a general page, so the segment always comes from the
+  // logged-in user's own profile. Used for both viewing tickets and creating them.
+  const currentSegment = isKnownSegment(currentUser?.segment)
+    ? currentUser?.segment
+    : undefined;
 
   // ── State ─────────────────────────────────────────────────────────────────
   const [categories, setCategories] = useState<TicketCategory[]>([]);
@@ -190,9 +183,6 @@ export default function HelpDeskPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("All");
-  const [segmentFilter, setSegmentFilter] = useState<string>(
-    currentSegment ?? "All",
-  );
   const [categoryFilter, setCategoryFilter] = useState<string>("All");
   const [showCreate, setShowCreate] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
@@ -256,7 +246,8 @@ export default function HelpDeskPage() {
   };
 
   // ── Form ──────────────────────────────────────────────────────────────────
-  // In makeEmptyForm()
+  // ✅ Segment in the create-ticket form is always the logged-in user's own segment,
+  // not the URL/path segment the help desk page happens to be viewed under.
   const makeEmptyForm = () => ({
     title: "",
     description: "",
@@ -265,7 +256,7 @@ export default function HelpDeskPage() {
     segment: currentSegment ?? "",
     department: currentUser?.department ?? (null as string | null),
     attachments: [] as AttachedImage[],
-    submittedByName: "", // ← add this
+    submittedByName: "",
   });
 
   const [form, setForm] = useState(makeEmptyForm);
@@ -301,8 +292,9 @@ export default function HelpDeskPage() {
     selectedTicketRef.current = selectedTicket;
   }, [selectedTicket]);
 
+  // ✅ Keep the form's segment in sync with the user's own segment
+  // (guards against currentUser resolving asynchronously after first render).
   useEffect(() => {
-    setSegmentFilter(currentSegment ?? "All");
     setForm((prev) => ({ ...prev, segment: currentSegment ?? "" }));
   }, [currentSegment]);
 
@@ -485,9 +477,10 @@ export default function HelpDeskPage() {
         description: form.description.trim(),
         category: form.category,
         priority: form.priority,
-        segment: form.segment,
+        // ✅ Always send the logged-in user's own segment, never the URL/page segment.
+        segment: currentSegment ?? form.segment,
         department: form.department?.trim() || null,
-        submittedByName: form.submittedByName.trim(), // ← add this
+        submittedByName: form.submittedByName.trim(),
         attachments:
           form.attachments.length > 0
             ? JSON.stringify(
@@ -570,6 +563,7 @@ export default function HelpDeskPage() {
   };
 
   // ── Derived state ─────────────────────────────────────────────────────────
+  // ✅ Always restricted to the user's own segment — no "All segments" escape hatch.
   const filtered = useMemo(() => {
     return tickets.filter((t) => {
       const q = search.toLowerCase();
@@ -577,11 +571,11 @@ export default function HelpDeskPage() {
         (t.title.toLowerCase().includes(q) ||
           t.ticketNumber.toLowerCase().includes(q)) &&
         (statusFilter === "All" || t.status === statusFilter) &&
-        (segmentFilter === "All" || t.segment === segmentFilter) &&
+        t.segment === currentSegment &&
         (categoryFilter === "All" || t.category === categoryFilter)
       );
     });
-  }, [tickets, search, statusFilter, segmentFilter, categoryFilter]);
+  }, [tickets, search, statusFilter, categoryFilter, currentSegment]);
 
   // ✅ These must come AFTER filtered is declared
   const totalPages = Math.max(1, Math.ceil(filtered.length / TICKET_PAGE_SIZE));
@@ -593,7 +587,7 @@ export default function HelpDeskPage() {
   // Reset page when filters change
   useEffect(() => {
     setPage(1);
-  }, [search, statusFilter, segmentFilter, categoryFilter]);
+  }, [search, statusFilter, categoryFilter]);
 
   const statusTabs = ["All", "OPEN", "IN_PROGRESS", "RESOLVED", "UNRESOLVED"];
 
@@ -633,6 +627,19 @@ export default function HelpDeskPage() {
   ];
 
   // ── Guard ─────────────────────────────────────────────────────────────────
+  // While the user is still being resolved (currentUser is undefined on first
+  // render), show a loading state instead of redirecting — otherwise this page
+  // would bounce back to "/" before the user's segment ever loads.
+  if (currentUser === undefined) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-700" />
+      </div>
+    );
+  }
+
+  // Only once the user has actually resolved and still has no known segment
+  // do we send them away.
   if (!currentSegment) {
     return <Navigate to="/" replace />;
   }
@@ -857,7 +864,7 @@ export default function HelpDeskPage() {
                   Search your requests
                 </h2>
                 <p className="mt-1 text-sm text-slate-500">
-                  Narrow down tickets by keyword, status, and segment.
+                  Narrow down tickets by keyword, status, and category.
                 </p>
               </div>
               <div className="space-y-4">
@@ -1235,10 +1242,13 @@ export default function HelpDeskPage() {
                   <Label className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
                     Segment
                   </Label>
+                  {/* ✅ Always reflects the logged-in user's own segment — never editable */}
                   <div
-                    className={`flex h-11 w-full items-center rounded-2xl border px-3 text-sm font-medium ${SEGMENT_CONFIG[form.segment]?.class ?? "bg-slate-50 text-slate-500 border-slate-200"}`}
+                    className={`flex h-11 w-full items-center rounded-2xl border px-3 text-sm font-medium ${SEGMENT_CONFIG[currentSegment ?? ""]?.class ?? "bg-slate-50 text-slate-500 border-slate-200"}`}
                   >
-                    {SEGMENT_CONFIG[form.segment]?.label ?? form.segment ?? "-"}
+                    {SEGMENT_CONFIG[currentSegment ?? ""]?.label ??
+                      currentSegment ??
+                      "-"}
                   </div>
                 </div>
               </div>

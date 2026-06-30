@@ -1,10 +1,22 @@
 import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
+import { ChevronDown, Plus } from "lucide-react";
 import logo from "../../assets/Logo.jpg";
+
+const DEPARTMENTS = ["HR", "Finance", "IT", "Sales", "Stores"];
+const COMPANIES = [
+  "CIC Feeds",
+  "CIC Poulry",
+  "CIC Vetcare",
+  "Asiavet",
+  "All Companies",
+];
 
 export default function Navbar() {
   const [visible, setVisible] = useState(false);
   const [pinned, setPinned] = useState(false);
+  const [companyOpen, setCompanyOpen] = useState(false);
+  const [selectedCompany, setSelectedCompany] = useState("All Companies");
   const isScrolled = useRef(false);
   const hoverZoneRef = useRef<HTMLDivElement>(null);
 
@@ -15,8 +27,8 @@ export default function Navbar() {
         setVisible(true);
       } else {
         isScrolled.current = false;
-        setPinned(false); // reset pin when back at top
-        setVisible(false); // always close at top
+        setPinned(false);
+        setVisible(false);
       }
     };
     window.addEventListener("scroll", handleScroll);
@@ -50,24 +62,21 @@ export default function Navbar() {
           ${visible ? "translate-y-0" : "-translate-y-full"}
         `}
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center h-16">
-            <div className="flex-shrink-0">
+        <div className="max-w-full mx-auto px-6 sm:px-8 lg:px-10">
+          <div className="flex items-center justify-between h-16">
+            {/* Left: Logo + Departments */}
+            <div className="flex items-center gap-12">
+              {/* Logo */}
               <Link
                 to="/"
                 onClick={(e) => {
                   e.preventDefault();
                   window.scrollTo({ top: 0, behavior: "smooth" });
-
                   const onScrollEnd = () => {
                     window.removeEventListener("scrollend", onScrollEnd);
                     window.location.href = "/";
                   };
-
-                  // 'scrollend' fires when scroll animation finishes
                   window.addEventListener("scrollend", onScrollEnd);
-
-                  // Fallback in case scrollend doesn't fire (already at top or unsupported browser)
                   setTimeout(() => {
                     window.removeEventListener("scrollend", onScrollEnd);
                     window.location.href = "/";
@@ -80,12 +89,74 @@ export default function Navbar() {
                   className="h-14 w-auto object-contain"
                 />
               </Link>
+
+              {/* Departments */}
+              <div className="hidden md:flex items-center gap-8">
+                {DEPARTMENTS.map((dept) => (
+                  <Link
+                    key={dept}
+                    to={`/${dept.toLowerCase()}`}
+                    className="text-gray-700 font-medium hover:text-blue-600 transition-colors flex items-center gap-1"
+                  >
+                    {dept}
+                    <ChevronDown size={16} className="opacity-60" />
+                  </Link>
+                ))}
+
+                {/* Settings Icon */}
+                <button
+                  aria-label="Settings"
+                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                >
+                  <Plus size={20} className="text-gray-600" />
+                </button>
+              </div>
+            </div>
+
+            {/* Right: Company Selector */}
+            <div className="relative">
+              <button
+                onClick={() => setCompanyOpen(!companyOpen)}
+                className="hidden sm:flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-full hover:bg-gray-50 transition-colors"
+              >
+                <span className="text-sm font-medium text-gray-700">
+                  {selectedCompany}
+                </span>
+                <ChevronDown
+                  size={18}
+                  className={`text-gray-600 transition-transform ${
+                    companyOpen ? "rotate-180" : ""
+                  }`}
+                />
+              </button>
+
+              {/* Dropdown */}
+              {companyOpen && (
+                <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+                  {COMPANIES.map((company) => (
+                    <button
+                      key={company}
+                      onClick={() => {
+                        setSelectedCompany(company);
+                        setCompanyOpen(false);
+                      }}
+                      className={`w-full text-left px-4 py-2 hover:bg-blue-50 transition-colors ${
+                        selectedCompany === company
+                          ? "text-blue-600 font-medium bg-blue-50"
+                          : "text-gray-700"
+                      }`}
+                    >
+                      {company}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
       </nav>
 
-      {/* Bare hamburger toggle — visible only when navbar is hidden */}
+      {/* Hamburger toggle */}
       <button
         onClick={handleToggle}
         aria-label="Show navigation"

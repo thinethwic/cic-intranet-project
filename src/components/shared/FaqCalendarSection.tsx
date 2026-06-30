@@ -26,7 +26,7 @@ export default function FaqCalendarSection() {
   ];
 
   return (
-    <section className="max-w-7xl mx-auto px-2 py-4">
+    <section className="max-w-full mx-auto px-6 sm:px-8 py-4 sm:py-4">
       <div>
         <h2 className="text-4xl font-bold text-blue-900 mb-6">FAQ</h2>
         <div className="w-12 h-0.5 bg-blue-900 rounded mb-5" />

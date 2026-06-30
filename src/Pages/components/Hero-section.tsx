@@ -1,7 +1,13 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { ChevronLeft, ChevronRight } from "lucide-react";
-import { Wheat, Pill, Bird, Syringe } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  HelpCircle,
+  ToolCaseIcon,
+  Globe,
+} from "lucide-react";
+import { FaFacebookF, FaHouseDamage, FaYoutube } from "react-icons/fa";
 import { Link } from "react-router-dom";
 
 import slide1 from "../../assets/chicken_farm.png";
@@ -10,42 +16,47 @@ import slide3 from "../../assets/Mask-group3.avif";
 import slide4 from "../../assets/poulry image.png";
 
 interface Slide {
-  title: string;
-  subtitle: string;
   image: string;
 }
 
 const slides: Slide[] = [
   {
-    title: "Welcome to CIC Feeds Group",
-    subtitle: "Sri Lanka's Leading Livestock Solutions Provider",
     image: slide1,
   },
   {
-    title: "Premium Poultry Excellence",
-    subtitle:
-      "Delivering fresh, safe, and trusted poultry products across Sri Lanka",
     image: slide2,
   },
   {
-    title: "Trusted Veterinary Care",
-    subtitle:
-      "Innovative healthcare solutions for stronger and healthier animals",
     image: slide3,
   },
   {
-    title: "Advanced Animal Feed Solutions",
-    subtitle:
-      "High-quality nutrition for healthier and more productive livestock",
     image: slide4,
   },
 ];
 
 const categories = [
-  { label: "CIC Feeds", icon: Wheat, Link: "/our-segments/cic-feeds" },
-  { label: "CIC Poultry", icon: Bird, Link: "/our-segments/cic-poulry" },
-  { label: "CIC Vetcare", icon: Pill, Link: "/our-segments/cic-vetcare" },
-  { label: "Asiavet", icon: Syringe, Link: "/our-segments/asia-vet" },
+  { label: "Help Desk", icon: HelpCircle, Link: "/helpdesk" },
+  {
+    label: "Gallery HR",
+    icon: FaHouseDamage,
+    Link: "/",
+  },
+  {
+    label: "Asset Tool",
+    icon: ToolCaseIcon,
+    Link: "https://cicinventory.netlify.app",
+  },
+  { label: "Official Website", icon: Globe, Link: "https://www.cic.lk/" },
+  {
+    label: "Facebook Page",
+    icon: FaFacebookF,
+    Link: "https://web.facebook.com/cicfeedsgrp",
+  },
+  {
+    label: "Youtube Page",
+    icon: FaYoutube,
+    Link: "https://youtube.com/@cicfeedsgroup",
+  },
 ];
 
 const AUTO_SLIDE_INTERVAL = 8000;
@@ -68,7 +79,7 @@ export default function HeroSection() {
   }, []);
 
   return (
-    <section className="relative w-full min-h-[480px] md:min-h-[700px] overflow-hidden flex flex-col">
+    <section className="relative w-full min-h-[480px] md:min-h-[400px] overflow-hidden flex flex-col">
       {/* Background slides — no overlays */}
       {slides.map((slide, i) => (
         <div
@@ -76,35 +87,12 @@ export default function HeroSection() {
           className="absolute inset-0 transition-opacity duration-700"
           style={{ opacity: i === currentSlide ? 1 : 0 }}
         >
-          <img
-            src={slide.image}
-            alt={slide.title}
-            className="w-full h-full object-cover"
-          />
+          <img src={slide.image} className="w-full h-full object-cover" />
         </div>
       ))}
 
-      {/* Subtle gradient only behind text */}
-      <div className="absolute inset-0 z-10 bg-gradient-to-b from-black/30 via-black/20 to-transparent" />
-
-      {/* Slide text — centered */}
-      <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 px-14 md:px-16">
-        <h1
-          key={currentSlide}
-          className="text-3xl sm:text-4xl md:text-7xl font-bold text-white text-center animate-fade-in leading-tight drop-shadow-xl"
-        >
-          {slides[currentSlide].title}
-        </h1>
-        <p
-          key={`sub-${currentSlide}`}
-          className="text-white text-sm sm:text-base md:text-xl text-center animate-fade-in drop-shadow-lg font-medium"
-        >
-          {slides[currentSlide].subtitle}
-        </p>
-      </div>
-
       {/* Category cards — bottom center */}
-      <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-20 grid grid-cols-2 sm:grid-cols-4 gap-4 w-max px-4">
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 grid grid-cols-3 sm:grid-cols-3 md:grid-cols-6 gap-4 w-max px-4">
         {categories.map(({ label, icon: Icon, Link: link }, i) => (
           <Link to={link} key={i}>
             {/* 👇 wrap Card in animated div */}
@@ -116,7 +104,7 @@ export default function HeroSection() {
                 transitionDelay: `${300 + i * 120}ms`,
               }}
             >
-              <Card className="bg-white/80 backdrop-blur-sm border border-white/60 hover:bg-white transition-all cursor-pointer group shadow-md w-36 sm:w-44">
+              <Card className="bg-white/36 backdrop-blur-sm border border-white/60 hover:bg-white/60 transition-all cursor-pointer group shadow-md w-36 sm:w-44">
                 <CardContent className="flex flex-col items-center justify-center py-6 px-3">
                   <div className="mb-3 p-3 rounded-2xl bg-blue-50 group-hover:bg-blue-100 transition-all group-hover:scale-110">
                     <Icon className="w-7 h-7 md:w-8 md:h-8 stroke-[1.5] text-[oklch(37.9%_0.146_265.522)]" />
@@ -150,7 +138,7 @@ export default function HeroSection() {
       </button>
 
       {/* Dots */}
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-20">
+      <div className="absolute bottom-1 left-1/2 -translate-x-1/2 flex gap-2 z-20">
         {slides.map((_, i) => (
           <button
             key={i}

@@ -74,7 +74,7 @@ export default function NewsDetailPage() {
     <div className="min-h-screen bg-slate-50">
       {/* ── Top nav bar ──────────────────────────────────── */}
       <div className="bg-white border-b border-slate-200 sticky top-0 z-10">
-        <div className="max-w-4xl mx-auto px-6 py-3 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
           <button
             onClick={() => navigate(-1)}
             className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-800 transition-colors"
@@ -102,7 +102,7 @@ export default function NewsDetailPage() {
       </div>
 
       {/* ── Main content ─────────────────────────────────── */}
-      <div className="max-w-4xl mx-auto px-6 py-10">
+      <div className="max-w-7xl mx-auto px-6 py-10">
         {/* Badges */}
         <div className="flex flex-wrap items-center gap-3 mb-5">
           {news.category && (

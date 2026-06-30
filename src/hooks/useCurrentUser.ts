@@ -9,6 +9,7 @@ export interface CurrentUser {
     username: string;
     role: UserRole | null;
     department: string | null;
+    segment: string | null;
     isAdmin: boolean;
     isService: boolean;
     isUser: boolean;
@@ -29,6 +30,7 @@ export const useCurrentUser = (): CurrentUser | null => {
                 username: payload.sub,
                 role,
                 department: payload.department ?? null, // ← add this
+                segment: payload.location ?? null, // ← add this
                 isAdmin: role === "ADMIN",
                 isService: role === "SERVICE",
                 isUser: role === "AUTHORIZED",
