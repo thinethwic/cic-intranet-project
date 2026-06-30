@@ -20,6 +20,7 @@ import {
   LogOut,
   Bell,
 } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Navigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -651,234 +652,246 @@ export default function HelpDeskPage() {
       return [];
     }
   };
+
   // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <div className="bg-surface-subtle">
-      {/* ── Hero ── */}
-      <section className="max-w-7xl mx-auto px-4 py-6 md:py-8">
-        <div className="rounded-3xl border border-slate-200 bg-[linear-gradient(135deg,#f8fbff_0%,#eef5ff_45%,#ffffff_100%)] p-6 shadow-card md:p-8">
-          <img
-            src={logo}
-            alt="CIC Livestock Solutions"
-            className="h-14 w-auto object-contain"
-          />
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between mt-8">
-            <div className="max-w-3xl">
-              <div className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
-                <Headset className="h-3.5 w-3.5" />
-                Employee Support Center
-              </div>
-              <h1 className="mt-4 text-3xl font-bold text-cic-900 md:text-4xl">
+    <div className="min-h-screen bg-slate-50">
+      {/* ── Top Navigation Bar ── */}
+      <header className="sticky top-0 z-10 border-b border-slate-200 bg-white/95 backdrop-blur-sm shadow-sm">
+        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <img src={logo} alt="CIC" className="h-12 w-auto object-contain" />
+            <span className="text-slate-200 text-lg font-light select-none">
+              |
+            </span>
+            <div className="flex items-center gap-2">
+              <Headset className="h-4 w-4 text-cic-600" />
+              <span className="text-base font-semibold text-slate-800">
                 Help Desk
-              </h1>
-              {currentUser?.isService ? (
-                <p className="mt-3 text-sm leading-relaxed text-slate-600 md:text-base">
-                  Manage, respond to, and resolve support tickets submitted by
-                  employees across all segments.
-                </p>
-              ) : (
-                <p className="mt-3 text-sm leading-relaxed text-slate-600 md:text-base">
-                  Submit support requests, follow progress, and keep every
-                  update organized in one place for your segment team.
-                </p>
-              )}
-              <div className="mt-5 flex flex-wrap items-center gap-3">
-                <div className="rounded-full border border-cic-100 bg-white px-3 py-1.5 text-xs font-medium text-slate-600">
-                  Segment:{" "}
-                  <span className="font-semibold text-cic-900">
-                    {currentSegmentLabel}
-                  </span>
-                </div>
-                <div className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600">
-                  Visible tickets:{" "}
-                  <span className="font-semibold text-slate-900">
-                    {filtered.length}
-                  </span>
-                </div>
-                {currentUser && (
-                  <div className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600">
-                    Logged in as:{" "}
-                    <span className="font-semibold text-slate-900">
-                      {currentUser.name}
-                    </span>
-                  </div>
-                )}
-                {currentUser && (
-                  <div className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600">
-                    Department:{" "}
-                    <span className="font-semibold text-slate-900">
-                      {currentUser.department}
-                    </span>
-                  </div>
-                )}
-              </div>
-            </div>
-            <div className="grid gap-3 sm:min-w-72">
-              <div className="flex justify-end">
-                <DropdownMenu>
-                  <DropdownMenuTrigger>
-                    <Button
-                      variant="outline"
-                      className="relative h-11 rounded-2xl border-slate-200 bg-white px-4 text-slate-600 hover:border-cic-200 hover:text-cic-700"
-                    >
-                      <Bell className="h-2 w-2 justify-center" />
-                      {unreadNotificationCount > 0 && (
-                        <span className="absolute right-1 top-3 h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-white" />
-                      )}
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-80 p-0">
-                    <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-                      <div>
-                        <p className="text-sm font-medium text-slate-900">
-                          Notifications
-                        </p>
-                        <p className="text-xs text-slate-400">
-                          {unreadNotificationCount} unread
-                        </p>
-                      </div>
-                      {notifications.length > 0 && (
-                        <button
-                          type="button"
-                          onClick={markAllNotificationsRead}
-                          className="text-xs text-cic-600 hover:text-cic-800"
-                        >
-                          Mark all read
-                        </button>
-                      )}
-                    </div>
-                    <div className="max-h-80 overflow-y-auto">
-                      {notifications.length === 0 ? (
-                        <div className="px-4 py-6 text-sm text-slate-400">
-                          No notifications yet
-                        </div>
-                      ) : (
-                        notifications.map((notification) => (
-                          <button
-                            key={notification.id}
-                            type="button"
-                            onClick={() => {
-                              markNotificationRead(notification.id);
-                              const ticket = tickets.find(
-                                (item) => item.id === notification.ticketId,
-                              );
-                              if (ticket) openTicket(ticket);
-                            }}
-                            className="flex w-full items-start gap-3 border-b border-slate-100 px-4 py-3 text-left hover:bg-slate-50"
-                          >
-                            <div className="relative mt-1">
-                              <Bell className="h-4 w-4 text-slate-400" />
-                              {notification.unread && (
-                                <span className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full bg-red-500" />
-                              )}
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <p className="truncate text-sm font-medium text-slate-900">
-                                {notification.ticketNumber}
-                              </p>
-                              <p className="truncate text-xs text-slate-500">
-                                {notification.title}
-                              </p>
-                              <p className="mt-1 line-clamp-2 text-xs text-slate-400">
-                                {notification.description}
-                              </p>
-                              <p className="mt-1 text-xs text-slate-400">
-                                {fmtDate(notification.createdAt)}
-                              </p>
-                            </div>
-                          </button>
-                        ))
-                      )}
-                    </div>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-              <Button
-                onClick={() => {
-                  setForm(makeEmptyForm());
-                  setShowCreate(true);
-                }}
-                className="h-11 rounded-2xl bg-emerald-700 px-4 text-white hover:bg-emerald-600"
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                Create New Ticket
-              </Button>
-              <Button
-                variant="outline"
-                onClick={handleLogout}
-                className="h-11 rounded-2xl border-slate-200 bg-white px-4 text-slate-600 hover:border-red-200 hover:text-red-600"
-              >
-                <LogOut className="mr-2 h-4 w-4" />
-                Logout
-              </Button>
+              </span>
             </div>
           </div>
-        </div>
-      </section>
 
-      {/* ── Stats ── */}
-      <section className="max-w-7xl mx-auto px-4 py-2">
+          <div className="flex items-center gap-2">
+            {/* Notifications */}
+            <DropdownMenu>
+              <DropdownMenuTrigger>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="relative h-9 w-9 rounded-xl text-slate-500 hover:bg-slate-100"
+                >
+                  <Bell className="h-4.5 w-4.5" />
+                  {unreadNotificationCount > 0 && (
+                    <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-red-500 ring-1 ring-white" />
+                  )}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-80 p-0">
+                <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900">
+                      Notifications
+                    </p>
+                    <p className="text-xs text-slate-400">
+                      {unreadNotificationCount} unread
+                    </p>
+                  </div>
+                  {notifications.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={markAllNotificationsRead}
+                      className="text-xs text-cic-600 hover:text-cic-800"
+                    >
+                      Mark all read
+                    </button>
+                  )}
+                </div>
+                <div className="max-h-80 overflow-y-auto">
+                  {notifications.length === 0 ? (
+                    <div className="px-4 py-8 text-center text-sm text-slate-400">
+                      No notifications yet
+                    </div>
+                  ) : (
+                    notifications.map((notification) => (
+                      <button
+                        key={notification.id}
+                        type="button"
+                        onClick={() => {
+                          markNotificationRead(notification.id);
+                          const ticket = tickets.find(
+                            (item) => item.id === notification.ticketId,
+                          );
+                          if (ticket) openTicket(ticket);
+                        }}
+                        className="flex w-full items-start gap-3 border-b border-slate-100 px-4 py-3 text-left hover:bg-slate-50"
+                      >
+                        <div className="relative mt-0.5 shrink-0">
+                          <div
+                            className={`flex h-7 w-7 items-center justify-center rounded-lg ${notification.unread ? "bg-cic-50" : "bg-slate-100"}`}
+                          >
+                            <Bell className="h-3.5 w-3.5 text-slate-400" />
+                          </div>
+                          {notification.unread && (
+                            <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-red-500" />
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs font-semibold text-slate-400">
+                            {notification.ticketNumber}
+                          </p>
+                          <p className="truncate text-sm font-medium text-slate-800">
+                            {notification.title}
+                          </p>
+                          <p className="mt-0.5 line-clamp-2 text-xs text-slate-400">
+                            {notification.description}
+                          </p>
+                          <p className="mt-1 text-xs text-slate-300">
+                            {fmtDate(notification.createdAt)}
+                          </p>
+                        </div>
+                      </button>
+                    ))
+                  )}
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* User pill */}
+            {currentUser && (
+              <div className="hidden sm:flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5">
+                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-cic-100 shrink-0">
+                  <Users className="h-3 w-3 text-cic-700" />
+                </div>
+                <span className="text-sm font-medium text-slate-700 max-w-36 truncate">
+                  {currentUser.name}
+                </span>
+              </div>
+            )}
+
+            {/* New Ticket */}
+            <Button
+              onClick={() => {
+                setForm(makeEmptyForm());
+                setShowCreate(true);
+              }}
+              className="hidden sm:flex h-9 rounded-xl bg-cic-900 px-4 text-sm text-white hover:bg-blue-800"
+            >
+              <Plus className="mr-1.5 h-4 w-4" />
+              New Ticket
+            </Button>
+
+            {/* Logout */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleLogout}
+              className="h-9 w-9 rounded-xl text-slate-400 hover:bg-red-50 hover:text-red-500"
+              title="Logout"
+            >
+              <LogOut className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      </header>
+
+      <div className="max-w-7xl mx-auto px-6 py-8 space-y-6">
+        {/* ── Page Header ── */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <div className="flex flex-wrap items-center gap-2 mb-2.5">
+              <Badge
+                variant="outline"
+                className="rounded-full bg-emerald-50 text-emerald-700 border-emerald-200 text-xs font-semibold px-3 py-1"
+              >
+                <Headset className="mr-1.5 h-3.5 w-3.5" />
+                {currentSegmentLabel}
+              </Badge>
+              {currentUser?.department && (
+                <Badge
+                  variant="outline"
+                  className="rounded-full bg-slate-100 text-slate-600 border-slate-200 text-xs font-semibold px-3 py-1"
+                >
+                  <Building2 className="mr-1.5 h-3.5 w-3.5" />
+                  {currentUser.department}
+                </Badge>
+              )}
+            </div>
+            <h1 className="text-2xl font-bold text-slate-900">
+              Support Requests
+            </h1>
+            <p className="mt-1 text-sm text-slate-500">
+              {currentUser?.isService
+                ? "Manage and respond to support tickets from your team."
+                : "Submit and track support requests for your segment."}
+            </p>
+          </div>
+          <Button
+            onClick={() => {
+              setForm(makeEmptyForm());
+              setShowCreate(true);
+            }}
+            className="sm:hidden h-10 rounded-xl bg-cic-900 px-5 text-sm text-white hover:bg-blue-800"
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            New Ticket
+          </Button>
+        </div>
+
+        {/* ── Stats ── */}
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
           {statsData.map((s) => {
             const StatIcon = s.icon;
             return (
               <Card
                 key={s.label}
-                className="border border-slate-200 bg-white shadow-card"
+                className="border border-slate-200 bg-white shadow-sm"
               >
-                <CardContent className="p-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="text-xs font-medium uppercase tracking-[0.16em] text-slate-400">
-                        {s.label}
-                      </p>
-                      <p
-                        className={`mt-3 text-3xl font-semibold ${s.valueClass}`}
-                      >
-                        {s.value}
-                      </p>
-                    </div>
+                <CardContent className="p-5">
+                  <div className="flex items-center justify-between mb-4">
+                    <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">
+                      {s.label}
+                    </p>
                     <div
-                      className={`flex h-11 w-11 items-center justify-center rounded-2xl ${s.iconClass}`}
+                      className={`flex h-10 w-10 items-center justify-center rounded-xl ${s.iconClass}`}
                     >
                       <StatIcon className="h-5 w-5" />
                     </div>
                   </div>
+                  <p className={`text-3xl font-bold ${s.valueClass}`}>
+                    {s.value}
+                  </p>
                 </CardContent>
               </Card>
             );
           })}
         </div>
-      </section>
 
-      {/* ── Filters + Ticket List ── */}
-      <section className="max-w-7xl mx-auto px-4 py-6">
-        <div className="grid gap-6 xl:grid-cols-[0.9fr_1.55fr]">
-          <Card className="h-fit border border-slate-200 bg-white shadow-card">
-            <CardContent className="space-y-5 p-5">
+        {/* ── Filters + Ticket List ── */}
+        <div className="grid gap-6 xl:grid-cols-[320px_1fr]">
+          {/* Filter Panel */}
+          <Card className="h-fit border border-slate-200 bg-white shadow-sm">
+            <CardContent className="p-5 space-y-5">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+                <h2 className="text-base font-semibold text-slate-900">
                   Filters
-                </p>
-                <h2 className="mt-2 text-xl font-semibold text-slate-900">
-                  Search your requests
                 </h2>
-                <p className="mt-1 text-sm text-slate-500">
-                  Narrow down tickets by keyword, status, and category.
+                <p className="text-sm text-slate-400 mt-0.5">
+                  Narrow by keyword, status, or category.
                 </p>
               </div>
+              <div className="relative">
+                <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <Input
+                  className="h-10 rounded-xl border-slate-200 bg-slate-50 pl-10 text-sm shadow-none focus-visible:ring-cic-200"
+                  placeholder="Search tickets..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+              </div>
               <div className="space-y-4">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                  <Input
-                    className="h-11 rounded-2xl border-slate-200 bg-slate-50/70 pl-9 shadow-none focus-visible:ring-cic-200"
-                    placeholder="Search by title or ticket number"
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+                <div className="space-y-2.5">
+                  <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
                     Status
                   </p>
                   <div className="flex flex-wrap gap-2">
@@ -886,103 +899,112 @@ export default function HelpDeskPage() {
                       <button
                         key={s}
                         onClick={() => setStatusFilter(s)}
-                        className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
+                        className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
                           statusFilter === s
                             ? "border-cic-900 bg-cic-900 text-white"
                             : "border-slate-200 bg-white text-slate-500 hover:border-cic-200 hover:text-cic-700"
                         }`}
                       >
-                        {s === "All" ? "All Statuses" : s.replace(/_/g, " ")}
+                        {s === "All" ? "All" : s.replace(/_/g, " ")}
                       </button>
                     ))}
                   </div>
-                  {categories.length > 0 && (
-                    <div className="space-y-2">
-                      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-                        Category
-                      </p>
-                      <div className="flex flex-wrap gap-2">
-                        <button
-                          onClick={() => setCategoryFilter("All")}
-                          className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
-                            categoryFilter === "All"
-                              ? "border-cic-900 bg-cic-900 text-white"
-                              : "border-slate-200 bg-white text-slate-500 hover:border-cic-200 hover:text-cic-700"
-                          }`}
-                        >
-                          All Categories
-                        </button>
-                        {categories.map((cat) => {
-                          const CatIcon = getCategoryIcon(cat.name);
-                          return (
-                            <button
-                              key={cat.id}
-                              onClick={() => setCategoryFilter(cat.name)}
-                              className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
-                                categoryFilter === cat.name
-                                  ? "border-cic-900 bg-cic-900 text-white"
-                                  : "border-slate-200 bg-white text-slate-500 hover:border-cic-200 hover:text-cic-700"
-                              }`}
-                            >
-                              <CatIcon className="h-3 w-3" />
-                              {cat.name}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
                 </div>
+                {categories.length > 0 && (
+                  <div className="space-y-2.5">
+                    <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                      Category
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        onClick={() => setCategoryFilter("All")}
+                        className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
+                          categoryFilter === "All"
+                            ? "border-cic-900 bg-cic-900 text-white"
+                            : "border-slate-200 bg-white text-slate-500 hover:border-cic-200 hover:text-cic-700"
+                        }`}
+                      >
+                        All
+                      </button>
+                      {categories.map((cat) => {
+                        const CatIcon = getCategoryIcon(cat.name);
+                        return (
+                          <button
+                            key={cat.id}
+                            onClick={() => setCategoryFilter(cat.name)}
+                            className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
+                              categoryFilter === cat.name
+                                ? "border-cic-900 bg-cic-900 text-white"
+                                : "border-slate-200 bg-white text-slate-500 hover:border-cic-200 hover:text-cic-700"
+                            }`}
+                          >
+                            <CatIcon className="h-3.5 w-3.5" />
+                            {cat.name}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
+
+          {/* Ticket List */}
           <div className="space-y-4">
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-                  Ticket List
-                </p>
-                <h2 className="mt-1 text-2xl font-semibold text-slate-900">
-                  Support requests
-                </h2>
-              </div>
-              <div className="hidden items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-500 shadow-card sm:flex">
-                <Circle className="h-3 w-3 fill-emerald-500 text-emerald-500" />
-                {filtered.length} records
-              </div>
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-slate-500 font-medium">
+                {filtered.length} ticket{filtered.length === 1 ? "" : "s"} found
+              </p>
             </div>
 
             {loading ? (
-              <Card className="border border-slate-200 bg-white shadow-card">
-                <CardContent className="flex min-h-72 flex-col items-center justify-center gap-3 text-center">
-                  <Loader2 className="h-8 w-8 animate-spin text-cic-700" />
-                  <div>
-                    <p className="font-medium text-slate-700">
-                      Loading tickets
-                    </p>
-                    <p className="text-sm text-slate-400">
-                      Please wait while we prepare your support queue.
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
+              <div className="space-y-3">
+                {[...Array(4)].map((_, i) => (
+                  <Card
+                    key={i}
+                    className="border border-slate-200 bg-white shadow-sm"
+                  >
+                    <CardContent className="p-5">
+                      <div className="flex gap-4">
+                        <Skeleton className="h-12 w-12 rounded-xl shrink-0" />
+                        <div className="flex-1 space-y-2.5">
+                          <div className="flex gap-2">
+                            <Skeleton className="h-5 w-24 rounded-md" />
+                            <Skeleton className="h-5 w-18 rounded-md" />
+                            <Skeleton className="h-5 w-16 rounded-md" />
+                          </div>
+                          <Skeleton className="h-5 w-2/3" />
+                          <Skeleton className="h-4 w-full" />
+                          <div className="flex gap-3">
+                            <Skeleton className="h-4 w-24" />
+                            <Skeleton className="h-4 w-20" />
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
             ) : filtered.length === 0 ? (
-              <Card className="border border-dashed border-slate-200 bg-slate-50 shadow-card">
-                <CardContent className="flex min-h-72 flex-col items-center justify-center px-6 text-center">
-                  <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-3xl bg-cic-50 text-blue-400">
-                    <AlertCircle className="h-7 w-7" />
+              <Card className="border border-dashed border-slate-200 bg-white shadow-sm">
+                <CardContent className="flex min-h-64 flex-col items-center justify-center gap-4 text-center px-6">
+                  <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100">
+                    <Headset className="h-7 w-7 text-slate-300" />
                   </div>
-                  <h3 className="text-lg font-semibold text-slate-800">
-                    No tickets found
-                  </h3>
-                  <p className="mt-2 max-w-md text-sm leading-relaxed text-slate-400">
-                    There are no requests matching the current filters. Try
-                    changing your filters or submit a new ticket.
-                  </p>
+                  <div>
+                    <h3 className="text-base font-semibold text-slate-700">
+                      No tickets found
+                    </h3>
+                    <p className="mt-1.5 text-sm text-slate-400 max-w-xs">
+                      No requests match the current filters. Adjust your search
+                      or create a new ticket.
+                    </p>
+                  </div>
                 </CardContent>
               </Card>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {paginated.map((ticket) => {
                   const status = STATUS_CONFIG[ticket.status];
                   const priority = PRIORITY_CONFIG[ticket.priority];
@@ -992,79 +1014,72 @@ export default function HelpDeskPage() {
                   return (
                     <Card
                       key={ticket.id}
-                      className="group cursor-pointer border border-slate-200 bg-white shadow-card transition-all hover:-translate-y-0.5 hover:border-cic-200 hover:shadow-card-hover"
+                      className="group cursor-pointer border border-slate-200 bg-white shadow-sm transition-all hover:border-cic-200 hover:shadow-md"
                     >
                       <CardContent className="p-5">
-                        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                          <div className="flex min-w-0 gap-4">
-                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-cic-50 text-cic-800 ring-1 ring-cic-100">
-                              <CategoryIcon className="h-5 w-5" />
+                        <div className="flex items-start gap-4">
+                          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-500 group-hover:bg-cic-50 group-hover:text-cic-700 transition-colors">
+                            <CategoryIcon className="h-5 w-5" />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex flex-wrap items-center gap-2 mb-2">
+                              <span className="font-mono text-xs font-semibold text-slate-400">
+                                {ticket.ticketNumber}
+                              </span>
+                              <Badge
+                                variant="outline"
+                                className={`rounded-md px-2.5 h-6 text-xs ${status.class}`}
+                              >
+                                <StatusIcon className="mr-1 h-3 w-3" />
+                                {status.label}
+                              </Badge>
+                              <Badge
+                                variant="outline"
+                                className={`rounded-md px-2.5 h-6 text-xs ${priority.class}`}
+                              >
+                                {ticket.priority}
+                              </Badge>
+                              {segment && (
+                                <Badge
+                                  variant="outline"
+                                  className={`rounded-md px-2.5 h-6 text-xs ${segment.class}`}
+                                >
+                                  {segment.label}
+                                </Badge>
+                              )}
+                              {ticket.submittedByName && (
+                                <Badge
+                                  variant="outline"
+                                  className="rounded-md px-2.5 h-6 text-xs bg-slate-50 text-slate-500 border-slate-200"
+                                >
+                                  <Users className="mr-1 h-3 w-3" />
+                                  {ticket.submittedByName}
+                                </Badge>
+                              )}
                             </div>
-                            <div className="min-w-0">
-                              <div className="mb-2 flex flex-wrap items-center gap-2">
-                                <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold tracking-[0.14em] text-slate-500">
-                                  {ticket.ticketNumber}
+                            <p className="text-base font-semibold text-slate-800 group-hover:text-cic-900 transition-colors">
+                              {ticket.title}
+                            </p>
+                            <p className="mt-1 text-sm text-slate-400 line-clamp-2">
+                              {ticket.description}
+                            </p>
+                            <div className="mt-2.5 flex flex-wrap items-center gap-4 text-xs text-slate-400">
+                              <span className="flex items-center gap-1.5">
+                                <Clock className="h-3.5 w-3.5" />
+                                {fmtDate(ticket.createdAt)}
+                              </span>
+                              {ticket.department && (
+                                <span className="flex items-center gap-1.5">
+                                  <Building2 className="h-3.5 w-3.5" />
+                                  {ticket.department}
                                 </span>
-                                <Badge
-                                  variant="outline"
-                                  className={`rounded-full px-2.5 text-xs ${status.class}`}
-                                >
-                                  <StatusIcon className="mr-1 h-3 w-3" />
-                                  {status.label}
-                                </Badge>
-                                <Badge
-                                  variant="outline"
-                                  className={`rounded-full px-2.5 text-xs ${priority.class}`}
-                                >
-                                  {ticket.priority}
-                                </Badge>
-                                {segment && (
-                                  <Badge
-                                    variant="outline"
-                                    className={`rounded-full px-2.5 text-xs ${segment.class}`}
-                                  >
-                                    {segment.label}
-                                  </Badge>
-                                )}
-                                {ticket.department && (
-                                  <Badge
-                                    variant="outline"
-                                    className="rounded-full px-2.5 text-xs bg-slate-50 text-slate-600 border-slate-200"
-                                  >
-                                    <Building2 className="mr-1 h-3 w-3" />
-                                    {ticket.department}
-                                  </Badge>
-                                )}
-                                {ticket.submittedByName && (
-                                  <Badge
-                                    variant="outline"
-                                    className="rounded-full px-2.5 text-xs bg-slate-50 text-cic-500 border-cic-200"
-                                  >
-                                    <Users className="h-3.5 w-3.5" />
-                                    {ticket.submittedByName}
-                                  </Badge>
-                                )}
-                              </div>
-                              <p className="text-base font-semibold text-slate-900 transition-colors group-hover:text-cic-900">
-                                {ticket.title}
-                              </p>
-                              <p className="mt-1 line-clamp-2 text-sm leading-relaxed text-slate-500">
-                                {ticket.description}
-                              </p>
+                              )}
                             </div>
                           </div>
-                          <div className="flex items-center justify-between gap-4 border-t border-slate-100 pt-3 lg:border-t-0 lg:pt-0">
-                            <div className="flex items-center gap-2 text-xs font-medium text-slate-400">
-                              <Clock className="h-3.5 w-3.5" />
-                              {fmtDate(ticket.createdAt)}
-                            </div>
-                            <button
-                              onClick={() => openTicket(ticket)}
-                              className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-400 transition-colors hover:bg-cic-50 hover:text-cic-600"
-                            >
-                              <ChevronRight className="h-4 w-4" />
-                            </button>
-                          </div>
+                          <ChevronRight
+                            className="h-5 w-5 text-slate-300 self-center shrink-0 group-hover:text-cic-500 transition-colors"
+                            onClick={() => openTicket(ticket)}
+                          />
                         </div>
                       </CardContent>
                     </Card>
@@ -1081,10 +1096,9 @@ export default function HelpDeskPage() {
               itemLabel="tickets"
               onPageChange={setPage}
             />
-          </div>{" "}
-          {/* closes the right column space-y-4 div */}
+          </div>
         </div>
-      </section>
+      </div>
 
       {/* ── Create Ticket Dialog ── */}
       <Dialog
@@ -1094,174 +1108,199 @@ export default function HelpDeskPage() {
           setShowCreate(open);
         }}
       >
-        <DialogContent className="rounded-3xl border-0 p-0 shadow-[0_24px_80px_-36px_rgba(15,23,42,0.45)] flex flex-col max-h-[92vh] w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] sm:w-full sm:max-w-xl overflow-hidden">
+        <DialogContent className="rounded-3xl border-0 p-0 shadow-[0_24px_80px_-36px_rgba(15,23,42,0.45)] flex flex-col max-h-[92vh] w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] sm:w-full sm:max-w-2xl overflow-hidden">
           <div className="rounded-3xl bg-white flex flex-col min-h-0 overflow-hidden">
-            <DialogHeader>
-              <div className="rounded-t-[28px] bg-linear-to-r from-slate-950 via-blue-950 to-blue-900 px-5 py-5 sm:px-6 text-white shrink-0">
-                <DialogTitle className="flex items-center gap-2 text-left text-xl text-white">
-                  <Plus className="h-4 w-4" /> Submit a Ticket
-                </DialogTitle>
-                <DialogDescription className="mt-2 text-left text-cic-100/80">
-                  Describe your issue clearly and route it to the right support
+            <DialogHeader className="shrink-0">
+              <div className="rounded-t-[28px] bg-linear-to-r from-slate-950 via-blue-950 to-blue-900 px-6 py-6 text-white">
+                <div className="flex items-center gap-3 mb-1">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 ring-1 ring-white/20">
+                    <Plus className="h-5 w-5 text-white" />
+                  </div>
+                  <DialogTitle className="text-left text-xl font-semibold text-white">
+                    Submit a Support Ticket
+                  </DialogTitle>
+                </div>
+                <DialogDescription className="mt-2 text-left text-slate-300 text-sm pl-12">
+                  Fill in the details below to route your issue to the right
                   team.
                 </DialogDescription>
               </div>
             </DialogHeader>
 
-            {/* Scrollable form body */}
-            <div className="space-y-5 px-4 py-4 sm:px-6 sm:py-6 overflow-y-auto flex-1 min-h-0">
-              <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
-                <div className="space-y-1.5 sm:col-span-2">
-                  <Label className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                    Title <span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    placeholder="Brief summary of your issue"
-                    value={form.title}
-                    onChange={(e) =>
-                      setForm((prev) => ({ ...prev, title: e.target.value }))
-                    }
-                    className="h-11 rounded-2xl border-slate-200 bg-slate-50/70 shadow-none focus-visible:ring-cic-200"
-                  />
-                </div>
-                <div className="space-y-1.5 sm:col-span-2">
-                  <Label className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                    Description <span className="text-red-500">*</span>
-                  </Label>
-                  <RichDescriptionEditor
-                    value={form.description}
-                    onChange={(text) =>
-                      setForm((prev) => ({ ...prev, description: text }))
-                    }
-                    attachments={form.attachments}
-                    onAttach={(img) =>
-                      setForm((prev) => ({
-                        ...prev,
-                        attachments: [...prev.attachments, img],
-                      }))
-                    }
-                    onDetach={(id) =>
-                      setForm((prev) => ({
-                        ...prev,
-                        attachments: prev.attachments.filter(
-                          (a) => a.id !== id,
-                        ),
-                      }))
-                    }
-                  />
-                </div>
-                <div className="space-y-1.5 sm:col-span-2">
-                  <Label className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                    Submitted By <span className="text-red-500">*</span>
-                  </Label>
-                  <div className="relative">
-                    <Users className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <div className="overflow-y-auto flex-1 min-h-0 px-6 py-6">
+              <div className="space-y-6">
+                {/* Ticket Info section */}
+                <div className="space-y-4">
+                  <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest">
+                    Ticket Details
+                  </p>
+                  <div className="space-y-1.5">
+                    <Label className="text-sm font-medium text-slate-700">
+                      Title <span className="text-red-500">*</span>
+                    </Label>
                     <Input
-                      placeholder="Your name"
-                      value={form.submittedByName}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        const formatted =
-                          val.length > 0
-                            ? val.charAt(0).toUpperCase() +
-                              val.slice(1).toLowerCase()
-                            : "";
-                        setForm((prev) => ({
-                          ...prev,
-                          submittedByName: formatted,
-                        }));
-                      }}
-                      className="h-11 rounded-2xl border-slate-200 bg-slate-50/70 pl-9 shadow-none focus-visible:ring-cic-200"
+                      placeholder="Brief summary of your issue"
+                      value={form.title}
+                      onChange={(e) =>
+                        setForm((prev) => ({ ...prev, title: e.target.value }))
+                      }
+                      className="h-11 rounded-xl border-slate-200 bg-slate-50 shadow-none focus-visible:ring-cic-200 text-sm"
                     />
                   </div>
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                    Category
-                  </Label>
-                  <select
-                    value={form.category}
-                    onChange={(e) =>
-                      setForm((prev) => ({ ...prev, category: e.target.value }))
-                    }
-                    className="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50/70 px-3 text-sm outline-none focus:ring-2 focus:ring-blue-200"
-                  >
-                    {categories.length === 0 ? (
-                      <option value="" disabled>
-                        Loading categories...
-                      </option>
-                    ) : (
-                      categories.map((cat) => (
-                        <option key={cat.id} value={cat.name}>
-                          {cat.name}
-                        </option>
-                      ))
-                    )}
-                  </select>
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                    Priority
-                  </Label>
-                  <select
-                    value={form.priority}
-                    onChange={(e) =>
-                      setForm((prev) => ({
-                        ...prev,
-                        priority: e.target.value as TicketPriority,
-                      }))
-                    }
-                    className="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50/70 px-3 text-sm outline-none focus:ring-2 focus:ring-blue-200"
-                  >
-                    {PRIORITIES.map((p) => (
-                      <option key={p}>{p}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="space-y-1.5 sm:col-span-2">
-                  <Label className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                    Department
-                  </Label>
-                  <div className="relative">
-                    <Building2 className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                    <Input
-                      placeholder="e.g. Sales, Engineering, Operations"
-                      value={form.department ?? ""}
-                      onChange={(e) =>
+                  <div className="space-y-1.5">
+                    <Label className="text-sm font-medium text-slate-700">
+                      Description <span className="text-red-500">*</span>
+                    </Label>
+                    <RichDescriptionEditor
+                      value={form.description}
+                      onChange={(text) =>
+                        setForm((prev) => ({ ...prev, description: text }))
+                      }
+                      attachments={form.attachments}
+                      onAttach={(img) =>
                         setForm((prev) => ({
                           ...prev,
-                          department: e.target.value,
+                          attachments: [...prev.attachments, img],
                         }))
                       }
-                      readOnly={!!currentUser?.department}
-                      className={`h-11 rounded-2xl border-slate-200 bg-slate-50/70 pl-9 shadow-none focus-visible:ring-cic-200 ${currentUser?.department ? "cursor-default opacity-70" : ""}`}
+                      onDetach={(id) =>
+                        setForm((prev) => ({
+                          ...prev,
+                          attachments: prev.attachments.filter(
+                            (a) => a.id !== id,
+                          ),
+                        }))
+                      }
                     />
                   </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <Label className="text-sm font-medium text-slate-700">
+                        Category
+                      </Label>
+                      <select
+                        value={form.category}
+                        onChange={(e) =>
+                          setForm((prev) => ({
+                            ...prev,
+                            category: e.target.value,
+                          }))
+                        }
+                        className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-800 outline-none focus:ring-2 focus:ring-cic-200"
+                      >
+                        {categories.length === 0 ? (
+                          <option value="" disabled>
+                            Loading...
+                          </option>
+                        ) : (
+                          categories.map((cat) => (
+                            <option key={cat.id} value={cat.name}>
+                              {cat.name}
+                            </option>
+                          ))
+                        )}
+                      </select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-sm font-medium text-slate-700">
+                        Priority
+                      </Label>
+                      <select
+                        value={form.priority}
+                        onChange={(e) =>
+                          setForm((prev) => ({
+                            ...prev,
+                            priority: e.target.value as TicketPriority,
+                          }))
+                        }
+                        className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-800 outline-none focus:ring-2 focus:ring-cic-200"
+                      >
+                        {PRIORITIES.map((p) => (
+                          <option key={p}>{p}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
                 </div>
-                <div className="space-y-1.5 sm:col-span-2">
-                  <Label className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                    Segment
-                  </Label>
-                  {/* ✅ Always reflects the logged-in user's own segment — never editable */}
-                  <div
-                    className={`flex h-11 w-full items-center rounded-2xl border px-3 text-sm font-medium ${SEGMENT_CONFIG[currentSegment ?? ""]?.class ?? "bg-slate-50 text-slate-500 border-slate-200"}`}
-                  >
-                    {SEGMENT_CONFIG[currentSegment ?? ""]?.label ??
-                      currentSegment ??
-                      "-"}
+
+                <div className="border-t border-slate-100" />
+
+                {/* Contact & Routing section */}
+                <div className="space-y-4">
+                  <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest">
+                    Contact & Routing
+                  </p>
+                  <div className="space-y-1.5">
+                    <Label className="text-sm font-medium text-slate-700">
+                      Your Name <span className="text-red-500">*</span>
+                    </Label>
+                    <div className="relative">
+                      <Users className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                      <Input
+                        placeholder="Full name"
+                        value={form.submittedByName}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          const formatted =
+                            val.length > 0
+                              ? val.charAt(0).toUpperCase() +
+                                val.slice(1).toLowerCase()
+                              : "";
+                          setForm((prev) => ({
+                            ...prev,
+                            submittedByName: formatted,
+                          }));
+                        }}
+                        className="h-11 rounded-xl border-slate-200 bg-slate-50 pl-10 shadow-none focus-visible:ring-cic-200 text-sm"
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <Label className="text-sm font-medium text-slate-700">
+                        Department
+                      </Label>
+                      <div className="relative">
+                        <Building2 className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                        <Input
+                          placeholder="e.g. Sales, HR"
+                          value={form.department ?? ""}
+                          onChange={(e) =>
+                            setForm((prev) => ({
+                              ...prev,
+                              department: e.target.value,
+                            }))
+                          }
+                          readOnly={!!currentUser?.department}
+                          className={`h-11 rounded-xl border-slate-200 bg-slate-50 pl-10 shadow-none focus-visible:ring-cic-200 text-sm ${currentUser?.department ? "cursor-default opacity-60" : ""}`}
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-sm font-medium text-slate-700">
+                        Segment
+                      </Label>
+                      <div
+                        className={`flex h-11 w-full items-center rounded-xl border px-3 text-sm font-medium ${SEGMENT_CONFIG[currentSegment ?? ""]?.class ?? "bg-slate-50 text-slate-500 border-slate-200"}`}
+                      >
+                        {SEGMENT_CONFIG[currentSegment ?? ""]?.label ??
+                          currentSegment ??
+                          "-"}
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
 
-            <DialogFooter className="border-t border-slate-100 px-4 py-3 sm:px-6 sm:py-4 shrink-0">
+            <DialogFooter className="border-t border-slate-100 px-6 py-4 shrink-0 bg-slate-50/60">
               <Button
                 variant="outline"
                 onClick={() => {
                   setForm(makeEmptyForm());
                   setShowCreate(false);
                 }}
-                className="rounded-2xl border-slate-200"
+                className="rounded-xl border-slate-200 h-10 px-5"
               >
                 Cancel
               </Button>
@@ -1273,7 +1312,7 @@ export default function HelpDeskPage() {
                   !form.submittedByName.trim() ||
                   saving
                 }
-                className="rounded-2xl bg-cic-900 text-white hover:bg-blue-800"
+                className="rounded-xl bg-cic-900 text-white hover:bg-blue-800 h-10 px-6"
               >
                 {saving ? "Submitting..." : "Submit Ticket"}
               </Button>
@@ -1310,8 +1349,6 @@ export default function HelpDeskPage() {
               const segment = SEGMENT_CONFIG[selectedTicket.segment];
               const StatusIcon = status.icon;
               const CategoryIcon = getCategoryIcon(selectedTicket.category);
-
-              // ✅ Lock check — based on saved status
               const isTicketClosed =
                 selectedTicket.status === "RESOLVED" ||
                 selectedTicket.status === "UNRESOLVED";
@@ -1392,8 +1429,7 @@ export default function HelpDeskPage() {
                     style={{ flex: 1, overflowY: "auto", minHeight: 0 }}
                     className="space-y-4 bg-slate-50/80 px-6 py-5"
                   >
-                    {/* Description */}
-                    <Card className="border border-slate-200/80 bg-white shadow-card">
+                    <Card className="border border-slate-200/80 bg-white shadow-sm">
                       <CardContent className="p-4">
                         <p className="mb-2 text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
                           Description
@@ -1404,12 +1440,11 @@ export default function HelpDeskPage() {
                       </CardContent>
                     </Card>
 
-                    {/* ── Attachments ── */}
                     {(() => {
                       const urls = parseAttachments(selectedTicket.attachments);
                       if (urls.length === 0) return null;
                       return (
-                        <Card className="border border-slate-200/80 bg-white shadow-card">
+                        <Card className="border border-slate-200/80 bg-white shadow-sm">
                           <CardContent className="p-4">
                             <p className="mb-3 text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
                               Attachments ({urls.length})
@@ -1430,7 +1465,7 @@ export default function HelpDeskPage() {
                                       className="h-full w-full object-cover"
                                     />
                                   </div>
-                                  <span className="max-w-[120px] truncate text-xs font-medium text-slate-600 group-hover:text-cic-700">
+                                  <span className="max-w-30 truncate text-xs font-medium text-slate-600 group-hover:text-cic-700">
                                     {url
                                       .substring(url.lastIndexOf("/") + 1)
                                       .replace(/^\d+_/, "")}
@@ -1450,7 +1485,6 @@ export default function HelpDeskPage() {
                           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
                             Conversation
                           </p>
-                          {/* ✅ Hide Live indicator when ticket is closed */}
                           {!isTicketClosed && (
                             <span className="flex items-center gap-1.5 text-xs text-emerald-500 font-medium">
                               <span className="relative flex h-2 w-2">
@@ -1485,8 +1519,22 @@ export default function HelpDeskPage() {
                       )}
 
                       {commentsLoading ? (
-                        <div className="rounded-3xl border border-slate-200 bg-white px-4 py-10 text-center text-sm text-slate-400">
-                          Loading conversation...
+                        <div className="space-y-3">
+                          {[...Array(3)].map((_, i) => (
+                            <div
+                              key={i}
+                              className={`flex ${i % 2 === 0 ? "justify-start" : "justify-end"}`}
+                            >
+                              <div className="max-w-72 space-y-2 rounded-2xl border border-slate-200 bg-white p-3">
+                                <div className="flex items-center gap-2">
+                                  <Skeleton className="h-3 w-24" />
+                                  <Skeleton className="h-4 w-14 rounded-full" />
+                                </div>
+                                <Skeleton className="h-3 w-full" />
+                                <Skeleton className="h-3 w-3/4" />
+                              </div>
+                            </div>
+                          ))}
                         </div>
                       ) : comments.length === 0 ? (
                         <div className="rounded-3xl border border-dashed border-slate-200 bg-white px-4 py-10 text-center text-sm text-slate-400">
@@ -1502,7 +1550,7 @@ export default function HelpDeskPage() {
                                 className={`flex ${appearance.align}`}
                               >
                                 <div
-                                  className={`max-w-[92%] rounded-[22px] border px-4 py-3 text-sm shadow-card sm:max-w-[78%] ${appearance.bubble}`}
+                                  className={`max-w-[92%] rounded-[22px] border px-4 py-3 text-sm shadow-sm sm:max-w-[78%] ${appearance.bubble}`}
                                 >
                                   <div className="mb-2 flex flex-wrap items-center gap-2">
                                     <span
@@ -1519,7 +1567,7 @@ export default function HelpDeskPage() {
                                       {fmtDate(c.createdAt)}
                                     </span>
                                   </div>
-                                  <p className="whitespace-pre-wrap break-words leading-relaxed text-current">
+                                  <p className="whitespace-pre-wrap wrap-break-word leading-relaxed text-current">
                                     {c.message}
                                   </p>
                                 </div>
@@ -1534,7 +1582,6 @@ export default function HelpDeskPage() {
 
                   {/* ── Reply footer ── */}
                   {isTicketClosed ? (
-                    // ✅ Ticket is RESOLVED or UNRESOLVED — show locked message
                     <div className="shrink-0 border-t border-slate-100 bg-white px-4 py-4 sm:px-6">
                       <div className="flex items-center gap-2 rounded-[24px] border border-slate-200 bg-slate-50 px-4 py-3">
                         <ShieldCheck className="h-4 w-4 shrink-0 text-slate-300" />
@@ -1545,7 +1592,6 @@ export default function HelpDeskPage() {
                       </div>
                     </div>
                   ) : (
-                    // ✅ Ticket is OPEN or IN_PROGRESS — show reply box
                     <div className="shrink-0 border-t border-slate-100 bg-white px-4 py-4 sm:px-6">
                       {!commentsLoading && !hasAdminReply ? (
                         <div className="flex items-center justify-center gap-2 rounded-[24px] border border-dashed border-slate-200 bg-slate-50 py-3 text-xs text-slate-400">

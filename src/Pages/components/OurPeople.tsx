@@ -2,9 +2,10 @@ import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useMembers } from "@/hooks/useMembers"; // 👈 import the hook
+import { ChevronLeft, ChevronRight, AlertCircle } from "lucide-react";
+import { useMembers } from "@/hooks/useMembers";
 import { roleLabels } from "@/utils/segmentMapper";
+import { Skeleton } from "@/components/ui/skeleton";
 
 function getInitials(firstName?: string, lastName?: string) {
   const f = firstName?.[0] ?? "";
@@ -44,18 +45,30 @@ export default function OurPeopleCard() {
     return (
       <Card className="relative text-center p-4 rounded-2xl shadow-sm w-full max-w-[260px] mx-auto md:max-w-none">
         <h3 className="text-sm font-semibold text-blue-900 mb-3">Our Staff</h3>
-        <div className="w-20 h-20 mx-auto mb-2 rounded-full bg-gray-200 animate-pulse" />
-        <div className="h-3 bg-gray-200 rounded animate-pulse mx-auto w-32 mb-2" />
-        <div className="h-2 bg-gray-100 rounded animate-pulse mx-auto w-24" />
+        <Skeleton className="w-20 h-20 mx-auto mb-2 rounded-full" />
+        <Skeleton className="h-3 w-32 mx-auto mb-2" />
+        <Skeleton className="h-2 w-24 mx-auto" />
       </Card>
     );
   }
 
-  if (error || members.length === 0) {
+  if (error) {
     return (
       <Card className="relative text-center p-4 rounded-2xl shadow-sm w-full max-w-[260px] mx-auto md:max-w-none">
         <h3 className="text-sm font-semibold text-blue-900 mb-3">Our Staff</h3>
-        <p className="text-xs text-gray-400">{error ?? "No members found."}</p>
+        <div className="flex flex-col items-center gap-1.5 py-2">
+          <AlertCircle className="h-4 w-4 text-red-400" />
+          <p className="text-xs text-red-400">Failed to load staff.</p>
+        </div>
+      </Card>
+    );
+  }
+
+  if (members.length === 0) {
+    return (
+      <Card className="relative text-center p-4 rounded-2xl shadow-sm w-full max-w-[260px] mx-auto md:max-w-none">
+        <h3 className="text-sm font-semibold text-blue-900 mb-3">Our Staff</h3>
+        <p className="text-xs text-slate-400">No members found.</p>
       </Card>
     );
   }

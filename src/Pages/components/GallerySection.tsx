@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
-import { X, ArrowLeft, ArrowRight } from "lucide-react";
+import { X, ArrowLeft, ArrowRight, AlertCircle } from "lucide-react";
 import type { Gallery } from "@/types";
 import { useGalleries } from "@/hooks/useGalleries";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface GalleryImage {
   key: string;
@@ -53,7 +54,18 @@ export default function GallerySection() {
       <section className="max-w-full mx-auto px-6 sm:px-8 py-4 sm:py-4">
         <h2 className="text-4xl font-bold text-blue-900 mb-6">Gallery</h2>
         <div className="w-12 h-0.5 bg-blue-900 rounded mb-5" />
-        <p className="text-sm text-gray-400">Loading gallery...</p>
+        <div className="grid md:grid-cols-3 gap-4 mb-4">
+          <Skeleton className="md:col-span-2 h-75 md:h-100 rounded-2xl" />
+          <div className="grid grid-rows-2 gap-4">
+            <Skeleton className="h-35 md:h-47.5 rounded-2xl" />
+            <Skeleton className="h-35 md:h-47.5 rounded-2xl" />
+          </div>
+        </div>
+        <div className="grid grid-cols-3 gap-4">
+          {[...Array(3)].map((_, i) => (
+            <Skeleton key={i} className="h-44 rounded-2xl" />
+          ))}
+        </div>
       </section>
     );
   }
@@ -63,10 +75,10 @@ export default function GallerySection() {
       <section className="max-w-full mx-auto px-6 sm:px-8 py-4 sm:py-4">
         <h2 className="text-4xl font-bold text-blue-900 mb-6">Gallery</h2>
         <div className="w-12 h-0.5 bg-blue-900 rounded mb-5" />
-        <div className="w-full min-h-55 flex flex-col items-center justify-center gap-3 border border-dashed border-red-200 rounded-2xl bg-red-50">
-          <p className="text-sm font-medium text-red-400">
-            Failed to load gallery. Please try again later.
-          </p>
+        <div className="w-full min-h-55 flex flex-col items-center justify-center gap-2 rounded-2xl bg-red-50 border border-red-200">
+          <AlertCircle className="h-5 w-5 text-red-400" />
+          <p className="text-sm font-medium text-red-500">Failed to load gallery.</p>
+          <p className="text-xs text-red-400">Please try again later.</p>
         </div>
       </section>
     );
@@ -110,6 +122,8 @@ export default function GallerySection() {
               src={main.key}
               alt={main.description || "Gallery main"}
               className="w-full h-full object-cover transition duration-500 group-hover:scale-105"
+              loading="eager"
+              decoding="async"
             />
           </div>
         )}
@@ -127,6 +141,8 @@ export default function GallerySection() {
                     src={img.key}
                     alt={img.description || `Gallery ${i + 2}`}
                     className="w-full h-full object-cover transition duration-500 group-hover:scale-105"
+                    loading="lazy"
+                    decoding="async"
                   />
                 </div>
               ),
@@ -152,6 +168,8 @@ export default function GallerySection() {
                   className={`w-full h-full object-cover transition duration-500 group-hover:scale-105 ${
                     isLast && hiddenCount > 0 ? "brightness-50" : ""
                   }`}
+                  loading="lazy"
+                  decoding="async"
                 />
                 {isLast && hiddenCount > 0 && (
                   <div className="absolute inset-0 flex flex-col items-center justify-center text-white gap-1 pointer-events-none">

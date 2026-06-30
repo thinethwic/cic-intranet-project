@@ -1,5 +1,7 @@
 import { useMembers } from "@/hooks/useMembers";
 import { useEffect, useRef, useState } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { AlertCircle } from "lucide-react";
 
 /* ✅ Counter Component */
 function Counter({ end, start }: { end: number; start: boolean }) {
@@ -28,12 +30,11 @@ function Counter({ end, start }: { end: number; start: boolean }) {
   return <>{count}</>;
 }
 
-/* ✅ Skeleton Card */
 function StatSkeleton() {
   return (
-    <div className="rounded-xl p-6  shadow-sm text-center space-y-3 animate-pulse">
-      <div className="h-14 w-24 bg-gray-200 rounded-lg mx-auto" />
-      <div className="h-4 w-32 bg-gray-100 rounded mx-auto" />
+    <div className="rounded-xl p-6 shadow-sm text-center space-y-3">
+      <Skeleton className="h-14 w-24 mx-auto rounded-lg" />
+      <Skeleton className="h-4 w-32 mx-auto" />
     </div>
   );
 }
@@ -107,11 +108,10 @@ export default function StatsSection() {
       className="bg-[#0E4E96] max-w-full mx-auto px-6 py-10"
     >
       {error ? (
-        <div className="rounded-xl bg-red-50 border border-red-100 px-6 py-8 text-center">
-          <p className="text-sm font-medium text-red-500">
-            Failed to load statistics.
-          </p>
-          <p className="text-xs text-red-400 mt-1">Please refresh the page.</p>
+        <div className="rounded-xl bg-red-50 border border-red-200 px-6 py-8 flex flex-col items-center gap-2">
+          <AlertCircle className="h-5 w-5 text-red-400" />
+          <p className="text-sm font-medium text-red-500">Failed to load statistics.</p>
+          <p className="text-xs text-red-400">Please try again later.</p>
         </div>
       ) : (
         <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4">

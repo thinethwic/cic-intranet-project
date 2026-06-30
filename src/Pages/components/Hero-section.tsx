@@ -3,9 +3,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import {
   ChevronLeft,
   ChevronRight,
-  HelpCircle,
   ToolCaseIcon,
   Globe,
+  Headset,
 } from "lucide-react";
 import { FaFacebookF, FaHouseDamage, FaYoutube } from "react-icons/fa";
 import { Link } from "react-router-dom";
@@ -35,7 +35,7 @@ const slides: Slide[] = [
 ];
 
 const categories = [
-  { label: "Help Desk", icon: HelpCircle, Link: "/helpdesk" },
+  { label: "Help Desk", icon: Headset, Link: "/helpdesk" },
   {
     label: "Gallery HR",
     icon: FaHouseDamage,
@@ -87,7 +87,12 @@ export default function HeroSection() {
           className="absolute inset-0 transition-opacity duration-700"
           style={{ opacity: i === currentSlide ? 1 : 0 }}
         >
-          <img src={slide.image} className="w-full h-full object-cover" />
+          <img
+            src={slide.image}
+            className="w-full h-full object-cover"
+            loading={i === 0 ? "eager" : "lazy"}
+            decoding={i === 0 ? "sync" : "async"}
+          />
         </div>
       ))}
 

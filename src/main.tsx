@@ -11,8 +11,10 @@ import ScrollToTopButton from "./components/shared/ScrollToTopButton";
 import AppErrorBoundary from "./components/AppErrorBoundary";
 import AuthSessionManager from "./components/AuthSessionManager";
 import { installFetchInterceptor } from "./lib/api/installFetchInterceptor";
+import { startKeepAlive } from "./lib/api/keepAlive";
 
 installFetchInterceptor();
+startKeepAlive();
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

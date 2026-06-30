@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useMembers } from "@/hooks/useMembers";
+import { Skeleton } from "@/components/ui/skeleton";
+import { AlertCircle } from "lucide-react";
 
 const ROLE_ORDER = ["CEO", "COO", "CFO"];
 const ROLE_LABELS: Record<string, string> = {
@@ -44,23 +46,29 @@ export default function TopManagementCarousel() {
     }, 600);
   }
 
-  // ── Loading skeleton ────────────────────────────────────────────────────
   if (loading) {
     return (
-      <div className="bg-[#ffffff] rounded-2xl p-6 flex flex-col items-center gap-4">
-        <div className="w-28 h-28 rounded-full bg-[#0E4E96] animate-pulse" />
-        <div className="h-4 w-36 bg-[#0E4E96]rounded animate-pulse" />
-        <div className="h-3 w-28 bg-[#0E4E96] rounded animate-pulse" />
+      <div className="bg-white rounded-2xl p-6 flex flex-col items-center gap-4">
+        <Skeleton className="w-28 h-28 rounded-full" />
+        <Skeleton className="h-4 w-36" />
+        <Skeleton className="h-3 w-28" />
       </div>
     );
   }
 
-  if (error || topManagement.length === 0) {
+  if (error) {
     return (
-      <div className="bg-[#0E4E96] rounded-2xl p-6 flex items-center justify-center">
-        <p className="text-sm text-blue-300">
-          No top management members found.
-        </p>
+      <div className="bg-white rounded-2xl p-6 flex flex-col items-center justify-center gap-2">
+        <AlertCircle className="h-4 w-4 text-red-400" />
+        <p className="text-sm text-red-400">Failed to load management.</p>
+      </div>
+    );
+  }
+
+  if (topManagement.length === 0) {
+    return (
+      <div className="bg-white rounded-2xl p-6 flex items-center justify-center">
+        <p className="text-sm text-slate-400">No top management members found.</p>
       </div>
     );
   }

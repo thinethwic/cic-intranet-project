@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useMembers } from "@/hooks/useMembers";
+import { Skeleton } from "@/components/ui/skeleton";
+import { AlertCircle } from "lucide-react";
 
 const ROLE_ORDER = ["CEO", "COO", "CFO"];
 const ROLE_LABELS: Record<string, string> = {
@@ -68,10 +70,10 @@ export default function MembersCarousel() {
         {[...Array(3)].map((_, i) => (
           <Card key={i}>
             <CardContent className="flex flex-col items-center py-10 gap-3">
-              <div className="w-16 h-16 rounded-full bg-gray-200 animate-pulse" />
-              <div className="h-3 w-20 bg-gray-200 rounded animate-pulse" />
-              <div className="h-2 w-28 bg-gray-100 rounded animate-pulse" />
-              <div className="h-2 w-16 bg-gray-100 rounded animate-pulse" />
+              <Skeleton className="w-16 h-16 rounded-full" />
+              <Skeleton className="h-3 w-20" />
+              <Skeleton className="h-2 w-28" />
+              <Skeleton className="h-2 w-16" />
             </CardContent>
           </Card>
         ))}
@@ -79,10 +81,19 @@ export default function MembersCarousel() {
     );
   }
 
-  if (error || topManagement.length === 0) {
+  if (error) {
     return (
-      <p className="text-center text-sm text-gray-400 py-8">
-        {error ?? "No top management members found."}
+      <div className="flex flex-col items-center gap-2 py-8">
+        <AlertCircle className="h-4 w-4 text-red-400" />
+        <p className="text-sm text-red-400">{error}</p>
+      </div>
+    );
+  }
+
+  if (topManagement.length === 0) {
+    return (
+      <p className="text-center text-sm text-slate-400 py-8">
+        No top management members found.
       </p>
     );
   }
