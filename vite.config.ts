@@ -11,11 +11,13 @@ export default defineConfig({
     chunkSizeWarningLimit: 600,
     rollupOptions: {
       output: {
-        manualChunks: {
-          "vendor-react": ["react", "react-dom", "react-router-dom"],
-          "vendor-ui": ["lucide-react", "react-icons"],
-          "vendor-charts": ["recharts"],
-          "vendor-date": ["date-fns", "react-day-picker"],
+        manualChunks(id) {
+          if (id.includes("node_modules")) {
+            if (["react", "react-dom", "react-router-dom"].some((pkg) => id.includes(`/${pkg}/`))) return "vendor-react";
+            if (["lucide-react", "react-icons"].some((pkg) => id.includes(`/${pkg}/`))) return "vendor-ui";
+            if (id.includes("/recharts/")) return "vendor-charts";
+            if (["date-fns", "react-day-picker"].some((pkg) => id.includes(`/${pkg}/`))) return "vendor-date";
+          }
         },
       },
     },
