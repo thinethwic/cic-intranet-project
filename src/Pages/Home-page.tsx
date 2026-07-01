@@ -485,7 +485,7 @@ function HomePage() {
               <div className="w-8 h-8 rounded-lg bg-cic-900 flex items-center justify-center shrink-0">
                 <CalendarDays className="w-4 h-4 text-white" />
               </div>
-              <h2 className="text-xl sm:text-2xl font-bold text-cic-900 tracking-tight">
+              <h2 className="text-2xl sm:text-3xl font-bold text-cic-900 tracking-tight">
                 Upcoming Events
               </h2>
             </div>
@@ -577,7 +577,7 @@ function HomePage() {
                 <div className="w-8 h-8 rounded-lg bg-cic-900 flex items-center justify-center shrink-0">
                   <FileText className="w-4 h-4 text-white" />
                 </div>
-                <h2 className="text-xl sm:text-2xl font-bold text-cic-900 tracking-tight">
+                <h2 className="text-2xl sm:text-3xl font-bold text-cic-900 tracking-tight">
                   Document Center
                 </h2>
               </div>
@@ -677,7 +677,7 @@ function HomePage() {
               <div className="w-8 h-8 rounded-lg bg-cic-900 flex items-center justify-center shrink-0">
                 <Bell className="w-4 h-4 text-white" />
               </div>
-              <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
+              <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
                 Announcements
               </h2>
               {announcements.length > 0 && (
@@ -771,7 +771,7 @@ function HomePage() {
               <div className="w-8 h-8 rounded-lg bg-amber-500 flex items-center justify-center shrink-0">
                 <Pin className="w-4 h-4 text-white" />
               </div>
-              <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
+              <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
                 Pinned For You
               </h2>
             </div>
@@ -820,7 +820,7 @@ function HomePage() {
               <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center shrink-0">
                 <Users className="w-4 h-4 text-cic-900" />
               </div>
-              <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
+              <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
                 Top Management
               </h2>
             </div>
@@ -834,7 +834,7 @@ function HomePage() {
 
       {/* Birthdays */}
       <section className="max-w-full mx-auto px-6 sm:px-8 py-4 sm:py-4">
-        <h2 className="text-2xl sm:text-3xl font-bold text-cic-900 mb-4">Birthdays</h2>
+        <h2 className="text-2xl sm:text-3xl font-bold text-cic-900 tracking-tight mb-4">Birthdays</h2>
         <div className="w-12 h-0.5 bg-cic-900 rounded mb-5" />
         {membersLoading ? (
           <BirthdaySkeleton />
@@ -863,7 +863,7 @@ function HomePage() {
           style={{ gridTemplateColumns: "1fr 350px" }}
         >
           <div>
-            <h2 className="text-2xl sm:text-3xl font-bold text-cic-900 mb-4">
+            <h2 className="text-2xl sm:text-3xl font-bold text-cic-900 tracking-tight mb-4">
               Welcome to CIC Feeds Group
             </h2>
             <div className="w-12 h-0.5 bg-cic-900 rounded mb-5" />
@@ -905,7 +905,7 @@ function HomePage() {
               <span className="inline-block text-xs font-semibold text-cic-300 uppercase tracking-[0.15em] mb-3">
                 Who We Are
               </span>
-              <h2 className="text-2xl sm:text-3xl font-bold text-white mb-3">OUR Vision</h2>
+              <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight mb-3">OUR Vision</h2>
               <div className="w-10 h-0.5 bg-cic-300/60 rounded mb-5" />
               <p className="text-cic-100 leading-relaxed text-sm font-medium">
                 To raise living standards around the country by delivering
@@ -1004,7 +1004,7 @@ function HomePage() {
               <span className="inline-block text-xs font-semibold text-cic-300 uppercase tracking-[0.15em] mb-3">
                 Our Purpose
               </span>
-              <h2 className="text-2xl sm:text-3xl font-bold text-white mb-3">
+              <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight mb-3">
                 OUR Mission
               </h2>
               <div className="w-10 h-0.5 bg-cic-300/60 rounded mb-5 ml-auto" />
@@ -1023,7 +1023,7 @@ function HomePage() {
 
       {/* Videos */}
       <section className="max-w-full mx-auto px-6 sm:px-8 py-4 sm:py-4">
-        <h2 className="text-2xl sm:text-3xl font-bold text-cic-900 mb-4">Video</h2>
+        <h2 className="text-2xl sm:text-3xl font-bold text-cic-900 tracking-tight mb-4">Video</h2>
         <div className="w-12 h-0.5 bg-cic-900 rounded mb-5" />
         {videosLoading ? (
           <VideoSkeleton />
