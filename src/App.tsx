@@ -16,7 +16,6 @@ const HomePageAsiavet = lazy(() => import("./Pages/Our Segments/Asia Vet/HomePag
 const NewsDetailPage = lazy(() => import("./components/NewsDetailPage"));
 const HelpDeskPage = lazy(() => import("./Pages/Our Segments/components/HelpDeskPage"));
 const AdminLayout = lazy(() => import("./components/AdminLayout"));
-const AdminLogin = lazy(() => import("./Pages/Admin/AdminLogin"));
 const AdminDashboard = lazy(() => import("./Pages/Admin/AdminDashboard"));
 const AdminVideosPage = lazy(() => import("./Pages/Admin/AdminVideo"));
 const AdminDocumentsPage = lazy(() => import("./Pages/Admin/AdminDocumentsPage"));
@@ -55,9 +54,6 @@ function App() {
         <Route element={<EmployeeProtectedRoute />}>
           <Route path="/helpdesk" element={<HelpDeskPage />} />
         </Route>
-
-        {/* ── Admin login ── */}
-        <Route path="/admin/login" element={<AdminLogin />} />
 
         {/* ── Admin routes (SUPER_ADMIN + ADMIN) ── */}
         <Route element={<ProtectedRoute />}>

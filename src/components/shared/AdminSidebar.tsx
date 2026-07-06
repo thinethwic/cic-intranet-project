@@ -148,7 +148,7 @@ export default function AdminSidebar() {
       : location.pathname.startsWith(path);
 
   const handleLogout = async () => {
-    await logout("/admin/login");
+    await logout("/");
   };
 
   const role = adminUser?.role ?? "";

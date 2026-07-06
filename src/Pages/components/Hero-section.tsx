@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   ChevronLeft,
@@ -14,6 +14,11 @@ import slide1 from "../../assets/chicken_farm.png";
 import slide2 from "../../assets/Mask-group5.avif";
 import slide3 from "../../assets/Mask-group3.avif";
 import slide4 from "../../assets/poulry image.png";
+
+import { CalendarDays } from "lucide-react";
+import { Calendar } from "@/components/ui/calendar";
+import { useEvents } from "@/hooks/useEvents";
+import EventItem from "../Our Segments/components/EventItem";
 
 interface Slide {
   image: string;
@@ -78,8 +83,28 @@ export default function HeroSection() {
     return () => clearTimeout(timeout);
   }, []);
 
+  const { events, loading: eventsLoading } = useEvents();
+  const [date, setDate] = useState<Date | undefined>(new Date());
+
+  function formatDate(d: Date | undefined) {
+    if (!d) return "";
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  }
+
+  const selectedDateStr = formatDate(date);
+
+  const eventDates = useMemo(
+    () => new Set(events.map((e) => e.date)),
+    [events],
+  );
+
+  const filteredEvents = events.filter((e) => e.date === selectedDateStr);
+
   return (
-    <section className="relative w-full min-h-[480px] md:min-h-[400px] overflow-hidden flex flex-col">
+    <section className="relative w-full min-h-[480px] md:min-h-[410px] overflow-hidden flex flex-col">
       {/* Background slides — no overlays */}
       {slides.map((slide, i) => (
         <div
@@ -97,7 +122,7 @@ export default function HeroSection() {
       ))}
 
       {/* Category cards — bottom center */}
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 grid grid-cols-3 sm:grid-cols-3 md:grid-cols-6 gap-4 w-max px-4">
+      <div className="absolute bottom-4 left-1/4 -translate-x-1/2 z-20 grid grid-cols-3 sm:grid-cols-3 md:grid-cols-3 gap-4 w-max px-4">
         {categories.map(({ label, icon: Icon, Link: link }, i) => (
           <Link to={link} key={i}>
             {/* 👇 wrap Card in animated div */}
@@ -109,12 +134,12 @@ export default function HeroSection() {
                 transitionDelay: `${300 + i * 120}ms`,
               }}
             >
-              <Card className="bg-white/36 backdrop-blur-sm border border-white/60 hover:bg-white/60 transition-all cursor-pointer group shadow-md w-36 sm:w-44">
+              <Card className="bg-white/36 backdrop-blur-sm border border-white/60 hover:bg-white/60 transition-all cursor-pointer group shadow-md w-36 sm:w-40">
                 <CardContent className="flex flex-col items-center justify-center py-6 px-3">
                   <div className="mb-3 p-3 rounded-2xl bg-blue-50 group-hover:bg-blue-100 transition-all group-hover:scale-110">
-                    <Icon className="w-7 h-7 md:w-8 md:h-8 stroke-[1.5] text-[oklch(37.9%_0.146_265.522)]" />
+                    <Icon className="w-4 h-4 md:w-8 md:h-8 stroke-[1.5] text-[oklch(37.9%_0.146_265.522)]" />
                   </div>
-                  <p className="text-sm sm:text-base font-semibold tracking-wide text-center leading-tight text-gray-700">
+                  <p className="text-sm sm:text-base font-semibold opacity-0 hover:opacity-100 tracking-wide text-center leading-tight text-gray-700">
                     {label}
                   </p>
                 </CardContent>
@@ -122,6 +147,101 @@ export default function HeroSection() {
             </div>
           </Link>
         ))}
+      </div>
+
+      {/* Upcoming Events — right side */}
+      <div
+        className="absolute top-4 bottom-4 right-6 md:right-16 z-20 hidden lg:flex flex-col gap-3 w-[700px]"
+        style={{
+          opacity: cardsVisible ? 1 : 0,
+          transform: cardsVisible ? "translateY(0)" : "translateY(20px)",
+          transition: "opacity 0.5s ease 0.4s, transform 0.5s ease 0.4s",
+        }}
+      >
+        {/* Header — icon box + title */}
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-lg bg-cic-900 flex items-center justify-center shrink-0">
+            <CalendarDays className="w-4 h-4 text-white" />
+          </div>
+          <h2 className="text-xl sm:text-2xl font-bold text-cic-900 tracking-tight drop-shadow-sm">
+            Upcoming Events
+          </h2>
+        </div>
+
+        {/* Events (left) + Calendar (right) */}
+        <div className="flex gap-3 flex-1 min-h-0">
+          {/* Events list */}
+          <div className="flex-1 min-w-0 bg-white rounded-2xl border border-slate-200 shadow-lg flex flex-col overflow-hidden">
+            <div className="px-4 py-3 border-b border-slate-100 bg-slate-50/80 shrink-0">
+              <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest">
+                Events
+              </p>
+              <p className="text-xs text-slate-400 mt-0.5">
+                {date?.toLocaleDateString("en-GB", {
+                  weekday: "long",
+                  day: "numeric",
+                  month: "long",
+                })}
+              </p>
+            </div>
+            <div className="overflow-y-auto flex-1 p-3 space-y-2">
+              {eventsLoading ? (
+                <div className="h-full flex items-center justify-center py-8">
+                  <div className="w-5 h-5 border-2 border-cic-600 border-t-transparent rounded-full animate-spin" />
+                </div>
+              ) : filteredEvents.length > 0 ? (
+                filteredEvents.map((event) => {
+                  const [year, month, day] = event.date.split("-").map(Number);
+                  const eventDate = new Date(year, month - 1, day);
+                  return (
+                    <EventItem
+                      key={event.id}
+                      day={eventDate.getDate().toString()}
+                      month={eventDate.toLocaleString("default", {
+                        month: "short",
+                      })}
+                      title={event.title}
+                      time={event.time}
+                      location={event.location}
+                    />
+                  );
+                })
+              ) : (
+                <div className="h-full flex flex-col items-center justify-center gap-2 py-8">
+                  <CalendarDays className="w-7 h-7 text-slate-200" />
+                  <p className="text-xs text-slate-400 text-center">
+                    No events for selected date
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Calendar */}
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-lg p-3 w-[250px] shrink-0 overflow-hidden">
+            <Calendar
+              mode="single"
+              selected={date}
+              onSelect={setDate}
+              className="w-full p-0 [--cell-size:1.85rem]"
+              modifiers={{
+                hasEvent: (day) => eventDates.has(formatDate(day)),
+              }}
+              modifiersClassNames={{
+                hasEvent: "bg-cic-100 text-cic-800 rounded-full font-bold",
+              }}
+              classNames={{
+                month: "w-full",
+                table: "w-full border-collapse",
+                weekdays: "w-full",
+                week: "w-full",
+                day: "flex-1 text-center",
+                day_selected: "bg-cic-900 text-white rounded-full",
+                day_today: "font-bold text-cic-900",
+              }}
+            />
+          </div>
+        </div>
       </div>
 
       {/* Prev button */}
@@ -143,7 +263,7 @@ export default function HeroSection() {
       </button>
 
       {/* Dots */}
-      <div className="absolute bottom-1 left-1/2 -translate-x-1/2 flex gap-2 z-20">
+      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 flex gap-2 z-20">
         {slides.map((_, i) => (
           <button
             key={i}

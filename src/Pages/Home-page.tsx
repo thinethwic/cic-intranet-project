@@ -16,13 +16,17 @@ import { Users, ChevronDown, ChevronUp } from "lucide-react";
 import visionImg from "@/assets/vision.jpg";
 import missionImg from "@/assets/mission.jpg";
 import GallerySection from "./components/GallerySection";
-import { useRef, useState, useMemo, useEffect } from "react";
+import {
+  useRef,
+  useState,
+  useMemo,
+  useEffect,
+  useSyncExternalStore,
+} from "react";
 import VideoCard, { VideoModal } from "./components/VideoCard";
-import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
-import FaqCalendarSection from "@/components/shared/FaqCalendarSection";
 import WelcomeCarousel from "./components/WelcomeMembers";
 import { useMembers } from "@/hooks/useMembers";
 import type { Member as BirthdayMember } from "@/utils/birthday";
@@ -40,7 +44,12 @@ import FeaturedNewsPanel from "./components/FeaturedNewsPanel";
 import EventItem from "./Our Segments/components/EventItem";
 import PinnedCard from "./Our Segments/components/PinnedCard";
 import { viewDocument, downloadDocument } from "@/lib/api/documentApi";
-import { loginAuthorized } from "@/lib/api/authApi";
+import { getAdminSession } from "@/lib/api/authSession";
+import {
+  getLoginDialogSnapshot,
+  openLoginDialog,
+  subscribeLoginDialog,
+} from "@/lib/loginDialogStore";
 import DocGrid from "./Our Segments/components/DocGrid";
 import { useAnnouncements } from "@/hooks/useAnnouncements";
 import TopManagementCarousel from "./Our Segments/components/TopManagementCarousel";
@@ -209,12 +218,46 @@ function HomePage() {
   const [activeTab, setActiveTab] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [showPrivate, setShowPrivate] = useState(false);
-  const [isAuthorized, setIsAuthorized] = useState(false);
-  const [showAuthModal, setShowAuthModal] = useState(false);
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [authError, setAuthError] = useState<string | null>(null);
-  const [authLoading, setAuthLoading] = useState(false);
+  const [privateAccessError, setPrivateAccessError] = useState<string | null>(
+    null,
+  );
+
+  // Re-render whenever the global LoginDialog opens/closes so we notice a
+  // session that just appeared (e.g. the user just signed in via the popup).
+  useSyncExternalStore(subscribeLoginDialog, getLoginDialogSnapshot);
+  const session = getAdminSession();
+  const isAuthorized =
+    !!session &&
+    (session.user.role === "AUTHORIZED" ||
+      session.user.role === "ADMIN" ||
+      session.user.role === "SUPER_ADMIN");
+
+  // Once the user is authorized (e.g. just signed in via the popup), enable
+  // the private documents view automatically.
+  useEffect(() => {
+    if (isAuthorized) {
+      setShowPrivate(true);
+      setPrivateAccessError(null);
+    }
+  }, [isAuthorized]);
+
+  const handlePrivateClick = () => {
+    if (isAuthorized) {
+      setShowPrivate(true);
+      return;
+    }
+    if (session) {
+      // Already signed in, but this account's role (e.g. SERVICE/helpdesk)
+      // isn't allowed to view private documents — reopening the popup with
+      // the same account would just loop, so surface it instead.
+      setPrivateAccessError(
+        "Your account isn't authorized to view private documents.",
+      );
+      return;
+    }
+    setPrivateAccessError(null);
+    openLoginDialog();
+  };
 
   const { announcements = [], loading: announcementsLoading } =
     useAnnouncements();
@@ -262,35 +305,6 @@ function HomePage() {
       return matchesTab && matchesSearch && matchesAccess;
     });
   }, [documents, activeTab, searchQuery, showPrivate, isAuthorized]);
-
-  // ── Auth ────────────────────────────────────────────────────────────────────
-  const handleAuthorizedLogin = async () => {
-    if (!username || !password) return;
-    setAuthError(null);
-    setAuthLoading(true);
-    try {
-      const data = await loginAuthorized(username, password);
-      if (
-        data.role !== "AUTHORIZED" &&
-        data.role !== "ADMIN" &&
-        data.role !== "SUPER_ADMIN"
-      ) {
-        setAuthError("You are not authorized to access private documents");
-        return;
-      }
-      localStorage.setItem("authorized_token", data.token);
-      localStorage.setItem("authorized_user", JSON.stringify(data));
-      setIsAuthorized(true);
-      setShowPrivate(true);
-      setShowAuthModal(false);
-      setUsername("");
-      setPassword("");
-    } catch (err: any) {
-      setAuthError(err.message || "Invalid credentials");
-    } finally {
-      setAuthLoading(false);
-    }
-  };
 
   // ── Document actions ────────────────────────────────────────────────────────
   const handleView = async (id: number) => {
@@ -406,14 +420,6 @@ function HomePage() {
     }
   };
 
-  const scroll = (dir: "left" | "right") => {
-    if (!scrollRef.current) return;
-    scrollRef.current.scrollBy({
-      left: dir === "left" ? -300 : 300,
-      behavior: "smooth",
-    });
-  };
-
   // ── Scroll-reveal ───────────────────────────────────────────────────────────
   function useScrollReveal(threshold = 0.15) {
     const ref = useRef<HTMLDivElement>(null);
@@ -476,99 +482,35 @@ function HomePage() {
         </div>
       </section>
 
+      {/* Birthdays */}
+      <section className="max-w-full mx-auto px-6 sm:px-8 py-4 sm:py-4">
+        <h2 className="text-2xl sm:text-3xl font-bold text-cic-900 tracking-tight mb-4">
+          Birthdays
+        </h2>
+        <div className="w-12 h-0.5 bg-cic-900 rounded mb-5" />
+        {membersLoading ? (
+          <BirthdaySkeleton />
+        ) : membersError ? (
+          <InlineErrorAlert message={membersError} />
+        ) : (
+          <div className="grid md:grid-cols-3 gap-6">
+            <div className="md:col-span-2 flex flex-col gap-4">
+              {todayBirthdays.length === 0 ? (
+                <NoBirthdayCard />
+              ) : (
+                <BirthdayCarousel members={todayBirthdays} />
+              )}
+            </div>
+            <UpcomingBirthdays list={upcomingList} />
+          </div>
+        )}
+      </section>
+
       {/* ── Upcoming Events (left) + Document Center (right) ──────────────── */}
       <section className="max-w-full mx-auto px-6 sm:px-8 py-4 sm:py-4">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
           {/* ── LEFT: Upcoming Events + Calendar ─────────────────────────── */}
-          <div className="flex flex-col gap-4">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-cic-900 flex items-center justify-center shrink-0">
-                <CalendarDays className="w-4 h-4 text-white" />
-              </div>
-              <h2 className="text-2xl sm:text-3xl font-bold text-cic-900 tracking-tight">
-                Upcoming Events
-              </h2>
-            </div>
-
-            <div className="flex flex-col sm:flex-row gap-4 sm:h-[340px]">
-              {/* Events list */}
-              <div className="flex-1 min-w-0 flex flex-col min-h-[200px] sm:h-full">
-                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col h-full overflow-hidden">
-                  <div className="px-4 py-3 border-b border-slate-100 bg-slate-50/80 shrink-0">
-                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest">
-                      Events
-                    </p>
-                    <p className="text-xs text-slate-400 mt-0.5">
-                      {date?.toLocaleDateString("en-GB", {
-                        weekday: "long",
-                        day: "numeric",
-                        month: "long",
-                      })}
-                    </p>
-                  </div>
-                  <div className="overflow-y-auto flex-1 p-3 space-y-2">
-                    {eventsLoading ? (
-                      <div className="h-full flex items-center justify-center py-8">
-                        <div className="w-5 h-5 border-2 border-cic-600 border-t-transparent rounded-full animate-spin" />
-                      </div>
-                    ) : filteredEvents.length > 0 ? (
-                      filteredEvents.map((event) => {
-                        const [year, month, day] = event.date
-                          .split("-")
-                          .map(Number);
-                        const eventDate = new Date(year, month - 1, day);
-                        return (
-                          <EventItem
-                            key={event.id}
-                            day={eventDate.getDate().toString()}
-                            month={eventDate.toLocaleString("default", {
-                              month: "short",
-                            })}
-                            title={event.title}
-                            time={event.time}
-                            location={event.location}
-                          />
-                        );
-                      })
-                    ) : (
-                      <div className="h-full flex flex-col items-center justify-center gap-2 py-8">
-                        <CalendarDays className="w-7 h-7 text-slate-200" />
-                        <p className="text-xs text-slate-400 text-center">
-                          No events for selected date
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Calendar */}
-              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-3 w-full sm:w-[260px] sm:shrink-0">
-                <Calendar
-                  mode="single"
-                  selected={date}
-                  onSelect={setDate}
-                  className="w-full"
-                  modifiers={{
-                    hasEvent: (day) => eventDates.has(formatDate(day)),
-                  }}
-                  modifiersClassNames={{
-                    hasEvent:
-                      "bg-cic-100 text-cic-800 rounded-full font-bold",
-                  }}
-                  classNames={{
-                    month: "w-full",
-                    table: "w-full border-collapse",
-                    weekdays: "w-full",
-                    week: "w-full",
-                    day: "flex-1 text-center",
-                    day_selected: "bg-cic-900 text-white rounded-full",
-                    day_today: "font-bold text-cic-900",
-                  }}
-                />
-              </div>
-            </div>
-          </div>
+          <div className="flex flex-col gap-4"></div>
 
           {/* ── RIGHT: Document Center ────────────────────────────────────── */}
           <div className="flex flex-col gap-4">
@@ -593,10 +535,7 @@ function HomePage() {
                   <span>👁</span> Public
                 </button>
                 <button
-                  onClick={() => {
-                    if (!isAuthorized) setShowAuthModal(true);
-                    else setShowPrivate(true);
-                  }}
+                  onClick={handlePrivateClick}
                   className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border transition-all ${
                     showPrivate
                       ? "bg-red-600 text-white border-red-600 shadow-sm"
@@ -607,6 +546,12 @@ function HomePage() {
                 </button>
               </div>
             </div>
+
+            {privateAccessError && (
+              <p className="text-xs text-red-500 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+                {privateAccessError}
+              </p>
+            )}
 
             {/* Search + Tabs */}
             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm px-4 sm:px-5 py-4">
@@ -832,28 +777,6 @@ function HomePage() {
         </div>
       </section>
 
-      {/* Birthdays */}
-      <section className="max-w-full mx-auto px-6 sm:px-8 py-4 sm:py-4">
-        <h2 className="text-2xl sm:text-3xl font-bold text-cic-900 tracking-tight mb-4">Birthdays</h2>
-        <div className="w-12 h-0.5 bg-cic-900 rounded mb-5" />
-        {membersLoading ? (
-          <BirthdaySkeleton />
-        ) : membersError ? (
-          <InlineErrorAlert message={membersError} />
-        ) : (
-          <div className="grid md:grid-cols-3 gap-6">
-            <div className="md:col-span-2 flex flex-col gap-4">
-              {todayBirthdays.length === 0 ? (
-                <NoBirthdayCard />
-              ) : (
-                <BirthdayCarousel members={todayBirthdays} />
-              )}
-            </div>
-            <UpcomingBirthdays list={upcomingList} />
-          </div>
-        )}
-      </section>
-
       <StatsSection />
 
       {/* Welcome */}
@@ -905,7 +828,9 @@ function HomePage() {
               <span className="inline-block text-xs font-semibold text-cic-300 uppercase tracking-[0.15em] mb-3">
                 Who We Are
               </span>
-              <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight mb-3">OUR Vision</h2>
+              <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight mb-3">
+                OUR Vision
+              </h2>
               <div className="w-10 h-0.5 bg-cic-300/60 rounded mb-5" />
               <p className="text-cic-100 leading-relaxed text-sm font-medium">
                 To raise living standards around the country by delivering
@@ -1019,58 +944,48 @@ function HomePage() {
         </div>
       </section>
 
-      <GallerySection />
-
-      {/* Videos */}
+      {/* ── Gallery (left) + Videos (right) ─────────────────────────────── */}
       <section className="max-w-full mx-auto px-6 sm:px-8 py-4 sm:py-4">
-        <h2 className="text-2xl sm:text-3xl font-bold text-cic-900 tracking-tight mb-4">Video</h2>
-        <div className="w-12 h-0.5 bg-cic-900 rounded mb-5" />
-        {videosLoading ? (
-          <VideoSkeleton />
-        ) : videosError ? (
-          <InlineErrorAlert message={videosError} />
-        ) : videos.length === 0 ? (
-          <div className="w-full min-h-55 flex flex-col items-center justify-center gap-3 border border-dashed border-slate-200 rounded-2xl bg-slate-50">
-            <p className="text-sm font-medium text-slate-400">
-              No videos available
-            </p>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+          {/* ── LEFT: Gallery ── */}
+          <GallerySection />
+
+          {/* ── RIGHT: Videos ── */}
+          <div className="w-full flex flex-col">
+            <h2 className="text-2xl sm:text-3xl font-bold text-cic-900 tracking-tight mb-4">
+              Video
+            </h2>
+            <div className="w-12 h-0.5 bg-cic-900 rounded mb-5" />
+            {videosLoading ? (
+              <VideoSkeleton />
+            ) : videosError ? (
+              <InlineErrorAlert message={videosError} />
+            ) : videos.length === 0 ? (
+              <div className="w-full min-h-55 flex flex-col items-center justify-center gap-3 border border-dashed border-slate-200 rounded-2xl bg-slate-50">
+                <p className="text-sm font-medium text-slate-400">
+                  No videos available
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-1 gap-2">
+                {videos
+                  .filter((v) => v.videoLink)
+                  .slice(0, 2)
+                  .map((video) => (
+                    <VideoCard
+                      key={video.id}
+                      title={video.title}
+                      description={video.description}
+                      videoLink={video.videoLink}
+                      onClick={() => setActiveVideo(video.videoLink)}
+                    />
+                  ))}
+              </div>
+            )}
           </div>
-        ) : (
-          <div className="relative">
-            <Button
-              size="icon"
-              variant="secondary"
-              onClick={() => scroll("left")}
-              className="absolute left-0 top-1/2 -translate-y-1/2 z-10 hidden sm:flex"
-            >
-              <ChevronLeft />
-            </Button>
-            <div
-              ref={scrollRef}
-              className="flex gap-4 sm:gap-6 overflow-x-auto no-scrollbar px-0 sm:px-10"
-            >
-              {videos
-                .filter((v) => v.videoLink)
-                .map((video) => (
-                  <VideoCard
-                    key={video.id}
-                    title={video.title}
-                    description={video.description}
-                    videoLink={video.videoLink}
-                    onClick={() => setActiveVideo(video.videoLink)}
-                  />
-                ))}
-            </div>
-            <Button
-              size="icon"
-              variant="secondary"
-              onClick={() => scroll("right")}
-              className="absolute right-0 top-1/2 -translate-y-1/2 z-10 hidden sm:flex"
-            >
-              <ChevronRight />
-            </Button>
-          </div>
-        )}
+        </div>
+
+        {/* Modal stays outside the grid */}
         {activeVideo && (
           <VideoModal
             activeVideo={activeVideo}
@@ -1081,78 +996,6 @@ function HomePage() {
           />
         )}
       </section>
-
-      <FaqCalendarSection />
-
-      {/* ── Auth Modal ──────────────────────────────────────────────────────── */}
-      {showAuthModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center z-50">
-          <div className="bg-white rounded-t-3xl sm:rounded-2xl w-full sm:w-[360px] shadow-2xl border border-slate-100 overflow-hidden">
-            <div className="flex justify-center pt-3 pb-1 sm:hidden">
-              <div className="w-10 h-1 bg-slate-200 rounded-full" />
-            </div>
-            <div className="bg-linear-to-br from-cic-900 to-cic-800 px-6 py-5">
-              <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center mb-3">
-                <LockIcon className="w-5 h-5 text-white" />
-              </div>
-              <p className="font-semibold text-white">Private Access</p>
-              <p className="text-xs text-cic-200 mt-0.5">
-                Enter your credentials to continue
-              </p>
-            </div>
-            <div className="px-6 py-5 flex flex-col gap-4">
-              <div>
-                <label className="text-xs font-medium text-slate-600 mb-1.5 block">
-                  Email
-                </label>
-                <input
-                  placeholder="your@email.com"
-                  className="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-cic-500/30 focus:border-cic-400 transition-all"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                />
-              </div>
-              <div>
-                <label className="text-xs font-medium text-slate-600 mb-1.5 block">
-                  Password
-                </label>
-                <input
-                  type="password"
-                  placeholder="••••••••"
-                  className="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm bg-slate-50 focus:outline-none focus:ring-2 focus:ring-cic-500/30 focus:border-cic-400 transition-all"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-              </div>
-              {authError && (
-                <p className="text-xs text-red-500 bg-red-50 border border-red-100 rounded-lg px-3 py-2 text-center">
-                  {authError}
-                </p>
-              )}
-            </div>
-            <div className="px-6 pb-8 sm:pb-5 flex gap-2">
-              <button
-                onClick={() => {
-                  setShowAuthModal(false);
-                  setAuthError(null);
-                  setUsername("");
-                  setPassword("");
-                }}
-                className="flex-1 text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 px-4 py-2.5 rounded-xl transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleAuthorizedLogin}
-                disabled={authLoading}
-                className="flex-1 bg-cic-900 hover:bg-cic-800 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-colors disabled:opacity-50"
-              >
-                {authLoading ? "Signing in..." : "Sign in"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

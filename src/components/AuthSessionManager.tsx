@@ -1,16 +1,15 @@
 import { useEffect } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import {
-  buildAdminLoginUrl,
   expireAdminSession,
   getAdminSession,
   getCurrentReturnTo,
   isProtectedAppPath,
 } from "@/lib/api/authSession";
+import { openLoginDialog } from "@/lib/loginDialogStore";
 
 export default function AuthSessionManager() {
   const location = useLocation();
-  const navigate = useNavigate();
 
   useEffect(() => {
     if (!isProtectedAppPath(location.pathname)) {
@@ -19,9 +18,9 @@ export default function AuthSessionManager() {
 
     const session = getAdminSession();
     if (!session) {
-      navigate(buildAdminLoginUrl(getCurrentReturnTo()), { replace: true });
+      openLoginDialog(getCurrentReturnTo());
     }
-  }, [location.pathname, location.search, location.hash, navigate]);
+  }, [location.pathname, location.search, location.hash]);
 
   useEffect(() => {
     const session = getAdminSession();
@@ -49,13 +48,13 @@ export default function AuthSessionManager() {
 
       const session = getAdminSession();
       if (!session) {
-        navigate(buildAdminLoginUrl(getCurrentReturnTo()), { replace: true });
+        openLoginDialog(getCurrentReturnTo());
       }
     };
 
     window.addEventListener("storage", handleStorage);
     return () => window.removeEventListener("storage", handleStorage);
-  }, [navigate]);
+  }, []);
 
   return null;
 }

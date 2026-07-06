@@ -1,23 +1,36 @@
+import { useEffect } from "react";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
+import { useSyncExternalStore } from "react";
 import {
-  buildAdminLoginUrl,
   getAdminSession,
   getUserRoleFromPayload,
   type JwtPayload,
   type UserRole,
 } from "@/lib/api/authSession";
+import {
+  getLoginDialogSnapshot,
+  openLoginDialog,
+  subscribeLoginDialog,
+} from "@/lib/loginDialogStore";
 
 const ADMIN_ROLES: UserRole[] = ["SUPER_ADMIN", "ADMIN"];
 const ALLOWED_ROLES: UserRole[] = ["SERVICE", "AUTHORIZED", ...ADMIN_ROLES];
 
 export default function EmployeeProtectedRoute() {
   const location = useLocation();
+  // Re-render whenever the login dialog opens/closes so we notice a session
+  // that just appeared, without needing a hard navigation.
+  useSyncExternalStore(subscribeLoginDialog, getLoginDialogSnapshot);
+
   const returnTo = `${location.pathname}${location.search}${location.hash}`;
-  const loginUrl = buildAdminLoginUrl(returnTo);
   const session = getAdminSession();
 
+  useEffect(() => {
+    if (!session) openLoginDialog(returnTo);
+  }, [session, returnTo]);
+
   if (!session) {
-    return <Navigate to={loginUrl} replace />;
+    return null;
   }
 
   const payload: JwtPayload = session.payload;

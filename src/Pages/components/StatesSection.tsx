@@ -110,7 +110,9 @@ export default function StatsSection() {
       {error ? (
         <div className="rounded-xl bg-red-50 border border-red-200 px-6 py-8 flex flex-col items-center gap-2">
           <AlertCircle className="h-5 w-5 text-red-400" />
-          <p className="text-sm font-medium text-red-500">Failed to load statistics.</p>
+          <p className="text-sm font-medium text-red-500">
+            Failed to load statistics.
+          </p>
           <p className="text-xs text-red-400">Please try again later.</p>
         </div>
       ) : (
@@ -130,7 +132,7 @@ export default function StatsSection() {
                       : "translateY(28px)",
                     transition: "opacity 0.6s ease, transform 0.6s ease",
                   }}
-                  className="rounded-xl p-6 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 text-center"
+                  className="rounded-xl p-6 transition-all duration-300 text-center"
                 >
                   <h3 className="text-7xl font-bold text-white">
                     <Counter end={item.value} start={isVisible} />

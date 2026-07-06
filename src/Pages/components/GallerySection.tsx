@@ -51,9 +51,11 @@ export default function GallerySection() {
 
   if (loading) {
     return (
-      <section className="max-w-full mx-auto px-6 sm:px-8 py-4 sm:py-4">
-        <h2 className="text-4xl font-bold text-blue-900 mb-6">Gallery</h2>
-        <div className="w-12 h-0.5 bg-blue-900 rounded mb-5" />
+      <div className="w-full">
+        <h2 className="text-2xl sm:text-3xl font-bold text-cic-900 tracking-tight mb-4">
+          Gallery
+        </h2>
+        <div className="w-12 h-0.5 bg-cic-900 rounded mb-5" />
         <div className="grid md:grid-cols-3 gap-4 mb-4">
           <Skeleton className="md:col-span-2 h-75 md:h-100 rounded-2xl" />
           <div className="grid grid-rows-2 gap-4">
@@ -66,34 +68,41 @@ export default function GallerySection() {
             <Skeleton key={i} className="h-44 rounded-2xl" />
           ))}
         </div>
-      </section>
+      </div>
     );
   }
 
   if (error) {
     return (
-      <section className="max-w-full mx-auto px-6 sm:px-8 py-4 sm:py-4">
-        <h2 className="text-4xl font-bold text-blue-900 mb-6">Gallery</h2>
-        <div className="w-12 h-0.5 bg-blue-900 rounded mb-5" />
+      <div className="w-full">
+        <h2 className="text-2xl sm:text-3xl font-bold text-cic-900 tracking-tight mb-4">
+          Gallery
+        </h2>
+        <div className="w-12 h-0.5 bg-cic-900 rounded mb-5" />
         <div className="w-full min-h-55 flex flex-col items-center justify-center gap-2 rounded-2xl bg-red-50 border border-red-200">
           <AlertCircle className="h-5 w-5 text-red-400" />
-          <p className="text-sm font-medium text-red-500">Failed to load gallery.</p>
+          <p className="text-sm font-medium text-red-500">
+            Failed to load gallery.
+          </p>
           <p className="text-xs text-red-400">Please try again later.</p>
         </div>
-      </section>
+      </div>
     );
   }
 
   if (!images || images.length === 0) {
     return (
-      <section className="max-w-full mx-auto px-6 sm:px-8 py-4 sm:py-4">
-        <h2 className="text-4xl font-bold text-blue-900 mb-6">Gallery</h2>
+      <div className="w-full">
+        <h2 className="text-2xl sm:text-3xl font-bold text-cic-900 tracking-tight mb-4">
+          Gallery
+        </h2>
+        <div className="w-12 h-0.5 bg-cic-900 rounded mb-5" />
         <div className="w-full min-h-55 flex flex-col items-center justify-center gap-3 border border-dashed border-slate-200 rounded-2xl bg-slate-50">
           <p className="text-sm font-medium text-slate-400">
             No images available
           </p>
         </div>
-      </section>
+      </div>
     );
   }
 
@@ -108,9 +117,11 @@ export default function GallerySection() {
   const hiddenCount = rest.length - visibleRest.length;
 
   return (
-    <section className="max-w-full mx-auto px-6 sm:px-8 py-4 sm:py-4">
-      <h2 className="text-4xl font-bold text-blue-900 mb-6">Gallery</h2>
-      <div className="w-12 h-0.5 bg-blue-900 rounded mb-5" />
+    <div className="w-full">
+      <h2 className="text-2xl sm:text-3xl font-bold text-cic-900 tracking-tight mb-4">
+        Gallery
+      </h2>
+      <div className="w-12 h-0.5 bg-cic-900 rounded mb-5" />
 
       <div className="grid md:grid-cols-3 gap-4 mb-4">
         {main && (
@@ -227,6 +238,6 @@ export default function GallerySection() {
           </button>
         </div>
       )}
-    </section>
+    </div>
   );
 }

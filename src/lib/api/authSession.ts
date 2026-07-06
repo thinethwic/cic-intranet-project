@@ -1,3 +1,5 @@
+import { openLoginDialog } from "@/lib/loginDialogStore";
+
 export type UserRole = "SUPER_ADMIN" | "ADMIN" | "AUTHORIZED" | "SERVICE";
 
 export interface AdminUser {
@@ -26,8 +28,6 @@ export interface JwtPayload {
 
 const ADMIN_TOKEN_KEY = "admin_token";
 const ADMIN_USER_KEY = "admin_user";
-
-let isRedirectingAfterExpiry = false;
 
 const decodeBase64Url = (value: string): string => {
   const normalized = value.replace(/-/g, "+").replace(/_/g, "/");
@@ -173,33 +173,22 @@ export const setAdminSession = (data: {
 
   localStorage.setItem(ADMIN_TOKEN_KEY, data.token);
   localStorage.setItem(ADMIN_USER_KEY, JSON.stringify(user));
-  isRedirectingAfterExpiry = false;
 };
 
 export const isProtectedAppPath = (pathname: string): boolean =>
-  pathname === "/helpdesk" ||
-  (pathname.startsWith("/admin") && pathname !== "/admin/login");
+  pathname === "/helpdesk" || pathname.startsWith("/admin");
 
 export const getCurrentReturnTo = (): string =>
   `${window.location.pathname}${window.location.search}${window.location.hash}`;
 
-export const buildAdminLoginUrl = (returnTo?: string): string => {
-  if (!returnTo || returnTo === "/admin/login") {
-    return "/admin/login";
-  }
-
-  return `/admin/login?returnTo=${encodeURIComponent(returnTo)}`;
-};
-
 export const expireAdminSession = (returnTo = getCurrentReturnTo()): void => {
   clearAdminSession();
 
-  if (isRedirectingAfterExpiry || !isProtectedAppPath(window.location.pathname)) {
+  if (!isProtectedAppPath(window.location.pathname)) {
     return;
   }
 
-  isRedirectingAfterExpiry = true;
-  window.location.replace(buildAdminLoginUrl(returnTo));
+  openLoginDialog(returnTo);
 };
 
 export const logout = async (redirectTo = "/"): Promise<void> => {
@@ -221,6 +210,5 @@ export const logout = async (redirectTo = "/"): Promise<void> => {
   }
 
   clearAdminSession();
-  isRedirectingAfterExpiry = false;
   window.location.replace(redirectTo);
 };

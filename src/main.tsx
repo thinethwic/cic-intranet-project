@@ -10,6 +10,7 @@ import { ScrollToTop } from "./components/ScrollToTop";
 import ScrollToTopButton from "./components/shared/ScrollToTopButton";
 import AppErrorBoundary from "./components/AppErrorBoundary";
 import AuthSessionManager from "./components/AuthSessionManager";
+import LoginDialog from "./components/LoginDialog";
 import { installFetchInterceptor } from "./lib/api/installFetchInterceptor";
 import { startKeepAlive } from "./lib/api/keepAlive";
 
@@ -26,6 +27,7 @@ createRoot(document.getElementById("root")!).render(
         <TooltipProvider>
           <App />
         </TooltipProvider>
+        <LoginDialog />
       </BrowserRouter>
     </AppErrorBoundary>
   </StrictMode>,
