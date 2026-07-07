@@ -47,7 +47,7 @@ const categories = [
   {
     label: "Gallery HR",
     icon: FaHouseDamage,
-    Link: "/",
+    Link: "https://app.galleryhr.com/",
   },
   {
     label: "Asset Tool",
