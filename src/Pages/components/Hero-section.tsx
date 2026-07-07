@@ -6,6 +6,7 @@ import {
   ToolCaseIcon,
   Globe,
   Headset,
+  ListTodo,
 } from "lucide-react";
 import { FaFacebookF, FaHouseDamage, FaYoutube } from "react-icons/fa";
 import { Link } from "react-router-dom";
@@ -19,6 +20,7 @@ import { CalendarDays } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { useEvents } from "@/hooks/useEvents";
 import EventItem from "../Our Segments/components/EventItem";
+import { getHoliday } from "@/data/sriLankanHolidays";
 
 interface Slide {
   image: string;
@@ -41,6 +43,7 @@ const slides: Slide[] = [
 
 const categories = [
   { label: "Help Desk", icon: Headset, Link: "/helpdesk" },
+  { label: "To-Do Tasks", icon: ListTodo, Link: "/tasks" },
   {
     label: "Gallery HR",
     icon: FaHouseDamage,
@@ -68,7 +71,7 @@ const AUTO_SLIDE_INTERVAL = 8000;
 
 export default function HeroSection() {
   const [currentSlide, setCurrentSlide] = useState(0);
-  const [cardsVisible, setCardsVisible] = useState(false); // 👈 add this
+  const [cardsVisible, setCardsVisible] = useState(false);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -77,7 +80,6 @@ export default function HeroSection() {
     return () => clearInterval(timer);
   }, []);
 
-  // 👇 add this
   useEffect(() => {
     const timeout = setTimeout(() => setCardsVisible(true), 300);
     return () => clearTimeout(timeout);
@@ -102,6 +104,7 @@ export default function HeroSection() {
   );
 
   const filteredEvents = events.filter((e) => e.date === selectedDateStr);
+  const selectedHoliday = getHoliday(selectedDateStr);
 
   return (
     <section className="relative w-full min-h-[480px] md:min-h-[410px] overflow-hidden flex flex-col">
@@ -121,37 +124,42 @@ export default function HeroSection() {
         </div>
       ))}
 
-      {/* Category cards — bottom center */}
-      <div className="absolute bottom-4 left-1/4 -translate-x-1/2 z-20 grid grid-cols-3 sm:grid-cols-3 md:grid-cols-3 gap-4 w-max px-4">
-        {categories.map(({ label, icon: Icon, Link: link }, i) => (
-          <Link to={link} key={i}>
-            {/* 👇 wrap Card in animated div */}
-            <div
-              style={{
-                opacity: cardsVisible ? 1 : 0,
-                transform: cardsVisible ? "translateY(0)" : "translateY(20px)",
-                transition: `opacity 0.5s ease, transform 0.5s ease`,
-                transitionDelay: `${300 + i * 120}ms`,
-              }}
-            >
-              <Card className="bg-white/36 backdrop-blur-sm border border-white/60 hover:bg-white/60 transition-all cursor-pointer group shadow-md w-36 sm:w-40">
-                <CardContent className="flex flex-col items-center justify-center py-6 px-3">
-                  <div className="mb-3 p-3 rounded-2xl bg-blue-50 group-hover:bg-blue-100 transition-all group-hover:scale-110">
-                    <Icon className="w-4 h-4 md:w-8 md:h-8 stroke-[1.5] text-[oklch(37.9%_0.146_265.522)]" />
-                  </div>
-                  <p className="text-sm sm:text-base font-semibold opacity-0 hover:opacity-100 tracking-wide text-center leading-tight text-gray-700">
-                    {label}
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-          </Link>
-        ))}
+      {/* Category cards — left side, 3x3 grid with horizontal scroll for overflow */}
+      <div className="absolute left-16 md:left-20 top-1/2 -translate-y-1/2 z-20 max-w-[362px] sm:max-w-[410px] md:max-w-[620px]">
+        <div className="overflow-x-auto category-scroll pb-1.5 pr-1">
+          <div className="grid grid-rows-2 grid-flow-col gap-3 w-max">
+            {categories.map(({ label, icon: Icon, Link: link }, i) => (
+              <Link to={link} key={i}>
+                <div
+                  style={{
+                    opacity: cardsVisible ? 1 : 0,
+                    transform: cardsVisible
+                      ? "translateY(0)"
+                      : "translateY(20px)",
+                    transition: `opacity 0.5s ease, transform 0.5s ease`,
+                    transitionDelay: `${300 + i * 120}ms`,
+                  }}
+                >
+                  <Card className="bg-white/36 backdrop-blur-sm border border-white/60 hover:bg-white/60 transition-all cursor-pointer group shadow-md w-28 sm:w-32 md:w-36">
+                    <CardContent className="flex flex-col items-center justify-center py-4 px-2">
+                      <div className="mb-2 p-2.5 rounded-2xl bg-blue-50 group-hover:bg-blue-100 transition-all group-hover:scale-110">
+                        <Icon className="w-4 h-4 md:w-7 md:h-7 stroke-[1.5] text-[oklch(37.9%_0.146_265.522)]" />
+                      </div>
+                      <p className="text-xs sm:text-sm font-semibold opacity-0 group-hover:opacity-100 transition-opacity tracking-wide text-center leading-tight text-gray-700">
+                        {label}
+                      </p>
+                    </CardContent>
+                  </Card>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
       </div>
 
-      {/* Upcoming Events — right side */}
+      {/* Upcoming Events — right side, with glass background panel */}
       <div
-        className="absolute top-4 bottom-4 right-6 md:right-16 z-20 hidden lg:flex flex-col gap-3 w-[700px]"
+        className="absolute top-4 bottom-4 right-6 md:right-16 z-20 hidden lg:flex flex-col gap-3 w-[700px] bg-white/50 backdrop-blur-md rounded-2xl border border-white/60 shadow-xl p-4"
         style={{
           opacity: cardsVisible ? 1 : 0,
           transform: cardsVisible ? "translateY(0)" : "translateY(20px)",
@@ -183,6 +191,18 @@ export default function HeroSection() {
                   month: "long",
                 })}
               </p>
+              {selectedHoliday && (
+                <p
+                  className={`text-xs font-semibold mt-1 ${
+                    selectedHoliday.type === "poya"
+                      ? "text-amber-600"
+                      : "text-red-600"
+                  }`}
+                >
+                  {selectedHoliday.type === "poya" ? "🌕" : "🎉"}{" "}
+                  {selectedHoliday.name}
+                </p>
+              )}
             </div>
             <div className="overflow-y-auto flex-1 p-3 space-y-2">
               {eventsLoading ? (
@@ -226,9 +246,14 @@ export default function HeroSection() {
               className="w-full p-0 [--cell-size:1.85rem]"
               modifiers={{
                 hasEvent: (day) => eventDates.has(formatDate(day)),
+                publicHoliday: (day) =>
+                  getHoliday(formatDate(day))?.type === "public",
+                poyaDay: (day) => getHoliday(formatDate(day))?.type === "poya",
               }}
               modifiersClassNames={{
                 hasEvent: "bg-cic-100 text-cic-800 rounded-full font-bold",
+                publicHoliday: "bg-red-100 text-red-700 rounded-full font-bold",
+                poyaDay: "bg-amber-100 text-amber-700 rounded-full font-bold",
               }}
               classNames={{
                 month: "w-full",
@@ -240,6 +265,24 @@ export default function HeroSection() {
                 day_today: "font-bold text-cic-900",
               }}
             />
+
+            {/* Legend */}
+            <div className="mt-2 pt-2 border-t border-slate-100 space-y-1">
+              <div className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-cic-100 border border-cic-200 shrink-0" />
+                <span className="text-[10px] text-slate-500">Event day</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-red-100 border border-red-200 shrink-0" />
+                <span className="text-[10px] text-slate-500">
+                  Public holiday
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-100 border border-amber-200 shrink-0" />
+                <span className="text-[10px] text-slate-500">Poya day</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -249,21 +292,21 @@ export default function HeroSection() {
         onClick={() =>
           setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length)
         }
-        className="absolute left-3 top-1/2 -translate-y-1/2 z-30 w-12 h-12 md:w-14 md:h-14 rounded-full bg-white/70 hover:bg-white border border-white/50 shadow-md backdrop-blur-sm flex items-center justify-center transition-all hover:scale-105"
+        className="absolute left-3 top-1/2 -translate-y-1/2 z-30 w-10 h-10 md:w-12 md:h-12 rounded-full bg-white/70 hover:bg-white border border-white/50 shadow-md backdrop-blur-sm flex items-center justify-center transition-all hover:scale-105"
       >
-        <ChevronLeft className="w-6 h-6 md:w-7 md:h-7 text-gray-700" />
+        <ChevronLeft className="w-5 h-5 md:w-6 md:h-6 text-gray-700" />
       </button>
 
       {/* Next button */}
       <button
         onClick={() => setCurrentSlide((prev) => (prev + 1) % slides.length)}
-        className="absolute right-3 top-1/2 -translate-y-1/2 z-30 w-12 h-12 md:w-14 md:h-14 rounded-full bg-white/70 hover:bg-white border border-white/50 shadow-md backdrop-blur-sm flex items-center justify-center transition-all hover:scale-105"
+        className="absolute right-3 top-1/2 -translate-y-1/2 z-30 w-10 h-10 md:w-12 md:h-12 rounded-full bg-white/70 hover:bg-white border border-white/50 shadow-md backdrop-blur-sm flex items-center justify-center transition-all hover:scale-105"
       >
-        <ChevronRight className="w-6 h-6 md:w-7 md:h-7 text-gray-700" />
+        <ChevronRight className="w-5 h-5 md:w-6 md:h-6 text-gray-700" />
       </button>
 
       {/* Dots */}
-      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 flex gap-2 z-20">
+      <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-2 z-20">
         {slides.map((_, i) => (
           <button
             key={i}
@@ -284,6 +327,23 @@ export default function HeroSection() {
         }
         .animate-fade-in {
           animation: fadeIn 0.5s ease forwards;
+        }
+        .category-scroll {
+          scrollbar-width: thin;
+          scrollbar-color: rgba(255, 255, 255, 0.6) transparent;
+        }
+        .category-scroll::-webkit-scrollbar {
+          height: 5px;
+        }
+        .category-scroll::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .category-scroll::-webkit-scrollbar-thumb {
+          background: rgba(255, 255, 255, 0.6);
+          border-radius: 9999px;
+        }
+        .category-scroll::-webkit-scrollbar-thumb:hover {
+          background: rgba(255, 255, 255, 0.85);
         }
       `}</style>
     </section>

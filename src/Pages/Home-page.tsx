@@ -2,15 +2,7 @@ import HeroSection from "./components/Hero-section";
 import OurPeopleCard from "./components/OurPeople";
 import StatsSection from "./components/StatesSection";
 import UpcomingBirthdays from "./components/UpComingBirthDay";
-import {
-  Flame,
-  CalendarDays,
-  FileText,
-  Pin,
-  LockIcon,
-  Search,
-  Bell,
-} from "lucide-react";
+import { Flame, FileText, Pin, LockIcon, Search, Bell } from "lucide-react";
 
 import { Users, ChevronDown, ChevronUp } from "lucide-react";
 import visionImg from "@/assets/vision.jpg";
@@ -24,8 +16,6 @@ import {
   useSyncExternalStore,
 } from "react";
 import VideoCard, { VideoModal } from "./components/VideoCard";
-import { ChevronLeft, ChevronRight } from "lucide-react";
-import { Calendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
 import WelcomeCarousel from "./components/WelcomeMembers";
 import { useMembers } from "@/hooks/useMembers";
@@ -35,13 +25,11 @@ import { getTodayBirthdays, getUpcomingBirthdays } from "@/utils/birthday";
 import BirthdayCarousel from "./components/BirthdayCarousel";
 import { useVideos } from "@/hooks/useVideos";
 import { useNews } from "@/hooks/useNews";
-import { useEvents } from "@/hooks/useEvents";
 import { useDocuments } from "@/hooks/useDocuments";
 import { AlertOrCEOCard } from "./components/Alertorceocard";
 import { Skeleton } from "@/components/ui/skeleton";
 import InlineErrorAlert from "@/components/shared/InlineErrorAlert";
 import FeaturedNewsPanel from "./components/FeaturedNewsPanel";
-import EventItem from "./Our Segments/components/EventItem";
 import PinnedCard from "./Our Segments/components/PinnedCard";
 import { viewDocument, downloadDocument } from "@/lib/api/documentApi";
 import { getAdminSession } from "@/lib/api/authSession";
@@ -194,14 +182,14 @@ function PinnedDocsSkeleton() {
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
+const VIDEO_VISIBLE = 2;
+
 function HomePage() {
-  const scrollRef = useRef<HTMLDivElement>(null);
   const [activeVideo, setActiveVideo] = useState<string | null>(null);
+  const [videoStartIndex, setVideoStartIndex] = useState(0);
 
   // ── Data hooks ──────────────────────────────────────────────────────────────
   const { videos, loading: videosLoading, error: videosError } = useVideos();
-  // Pass no segment (or null/undefined) to get ALL events / documents
-  const { events, loading: eventsLoading } = useEvents();
   const { news, loading: newsLoading, error: newsError } = useNews();
   const {
     members = [],
@@ -210,9 +198,6 @@ function HomePage() {
   } = useMembers();
   // ▼ NEW — global documents (no segment filter)
   const { documents, loading: docsLoading } = useDocuments(undefined);
-
-  // ── Calendar state (was missing — caused TS errors) ─────────────────────────
-  const [date, setDate] = useState<Date | undefined>(new Date());
 
   // ── Document section state ──────────────────────────────────────────────────
   const [activeTab, setActiveTab] = useState("All");
@@ -264,24 +249,6 @@ function HomePage() {
   const [showAllAnnouncements, setShowAllAnnouncements] = useState(false);
 
   const tabs = ["All", "HR & Policies", "Finance", "Operations"];
-
-  // ── Helpers ─────────────────────────────────────────────────────────────────
-  function formatDate(d: Date | undefined) {
-    if (!d) return "";
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, "0");
-    const day = String(d.getDate()).padStart(2, "0");
-    return `${year}-${month}-${day}`;
-  }
-
-  const selectedDateStr = formatDate(date);
-
-  const eventDates = useMemo(
-    () => new Set(events.map((e) => e.date)),
-    [events],
-  );
-
-  const filteredEvents = events.filter((e) => e.date === selectedDateStr);
 
   // ── Document filtering ──────────────────────────────────────────────────────
   const pinnedDocs = documents.filter((doc) => doc.isPinned);
@@ -454,27 +421,126 @@ function HomePage() {
     <div>
       <HeroSection />
 
-      {/* News + Alert */}
-      <section className="bg-cic-800 max-w-full mx-auto px-2 py-4">
-        <div className="flex flex-col md:flex-row gap-3">
+      {/* Birthdays + Alert */}
+      <section className="max-w-full mx-auto px-6 sm:px-8 py-4 sm:py-4">
+        <div className="flex flex-col md:flex-row gap-6">
           <div className="w-full md:w-3/4">
-            {newsLoading ? (
-              <FeaturedNewsSkeleton />
-            ) : newsError ? (
-              <InlineErrorAlert message={newsError} />
-            ) : featuredItem ? (
-              <FeaturedNewsPanel
-                featured={featuredItem}
-                sideItems={sideItems}
-              />
+            <h2 className="text-2xl sm:text-3xl font-bold text-cic-900 tracking-tight mb-4">
+              Birthdays
+            </h2>
+            <div className="w-12 h-0.5 bg-cic-900 rounded mb-5" />
+            {membersLoading ? (
+              <BirthdaySkeleton />
+            ) : membersError ? (
+              <InlineErrorAlert message={membersError} />
             ) : (
-              <div className="w-full min-h-55 flex flex-col items-center justify-center gap-3 border border-dashed border-slate-200 rounded-2xl bg-slate-50">
-                <Flame className="w-5 h-5 text-slate-300" />
-                <p className="text-sm font-medium text-slate-400">
-                  No news available
-                </p>
+              <div className="flex flex-col md:flex-row gap-4 items-stretch">
+                <div className="w-full md:flex-1 md:min-w-0">
+                  {todayBirthdays.length === 0 ? (
+                    <NoBirthdayCard />
+                  ) : (
+                    <BirthdayCarousel members={todayBirthdays} />
+                  )}
+                </div>
+                <div className="w-full md:w-auto md:min-w-100 md:max-w-sm shrink-0 md:flex">
+                  <UpcomingBirthdays list={upcomingList} />
+                </div>
               </div>
             )}
+
+            {/* Announcements — placed below Upcoming Birthdays */}
+            <div
+              ref={announcementsReveal.ref}
+              className="flex flex-col gap-4 mt-6"
+              style={{
+                opacity: announcementsReveal.visible ? 1 : 0,
+                transform: announcementsReveal.visible
+                  ? "translateY(0)"
+                  : "translateY(30px)",
+                transition: "opacity 0.7s ease, transform 0.7s ease",
+              }}
+            >
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-cic-900 flex items-center justify-center shrink-0">
+                  <Bell className="w-4 h-4 text-white" />
+                </div>
+                <h2 className="text-2xl sm:text-3xl font-bold text-cic-900 tracking-tight">
+                  Announcements
+                </h2>
+                {announcements.length > 0 && (
+                  <span className="text-xs font-semibold bg-cic-100 text-cic-700 px-2 py-0.5 rounded-full">
+                    {announcements.length}
+                  </span>
+                )}
+              </div>
+
+              <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-200">
+                {announcementsLoading ? (
+                  <AnnouncementsSkeleton />
+                ) : announcements.length === 0 ? (
+                  <div className="px-5 py-10 flex flex-col items-center justify-center gap-2">
+                    <Bell className="w-8 h-8 text-slate-300" />
+                    <p className="text-sm text-slate-400">
+                      No announcements at this time
+                    </p>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-slate-100">
+                    {(showAllAnnouncements
+                      ? announcements
+                      : announcements.slice(0, 4)
+                    ).map((a) => (
+                      <div
+                        key={a.id}
+                        className="flex items-center gap-3 px-4 py-3 hover:bg-cic-50 transition-colors cursor-pointer"
+                      >
+                        {/* Thumbnail */}
+                        {a.image ? (
+                          <img
+                            src={a.image}
+                            alt={a.title}
+                            className="w-16 h-14 rounded-lg object-cover shrink-0"
+                          />
+                        ) : (
+                          <div className="w-16 h-14 rounded-lg bg-slate-50 flex items-center justify-center shrink-0">
+                            <Bell className="w-5 h-5 text-cic-800" />
+                          </div>
+                        )}
+                        {/* Text */}
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-cic-800 leading-snug line-clamp-2">
+                            {a.title}
+                          </p>
+                          {(a.time || a.location) && (
+                            <p className="text-xs text-slate-500 mt-0.5">
+                              {[a.time, a.location].filter(Boolean).join(" · ")}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Show more / less */}
+                {announcements.length > 4 && (
+                  <button
+                    onClick={() => setShowAllAnnouncements((prev) => !prev)}
+                    className="w-full py-2.5 text-xs font-semibold text-cic-700 hover:text-cic-900 hover:bg-cic-50 transition-colors flex items-center justify-center gap-1 border-t border-slate-100"
+                  >
+                    {showAllAnnouncements ? (
+                      <>
+                        <ChevronUp className="w-3.5 h-3.5" /> Show less
+                      </>
+                    ) : (
+                      <>
+                        <ChevronDown className="w-3.5 h-3.5" /> View all
+                      </>
+                    )}
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
           <div className="w-full md:w-1/4">
             <AlertOrCEOCard />
@@ -482,26 +548,20 @@ function HomePage() {
         </div>
       </section>
 
-      {/* Birthdays */}
-      <section className="max-w-full mx-auto px-6 sm:px-8 py-4 sm:py-4">
-        <h2 className="text-2xl sm:text-3xl font-bold text-cic-900 tracking-tight mb-4">
-          Birthdays
-        </h2>
-        <div className="w-12 h-0.5 bg-cic-900 rounded mb-5" />
-        {membersLoading ? (
-          <BirthdaySkeleton />
-        ) : membersError ? (
-          <InlineErrorAlert message={membersError} />
+      {/* News */}
+      <section className="bg-cic-800 max-w-full mx-auto px-2 py-4">
+        {newsLoading ? (
+          <FeaturedNewsSkeleton />
+        ) : newsError ? (
+          <InlineErrorAlert message={newsError} />
+        ) : featuredItem ? (
+          <FeaturedNewsPanel featured={featuredItem} sideItems={sideItems} />
         ) : (
-          <div className="grid md:grid-cols-3 gap-6">
-            <div className="md:col-span-2 flex flex-col gap-4">
-              {todayBirthdays.length === 0 ? (
-                <NoBirthdayCard />
-              ) : (
-                <BirthdayCarousel members={todayBirthdays} />
-              )}
-            </div>
-            <UpcomingBirthdays list={upcomingList} />
+          <div className="w-full min-h-55 flex flex-col items-center justify-center gap-3 border border-dashed border-slate-200 rounded-2xl bg-slate-50">
+            <Flame className="w-5 h-5 text-slate-300" />
+            <p className="text-sm font-medium text-slate-400">
+              No news available
+            </p>
           </div>
         )}
       </section>
@@ -510,7 +570,47 @@ function HomePage() {
       <section className="max-w-full mx-auto px-6 sm:px-8 py-4 sm:py-4">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
           {/* ── LEFT: Upcoming Events + Calendar ─────────────────────────── */}
-          <div className="flex flex-col gap-4"></div>
+          <div className="flex flex-col gap-4">
+            <div ref={pinnedReveal.ref} className="flex flex-col gap-4">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-amber-500 flex items-center justify-center shrink-0">
+                  <Pin className="w-4 h-4 text-cic-900" />
+                </div>
+                <h2 className="text-2xl sm:text-3xl font-bold text-cic-900 tracking-tight">
+                  Pinned For You
+                </h2>
+              </div>
+
+              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                <div className="px-4 py-3 border-b border-slate-100 bg-slate-50/80">
+                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest">
+                    Pinned Documents
+                  </p>
+                </div>
+                {docsLoading ? (
+                  <PinnedDocsSkeleton />
+                ) : pinnedDocs.length === 0 ? (
+                  <div className="px-5 py-10 flex flex-col items-center justify-center gap-2">
+                    <Pin className="w-8 h-8 text-slate-200" />
+                    <p className="text-sm text-slate-400">
+                      No pinned documents
+                    </p>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-slate-100">
+                    {pinnedDocs.slice(0, 5).map((doc) => (
+                      <div
+                        key={doc.id}
+                        className="px-4 py-3 hover:bg-cic-50 transition-colors cursor-pointer"
+                      >
+                        <PinnedCard title={doc.title} category={doc.category} />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
 
           {/* ── RIGHT: Document Center ────────────────────────────────────── */}
           <div className="flex flex-col gap-4">
@@ -603,181 +703,33 @@ function HomePage() {
         </div>
       </section>
 
-      {/* ── Announcements (left) + Pinned For You (center) + Top Management (right) ── */}
+      {/* ── Top Management ──────────────────────────────────────────────── */}
       <section className="bg-cic-800 max-w-full mx-auto px-6 sm:px-8 py-4 sm:py-4">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-          {/* ── LEFT: Announcements ───────────────────────────────────────── */}
-          <div
-            ref={announcementsReveal.ref}
-            className="flex flex-col gap-4"
-            style={{
-              opacity: announcementsReveal.visible ? 1 : 0,
-              transform: announcementsReveal.visible
-                ? "translateY(0)"
-                : "translateY(30px)",
-              transition: "opacity 0.7s ease, transform 0.7s ease",
-            }}
-          >
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-cic-900 flex items-center justify-center shrink-0">
-                <Bell className="w-4 h-4 text-white" />
-              </div>
-              <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
-                Announcements
-              </h2>
-              {announcements.length > 0 && (
-                <span className="text-xs font-semibold bg-cic-100 text-cic-700 px-2 py-0.5 rounded-full">
-                  {announcements.length}
-                </span>
-              )}
+        <div
+          ref={topManagementReveal.ref}
+          className="flex flex-col gap-4"
+          style={{
+            opacity: topManagementReveal.visible ? 1 : 0,
+            transform: topManagementReveal.visible
+              ? "translateY(0)"
+              : "translateY(30px)",
+            transition: "opacity 0.7s ease, transform 0.7s ease",
+          }}
+        >
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center shrink-0">
+              <Users className="w-4 h-4 text-cic-900" />
             </div>
-
-            <div className="bg-white rounded-2xl overflow-hidden shadow-sm">
-              {announcementsLoading ? (
-                <AnnouncementsSkeleton />
-              ) : announcements.length === 0 ? (
-                <div className="px-5 py-10 flex flex-col items-center justify-center gap-2">
-                  <Bell className="w-8 h-8 text-slate-300" />
-                  <p className="text-sm text-slate-400">
-                    No announcements at this time
-                  </p>
-                </div>
-              ) : (
-                <div className="divide-y divide-slate-100">
-                  {(showAllAnnouncements
-                    ? announcements
-                    : announcements.slice(0, 4)
-                  ).map((a) => (
-                    <div
-                      key={a.id}
-                      className="flex items-center gap-3 px-4 py-3 hover:bg-cic-50 transition-colors cursor-pointer"
-                    >
-                      {/* Thumbnail */}
-                      {a.image ? (
-                        <img
-                          src={a.image}
-                          alt={a.title}
-                          className="w-16 h-14 rounded-lg object-cover shrink-0"
-                        />
-                      ) : (
-                        <div className="w-16 h-14 rounded-lg bg-white flex items-center justify-center shrink-0">
-                          <Bell className="w-5 h-5 text-cic-800" />
-                        </div>
-                      )}
-                      {/* Text */}
-                      <div className="min-w-0">
-                        <p className="text-sm font-semibold text-cic-800 leading-snug line-clamp-2">
-                          {a.title}
-                        </p>
-                        {(a.time || a.location) && (
-                          <p className="text-xs text-slate-500 mt-0.5">
-                            {[a.time, a.location].filter(Boolean).join(" · ")}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Show more / less */}
-              {announcements.length > 4 && (
-                <button
-                  onClick={() => setShowAllAnnouncements((prev) => !prev)}
-                  className="w-full py-2.5 text-xs font-semibold text-cic-700 hover:text-cic-900 hover:bg-cic-50 transition-colors flex items-center justify-center gap-1 border-t border-slate-100"
-                >
-                  {showAllAnnouncements ? (
-                    <>
-                      <ChevronUp className="w-3.5 h-3.5" /> Show less
-                    </>
-                  ) : (
-                    <>
-                      <ChevronDown className="w-3.5 h-3.5" /> View all
-                    </>
-                  )}
-                </button>
-              )}
-            </div>
+            <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
+              Top Management
+            </h2>
           </div>
 
-          {/* ── CENTER: Pinned For You ────────────────────────────────────── */}
-          <div
-            ref={pinnedReveal.ref}
-            className="flex flex-col gap-4"
-            style={{
-              opacity: pinnedReveal.visible ? 1 : 0,
-              transform: pinnedReveal.visible
-                ? "translateY(0)"
-                : "translateY(30px)",
-              transition: "opacity 0.7s ease 0.15s, transform 0.7s ease 0.15s",
-            }}
-          >
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-amber-500 flex items-center justify-center shrink-0">
-                <Pin className="w-4 h-4 text-white" />
-              </div>
-              <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
-                Pinned For You
-              </h2>
-            </div>
-
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-              <div className="px-4 py-3 border-b border-slate-100 bg-slate-50/80">
-                <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest">
-                  Pinned Documents
-                </p>
-              </div>
-              {docsLoading ? (
-                <PinnedDocsSkeleton />
-              ) : pinnedDocs.length === 0 ? (
-                <div className="px-5 py-10 flex flex-col items-center justify-center gap-2">
-                  <Pin className="w-8 h-8 text-slate-200" />
-                  <p className="text-sm text-slate-400">No pinned documents</p>
-                </div>
-              ) : (
-                <div className="divide-y divide-slate-100">
-                  {pinnedDocs.slice(0, 5).map((doc) => (
-                    <div
-                      key={doc.id}
-                      className="px-4 py-3 hover:bg-cic-50 transition-colors cursor-pointer"
-                    >
-                      <PinnedCard title={doc.title} category={doc.category} />
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* ── RIGHT: Top Management ─────────────────────────────────────── */}
-          <div
-            ref={topManagementReveal.ref}
-            className="flex flex-col gap-4"
-            style={{
-              opacity: topManagementReveal.visible ? 1 : 0,
-              transform: topManagementReveal.visible
-                ? "translateY(0)"
-                : "translateY(30px)",
-              transition: "opacity 0.7s ease 0.3s, transform 0.7s ease 0.3s",
-            }}
-          >
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center shrink-0">
-                <Users className="w-4 h-4 text-cic-900" />
-              </div>
-              <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
-                Top Management
-              </h2>
-            </div>
-
-            <div className="bg-surface-muted rounded-2xl overflow-hidden shadow-sm">
-              <TopManagementCarousel />
-            </div>
+          <div className="rounded-2xl shadow-sm">
+            <TopManagementCarousel visible={topManagementReveal.visible} />
           </div>
         </div>
       </section>
-
-      <StatsSection />
 
       {/* Welcome */}
       <section className="max-w-full mx-auto px-6 sm:px-8 py-4 sm:py-4">
@@ -967,20 +919,88 @@ function HomePage() {
                 </p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-1 gap-2">
-                {videos
-                  .filter((v) => v.videoLink)
-                  .slice(0, 2)
-                  .map((video) => (
-                    <VideoCard
-                      key={video.id}
-                      title={video.title}
-                      description={video.description}
-                      videoLink={video.videoLink}
-                      onClick={() => setActiveVideo(video.videoLink)}
-                    />
-                  ))}
-              </div>
+              (() => {
+                const playableVideos = videos.filter((v) => v.videoLink);
+                const canScrollVideoUp = videoStartIndex > 0;
+                const canScrollVideoDown =
+                  videoStartIndex + VIDEO_VISIBLE < playableVideos.length;
+                const visibleVideos = playableVideos.slice(
+                  videoStartIndex,
+                  videoStartIndex + VIDEO_VISIBLE,
+                );
+
+                return (
+                  <div className="flex gap-2">
+                    <div className="flex-1 flex flex-col gap-2">
+                      {visibleVideos.map((video) => (
+                        <VideoCard
+                          key={video.id}
+                          title={video.title}
+                          description={video.description}
+                          videoLink={video.videoLink}
+                          onClick={() => setActiveVideo(video.videoLink)}
+                        />
+                      ))}
+                    </div>
+
+                    {playableVideos.length > VIDEO_VISIBLE && (
+                      <div className="flex flex-col justify-center gap-2 pl-1">
+                        <button
+                          onClick={() =>
+                            setVideoStartIndex((i) => Math.max(0, i - 1))
+                          }
+                          disabled={!canScrollVideoUp}
+                          className={`w-7 h-7 rounded-full flex items-center justify-center border transition-colors ${
+                            canScrollVideoUp
+                              ? "border-slate-300 text-cic-900 hover:bg-slate-100"
+                              : "border-slate-100 text-slate-300 cursor-not-allowed"
+                          }`}
+                          aria-label="Scroll up"
+                        >
+                          <ChevronUp className="w-4 h-4" />
+                        </button>
+
+                        <div className="flex flex-col items-center gap-1 py-1">
+                          {Array.from({
+                            length: playableVideos.length - VIDEO_VISIBLE + 1,
+                          }).map((_, i) => (
+                            <button
+                              key={i}
+                              onClick={() => setVideoStartIndex(i)}
+                              className={`w-1.5 rounded-full transition-all ${
+                                i === videoStartIndex
+                                  ? "h-4 bg-cic-900"
+                                  : "h-1.5 bg-slate-300 hover:bg-slate-400"
+                              }`}
+                              aria-label={`Go to page ${i + 1}`}
+                            />
+                          ))}
+                        </div>
+
+                        <button
+                          onClick={() =>
+                            setVideoStartIndex((i) =>
+                              Math.min(
+                                playableVideos.length - VIDEO_VISIBLE,
+                                i + 1,
+                              ),
+                            )
+                          }
+                          disabled={!canScrollVideoDown}
+                          className={`w-7 h-7 rounded-full flex items-center justify-center border transition-colors ${
+                            canScrollVideoDown
+                              ? "border-slate-300 text-cic-900 hover:bg-slate-100"
+                              : "border-slate-100 text-slate-300 cursor-not-allowed"
+                          }`}
+                          aria-label="Scroll down"
+                        >
+                          <ChevronDown className="w-4 h-4" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()
             )}
           </div>
         </div>

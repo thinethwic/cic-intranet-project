@@ -1,6 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { encryptSegment } from "@/utils/segmentEncryption";
-import { BriefcaseBusiness, ShipWheelIcon } from "lucide-react";
+import { BriefcaseBusiness, ListTodo, ShipWheelIcon } from "lucide-react";
 import { Link } from "react-router-dom";
 import { openLoginDialog } from "@/lib/loginDialogStore";
 
@@ -15,6 +15,12 @@ export default function ButtonsSection({ segment }: ButtonsSectionProps) {
       icon: ShipWheelIcon,
       // No segment = prompt sign-in instead of navigating anywhere.
       link: segment ? `/helpdesk?s=${encryptSegment(segment)}` : null,
+    },
+    {
+      // Personal, per-user tool — not segment-scoped like Help Desk, so no gating.
+      label: "To-Do Tasks",
+      icon: ListTodo,
+      link: "/tasks",
     },
     {
       label: "Asset Management",

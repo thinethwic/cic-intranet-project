@@ -32,6 +32,38 @@ export interface TicketComment {
     createdAt: string;
 }
 
+export type TaskStatus = "TODO" | "IN_PROGRESS" | "DONE";
+export type TaskPriority = "LOW" | "MEDIUM" | "HIGH";
+
+export interface TaskAttachment {
+    id: number;
+    fileName: string;
+    fileUrl: string;
+    fileSize: number;
+    contentType: string;
+    uploadedAt: string;
+}
+
+export interface Task {
+    id: number;
+    title: string;
+    description: string | null;
+    status: TaskStatus;
+    priority: TaskPriority;
+    dueDate: string | null;
+    createdAt: string;
+    updatedAt: string;
+    owner: { id: number; name: string; email: string };
+    attachments: TaskAttachment[];
+}
+
+// An attachment as it appears in the aggregated "My Documents" view — same
+// file, plus which task it's linked to so it can be opened from there.
+export interface TaskDocument extends TaskAttachment {
+    taskId: number;
+    taskTitle: string;
+}
+
 export interface Document {
     id: number;
     title: string;

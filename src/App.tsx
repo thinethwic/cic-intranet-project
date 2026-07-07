@@ -1,6 +1,7 @@
 import { lazy, Suspense } from "react";
 import { Route, Routes } from "react-router-dom";
 import { usePageTitle } from "./hooks/usePageTitle";
+import { useIdleLogout } from "./hooks/useIdleLogout";
 
 // Eagerly loaded — always needed
 import Layout from "./components/Layout";
@@ -15,6 +16,7 @@ const HomePageFeeds = lazy(() => import("./Pages/Our Segments/CIC Feeds/HomePage
 const HomePageAsiavet = lazy(() => import("./Pages/Our Segments/Asia Vet/HomePageAsiavet"));
 const NewsDetailPage = lazy(() => import("./components/NewsDetailPage"));
 const HelpDeskPage = lazy(() => import("./Pages/Our Segments/components/HelpDeskPage"));
+const TaskManagerPage = lazy(() => import("./Pages/Our Segments/components/TaskManagerPage"));
 const AdminLayout = lazy(() => import("./components/AdminLayout"));
 const AdminDashboard = lazy(() => import("./Pages/Admin/AdminDashboard"));
 const AdminVideosPage = lazy(() => import("./Pages/Admin/AdminVideo"));
@@ -39,6 +41,7 @@ function PageSpinner() {
 
 function App() {
   usePageTitle();
+  useIdleLogout();
   return (
     <Suspense fallback={<PageSpinner />}>
       <Routes>
@@ -53,6 +56,7 @@ function App() {
         {/* ── Employee routes ── */}
         <Route element={<EmployeeProtectedRoute />}>
           <Route path="/helpdesk" element={<HelpDeskPage />} />
+          <Route path="/tasks" element={<TaskManagerPage />} />
         </Route>
 
         {/* ── Admin routes (SUPER_ADMIN + ADMIN) ── */}

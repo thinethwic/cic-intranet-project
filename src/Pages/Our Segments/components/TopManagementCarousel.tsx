@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useMembers } from "@/hooks/useMembers";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -16,10 +15,12 @@ function getRoleFromEmail(email: string): string {
   return ROLE_LABELS[prefix] ?? prefix;
 }
 
-export default function TopManagementCarousel() {
+interface Props {
+  visible?: boolean;
+}
+
+export default function TopManagementCarousel({ visible = true }: Props) {
   const { members, loading, error } = useMembers();
-  const [current, setCurrent] = useState(0);
-  const [animating, setAnimating] = useState(false);
 
   const topManagement = members
     .filter((m) => m.role === "TOP_MANAGEMENT")
@@ -29,29 +30,19 @@ export default function TopManagementCarousel() {
       return ROLE_ORDER.indexOf(aRole) - ROLE_ORDER.indexOf(bRole);
     });
 
-  // Auto-advance every 3 seconds
-  useEffect(() => {
-    if (topManagement.length <= 1) return;
-    const interval = setInterval(() => {
-      goTo((prev) => (prev + 1) % topManagement.length);
-    }, 5000);
-    return () => clearInterval(interval);
-  }, [topManagement.length]);
-
-  function goTo(indexOrUpdater: number | ((prev: number) => number)) {
-    setAnimating(true);
-    setTimeout(() => {
-      setCurrent(indexOrUpdater as any);
-      setAnimating(false);
-    }, 600);
-  }
-
   if (loading) {
     return (
-      <div className="bg-white rounded-2xl p-6 flex flex-col items-center gap-4">
-        <Skeleton className="w-28 h-28 rounded-full" />
-        <Skeleton className="h-4 w-36" />
-        <Skeleton className="h-3 w-28" />
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-4">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <div
+            key={i}
+            className="bg-white rounded-2xl p-6 flex flex-col items-center gap-4"
+          >
+            <Skeleton className="w-28 h-28 rounded-full" />
+            <Skeleton className="h-4 w-36" />
+            <Skeleton className="h-3 w-28" />
+          </div>
+        ))}
       </div>
     );
   }
@@ -68,68 +59,53 @@ export default function TopManagementCarousel() {
   if (topManagement.length === 0) {
     return (
       <div className="bg-white rounded-2xl p-6 flex items-center justify-center">
-        <p className="text-sm text-slate-400">No top management members found.</p>
+        <p className="text-sm text-slate-400">
+          No top management members found.
+        </p>
       </div>
     );
   }
 
-  const member = topManagement[current];
-
   return (
-    <div className="bg-[#ffffff] rounded-2xl shadow-sm overflow-hidden">
-      {/* Card */}
-      <div
-        className="flex flex-col items-center px-6 pt-8 pb-6 gap-4"
-        style={{
-          opacity: animating ? 0 : 1,
-          transform: animating ? "translateY(8px)" : "translateY(0)",
-          transition: "opacity 0.25s ease, transform 0.25s ease",
-        }}
-      >
-        {/* Avatar */}
-        <div className="ring-4 ring-white/20 rounded-full">
-          <Avatar className="w-40 h-40">
-            {member.imgeURL && (
-              <AvatarImage
-                src={member.imgeURL}
-                alt={`${member.firstName} ${member.lastName}`}
-                className="object-cover w-full h-full"
-              />
-            )}
-            <AvatarFallback className="text-2xl font-bold text-[#0E4E96] bg-blue-100">
-              {member.firstName[0]}
-              {member.lastName[0]}
-            </AvatarFallback>
-          </Avatar>
-        </div>
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-4">
+      {topManagement.map((member, index) => (
+        <div
+          key={member.id}
+          className="bg-[#ffffff] rounded-2xl shadow-sm flex flex-col items-center px-6 pt-8 pb-6 gap-4"
+          style={{
+            opacity: visible ? 1 : 0,
+            transform: visible ? "translateY(0)" : "translateY(30px)",
+            transition: `opacity 0.7s ease ${index * 0.15}s, transform 0.7s ease ${index * 0.15}s`,
+          }}
+        >
+          {/* Avatar */}
+          <div className="ring-4 ring-white/20 rounded-full">
+            <Avatar className="w-32 h-32">
+              {member.imgeURL && (
+                <AvatarImage
+                  src={member.imgeURL}
+                  alt={`${member.firstName} ${member.lastName}`}
+                  className="object-cover w-full h-full"
+                />
+              )}
+              <AvatarFallback className="text-2xl font-bold text-[#0E4E96] bg-blue-100">
+                {member.firstName[0]}
+                {member.lastName[0]}
+              </AvatarFallback>
+            </Avatar>
+          </div>
 
-        {/* Name */}
-        <div className="text-center">
-          <h3 className="text-xl font-bold text-[#0E4E96] leading-snug">
-            {member.title}. {member.firstName} {member.lastName}
-          </h3>
-          <p className="text-lg text-[#1e4c7f] mt-1">
-            {getRoleFromEmail(member.email)}
-          </p>
+          {/* Name */}
+          <div className="text-center">
+            <h3 className="text-xl font-bold text-[#0E4E96] leading-snug">
+              {member.title}. {member.firstName} {member.lastName}
+            </h3>
+            <p className="text-lg text-[#1e4c7f] mt-1">
+              {getRoleFromEmail(member.email)}
+            </p>
+          </div>
         </div>
-      </div>
-
-      {/* Dot indicators */}
-      {topManagement.length > 1 && (
-        <div className="flex items-center justify-center gap-2 pb-5">
-          {topManagement.map((_, i) => (
-            <button
-              key={i}
-              onClick={() => goTo(i)}
-              className={`rounded-full transition-all duration-300 ${
-                i === current
-                  ? "w-6 h-2.5 bg-white"
-                  : "w-2.5 h-2.5 bg-white/30 hover:bg-white/60"
-              }`}
-            />
-          ))}
-        </div>
-      )}
+      ))}
     </div>
   );
 }

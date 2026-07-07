@@ -15,15 +15,15 @@ interface Props {
 
 export default function UpcomingBirthdays({ list }: Props) {
   return (
-    <Card className="p-4 rounded-2xl bg-gray-50 border shadow-sm">
-      <div className="flex items-center gap-2 mb-4">
+    <Card className="p-4 rounded-2xl bg-gray-50 border shadow-sm h-full w-full flex flex-col">
+      <div className="flex items-center gap-2 mb-4 shrink-0">
         <CalendarDays className="w-4 h-4 text-blue-600" />
         <h3 className="text-sm font-semibold text-gray-700 tracking-wide">
           Upcoming Birthdays
         </h3>
       </div>
 
-      <div className="space-y-2 max-h-[12.5rem] overflow-y-auto pr-1">
+      <div className="flex flex-col gap-2 flex-1 overflow-y-auto pr-1">
         {list.length === 0 ? (
           <p className="text-xs text-gray-400 text-center py-4">
             No upcoming birthdays.
@@ -32,10 +32,10 @@ export default function UpcomingBirthdays({ list }: Props) {
           list.map((item, i) => (
             <div
               key={i}
-              className="flex items-center justify-between bg-white rounded-xl px-3 py-2 hover:shadow-sm transition"
+              className="flex items-center justify-between bg-white rounded-xl px-3 py-2 hover:shadow-sm transition h-fit"
             >
               <div className="flex items-center gap-3 min-w-0">
-                <div className="w-9 h-9 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center text-[11px] font-semibold">
+                <div className="w-9 h-9 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center text-[11px] font-semibold shrink-0">
                   {item.name.substring(0, 2).toUpperCase()}
                 </div>
                 <div className="min-w-0">

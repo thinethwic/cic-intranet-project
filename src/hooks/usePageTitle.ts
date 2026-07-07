@@ -9,7 +9,7 @@ const ROUTE_TITLES: Record<string, string> = {
     "/our-segments/asia-vet": "Asia Vet",
     "/helpdesk": "Help Desk",
     "/admin": "Dashboard",
-    "/admin/ticket": "Tickets",
+    "/tasks": "Tasks",
     "/admin/videos": "Videos",
     "/admin/documents": "Documents",
     "/admin/news": "News",
