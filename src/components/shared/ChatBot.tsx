@@ -67,7 +67,7 @@ export default function ChatBot() {
       setMessages((prev) => [
         ...prev,
         {
-          text: "Sorry, chat service is temporarily unavailable. Please try again later. If you have any inquiries, please contact us directly at info@cicfeeds.lk or 011-5389800 | 011-4830990-3. Thank you.",
+          text: "This service is under construction and temporarily unavailable 🤖. If you have any inquiries, please contact us directly at ✉️ info@cicfeeds.lk or 📞 011-5389800 | 011-4830990-3. Thank you 🙏",
           sender: "bot",
           timestamp: getTime(),
         },

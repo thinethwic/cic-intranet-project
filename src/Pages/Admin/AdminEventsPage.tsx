@@ -66,7 +66,7 @@ const SEGMENT_OPTIONS = [
   "AISA_VET",
 ];
 
-const CATEGORIES = ["All", "HR", "FINANCE", "OPERATIONS"];
+const CATEGORIES = ["All", "HR", "FINANCE", "OPERATION"];
 
 const TYPES = ["All", "Unread", "Read"];
 const ALLOWED_IMAGE_TYPES = [
@@ -86,7 +86,7 @@ const EMPTY_EVENT_FORM = {
 
 const EMPTY_ANN_FORM = {
   title: "",
-  category: "GENERAL",
+  category: "HR",
   segment: "CIC_FEEDS",
 };
 

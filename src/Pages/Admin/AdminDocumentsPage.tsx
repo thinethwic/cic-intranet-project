@@ -118,6 +118,7 @@ function FilterDropdown({
 
 export default function AdminDocumentsPage() {
   const PAGE_SIZE = 8;
+  const LOGS_PAGE_SIZE = 10;
   const [docs, setDocs] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -146,6 +147,8 @@ export default function AdminDocumentsPage() {
   const [logsDoc, setLogsDoc] = useState<Document | null>(null);
   const [logs, setLogs] = useState<DocumentAccessLog[]>([]);
   const [logsLoading, setLogsLoading] = useState(false);
+  const [logsPage, setLogsPage] = useState(1);
+  const [logsTotalElements, setLogsTotalElements] = useState(0);
   const [page, setPage] = useState(1);
 
   const adminUser = getAdminUser();
@@ -352,13 +355,15 @@ export default function AdminDocumentsPage() {
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   // Add this handler
-  const handleViewLogs = async (doc: Document) => {
+  const handleViewLogs = async (doc: Document, pageNum = 1) => {
     setLogsDoc(doc);
     setLogsLoading(true);
     try {
       setError("");
-      const data = await getDocumentLogs(doc.id);
+      const data = await getDocumentLogs(doc.id, pageNum - 1, LOGS_PAGE_SIZE);
       setLogs(data.content);
+      setLogsTotalElements(data.totalElements);
+      setLogsPage(pageNum);
     } catch (err) {
       console.error("Failed to fetch logs", err);
       setError(
@@ -368,6 +373,7 @@ export default function AdminDocumentsPage() {
         ),
       );
       setLogs([]);
+      setLogsTotalElements(0);
     } finally {
       setLogsLoading(false);
     }
@@ -935,6 +941,8 @@ export default function AdminDocumentsPage() {
           if (!o) {
             setLogsDoc(null);
             setLogs([]);
+            setLogsPage(1);
+            setLogsTotalElements(0);
           }
         }}
       >
@@ -1020,17 +1028,33 @@ export default function AdminDocumentsPage() {
             )}
           </div>
 
-          <div className="px-5 py-3 border-t border-slate-100 shrink-0 flex justify-between items-center">
-            <p className="text-xs text-slate-400">{logs.length} log entries</p>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setLogsDoc(null);
-                setLogs([]);
-              }}
-            >
-              Close
-            </Button>
+          <div className="px-5 py-3 border-t border-slate-100 shrink-0 space-y-3">
+            {logsTotalElements > 0 && (
+              <AdminPagination
+                page={logsPage}
+                totalPages={Math.max(
+                  1,
+                  Math.ceil(logsTotalElements / LOGS_PAGE_SIZE),
+                )}
+                totalItems={logsTotalElements}
+                pageSize={LOGS_PAGE_SIZE}
+                itemLabel="log entries"
+                onPageChange={(p) => logsDoc && handleViewLogs(logsDoc, p)}
+              />
+            )}
+            <div className="flex justify-end">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setLogsDoc(null);
+                  setLogs([]);
+                  setLogsPage(1);
+                  setLogsTotalElements(0);
+                }}
+              >
+                Close
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>

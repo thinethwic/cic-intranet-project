@@ -25,8 +25,6 @@ export interface Holiday {
   type: "public" | "poya";
 }
 
-const YEARS = [2025, 2026, 2027];
-
 function fixedHolidaysForYear(year: number): Holiday[] {
   return [
     { date: `${year}-01-01`, name: "New Year's Day", type: "public" },
@@ -64,13 +62,30 @@ const ANNOUNCED_HOLIDAYS: Holiday[] = [
   { date: "2026-11-08", name: "Deepavali Festival Day", type: "public" },
 ];
 
-export const SRI_LANKAN_HOLIDAYS: Holiday[] = YEARS.flatMap((year) => [
-  ...fixedHolidaysForYear(year),
-  ...getPoyaDays(year).map(
-    (p): Holiday => ({ date: p.date, name: p.name, type: "poya" }),
-  ),
-]).concat(ANNOUNCED_HOLIDAYS);
+// Fixed-date holidays and Poya days are computed per year on first request
+// and cached, so any year the calendar navigates to gets highlighting —
+// not just the years someone remembered to list.
+const yearCache = new Map<number, Holiday[]>();
+
+function holidaysForYear(year: number): Holiday[] {
+  let cached = yearCache.get(year);
+  if (!cached) {
+    cached = [
+      ...fixedHolidaysForYear(year),
+      ...getPoyaDays(year).map(
+        (p): Holiday => ({ date: p.date, name: p.name, type: "poya" }),
+      ),
+    ];
+    yearCache.set(year, cached);
+  }
+  return cached;
+}
 
 export function getHoliday(dateStr: string): Holiday | undefined {
-  return SRI_LANKAN_HOLIDAYS.find((h) => h.date === dateStr);
+  const announced = ANNOUNCED_HOLIDAYS.find((h) => h.date === dateStr);
+  if (announced) return announced;
+
+  const year = Number(dateStr.slice(0, 4));
+  if (!Number.isFinite(year)) return undefined;
+  return holidaysForYear(year).find((h) => h.date === dateStr);
 }

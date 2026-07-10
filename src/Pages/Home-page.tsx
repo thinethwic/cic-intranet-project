@@ -246,7 +246,6 @@ function HomePage() {
 
   const { announcements = [], loading: announcementsLoading } =
     useAnnouncements();
-  const [showAllAnnouncements, setShowAllAnnouncements] = useState(false);
 
   const tabs = ["All", "HR & Policies", "Finance", "Operations"];
 
@@ -259,7 +258,7 @@ function HomePage() {
         activeTab === "All" ||
         (activeTab === "HR & Policies" && doc.category === "HR") ||
         (activeTab === "Finance" && doc.category === "FINANCE") ||
-        (activeTab === "Operations" && doc.category === "OPERATIONS");
+        (activeTab === "Operations" && doc.category === "OPERATION");
 
       const matchesSearch =
         searchQuery === "" ||
@@ -347,7 +346,7 @@ function HomePage() {
   );
 
   const featuredRaw = useMemo(
-    () => sortedNews.find((n) => n.isHot) ?? null,
+    () => sortedNews.find((n) => n.isHot) ?? sortedNews[0] ?? null,
     [sortedNews],
   );
 
@@ -485,11 +484,14 @@ function HomePage() {
                     </p>
                   </div>
                 ) : (
-                  <div className="divide-y divide-slate-100">
-                    {(showAllAnnouncements
-                      ? announcements
-                      : announcements.slice(0, 4)
-                    ).map((a) => (
+                  <div
+                    className={`divide-y divide-slate-100 ${
+                      announcements.length > 2
+                        ? "max-h-40 overflow-y-auto"
+                        : ""
+                    }`}
+                  >
+                    {announcements.map((a) => (
                       <div
                         key={a.id}
                         className="flex items-center gap-3 px-4 py-3 hover:bg-cic-50 transition-colors cursor-pointer"
@@ -520,24 +522,6 @@ function HomePage() {
                       </div>
                     ))}
                   </div>
-                )}
-
-                {/* Show more / less */}
-                {announcements.length > 4 && (
-                  <button
-                    onClick={() => setShowAllAnnouncements((prev) => !prev)}
-                    className="w-full py-2.5 text-xs font-semibold text-cic-700 hover:text-cic-900 hover:bg-cic-50 transition-colors flex items-center justify-center gap-1 border-t border-slate-100"
-                  >
-                    {showAllAnnouncements ? (
-                      <>
-                        <ChevronUp className="w-3.5 h-3.5" /> Show less
-                      </>
-                    ) : (
-                      <>
-                        <ChevronDown className="w-3.5 h-3.5" /> View all
-                      </>
-                    )}
-                  </button>
                 )}
               </div>
             </div>

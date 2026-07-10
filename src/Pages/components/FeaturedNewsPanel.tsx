@@ -52,9 +52,11 @@ export default function FeaturedNewsPanel({ featured, sideItems }: Props) {
           </div>
 
           <div className="flex items-center gap-2 mb-2">
-            <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-red-100 text-red-700">
-              <Flame className="w-3 h-3" /> Hot
-            </span>
+            {featured.isHot && (
+              <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-red-100 text-red-700">
+                <Flame className="w-3 h-3" /> Hot
+              </span>
+            )}
             {featured.category && (
               <span className="text-[11px] text-slate-400 uppercase tracking-wide">
                 {featured.category}

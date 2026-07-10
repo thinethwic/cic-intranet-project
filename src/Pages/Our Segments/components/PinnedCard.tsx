@@ -8,7 +8,7 @@ interface Props {
 const CATEGORY_LABEL: Record<string, string> = {
   HR: "HR",
   FINANCE: "Finance",
-  OPERATIONS: "Operations",
+  OPERATION: "Operations",
 };
 
 export default function PinnedCard({ title, category }: Props) {

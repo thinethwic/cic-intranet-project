@@ -2,7 +2,6 @@
 
 import type { Document } from "@/types";
 import { apiFetch } from "./apiFetch";
-import { authHeaders } from "./authHeaders";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 const API = `${BASE_URL}/api/v1`;
@@ -29,9 +28,8 @@ export const getDocumentLogs = async (
     page = 0,
     size = 50
 ): Promise<{ content: DocumentAccessLog[]; totalElements: number }> => {
-    const response = await fetch(
+    const response = await apiFetch(
         `${API}/documents/${documentId}/logs?page=${page}&size=${size}`,
-        { headers: authHeaders() }
     );
     if (!response.ok) throw new Error("Failed to fetch document logs");
     return response.json();

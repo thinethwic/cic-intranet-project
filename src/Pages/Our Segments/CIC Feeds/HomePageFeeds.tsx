@@ -72,7 +72,7 @@ export default function HomePageAsiavet() {
         activeTab === "All" ||
         (activeTab === "HR & Policies" && doc.category === "HR") ||
         (activeTab === "Finance" && doc.category === "FINANCE") ||
-        (activeTab === "Operations" && doc.category === "OPERATIONS");
+        (activeTab === "Operations" && doc.category === "OPERATION");
 
       const matchesSearch =
         searchQuery === "" ||

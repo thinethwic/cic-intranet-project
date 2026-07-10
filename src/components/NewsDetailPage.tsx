@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Calendar, Share2, Bookmark, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -47,6 +48,32 @@ export default function NewsDetailPage() {
 
   const { news, loading, error } = useNewsById(Number(id));
   const { news: allNews } = useNews();
+  const [copied, setCopied] = useState(false);
+
+  const handleShare = async () => {
+    const shareUrl = window.location.href;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: news?.title,
+          text: news?.description,
+          url: shareUrl,
+        });
+      } catch {
+        // User cancelled the share sheet — nothing to do
+      }
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Clipboard unavailable — nothing to do
+    }
+  };
 
   const related = news
     ? allNews
@@ -90,13 +117,21 @@ export default function NewsDetailPage() {
             >
               <Bookmark className="w-4 h-4" />
             </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-slate-500 hover:text-slate-800"
-            >
-              <Share2 className="w-4 h-4" />
-            </Button>
+            <div className="relative">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-slate-500 hover:text-slate-800"
+                onClick={handleShare}
+              >
+                <Share2 className="w-4 h-4" />
+              </Button>
+              {copied && (
+                <span className="absolute top-full right-0 mt-1.5 whitespace-nowrap rounded-md bg-slate-900 px-2 py-1 text-xs text-white shadow-md z-20">
+                  Link copied!
+                </span>
+              )}
+            </div>
           </div>
         </div>
       </div>
