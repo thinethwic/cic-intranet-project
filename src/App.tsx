@@ -30,6 +30,7 @@ const AdminUsersPage = lazy(() => import("./Pages/Admin/AdminUsersPage"));
 const AdminTicketsPage = lazy(() => import("./Pages/Admin/AdminTicketsPage"));
 const AdminCategoriesPage = lazy(() => import("./Pages/Admin/AdminCategoriesPage"));
 const AdminAuditLogPage = lazy(() => import("./Pages/Admin/AdminAuditLogPage"));
+const AdminHeroShortcutsPage = lazy(() => import("./Pages/Admin/AdminHeroShortcutsPage"));
 
 function PageSpinner() {
   return (
@@ -78,6 +79,7 @@ function App() {
               <Route path="users" element={<AdminUsersPage />} />
               <Route path="categories" element={<AdminCategoriesPage />} />
               <Route path="auditLog" element={<AdminAuditLogPage />} />
+              <Route path="hero-shortcuts" element={<AdminHeroShortcutsPage />} />
             </Route>
           </Route>
         </Route>

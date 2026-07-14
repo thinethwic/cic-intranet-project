@@ -153,3 +153,32 @@ export interface Alert {
     href?: string;
     flyerImage?: string;
 }
+
+export type HeroShortcutColor =
+    | "blue"
+    | "violet"
+    | "orange"
+    | "teal"
+    | "indigo"
+    | "sky"
+    | "red"
+    | "emerald"
+    | "amber"
+    | "slate";
+
+export interface HeroShortcut {
+    id: number;
+    label: string;
+    url: string;
+    iconName: string;
+    color: HeroShortcutColor;
+    groupId: number;
+    sortOrder: number;
+}
+
+export interface HeroShortcutGroup {
+    id: number;
+    name: string;
+    sortOrder: number;
+    shortcuts: HeroShortcut[];
+}

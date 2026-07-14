@@ -13,6 +13,7 @@ import {
   ChevronRight,
   AlertCircleIcon,
   Activity,
+  LayoutGrid,
 } from "lucide-react";
 import {
   Sidebar,
@@ -120,6 +121,12 @@ const navItems: NavItem[] = [
     name: "Audit Logs",
     icon: Activity,
     path: "/admin/auditLog",
+    roles: ["SUPER_ADMIN"],
+  },
+  {
+    name: "Hero Shortcuts",
+    icon: LayoutGrid,
+    path: "/admin/hero-shortcuts",
     roles: ["SUPER_ADMIN"],
   },
 ];

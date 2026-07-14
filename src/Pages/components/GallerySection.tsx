@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { X, ArrowLeft, ArrowRight, AlertCircle } from "lucide-react";
+import { X, ArrowLeft, ArrowRight, AlertCircle, Image } from "lucide-react";
 import type { Gallery } from "@/types";
 import { useGalleries } from "@/hooks/useGalleries";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -118,10 +118,14 @@ export default function GallerySection() {
 
   return (
     <div className="w-full">
-      <h2 className="text-2xl sm:text-3xl font-bold text-cic-900 tracking-tight mb-4">
-        Gallery
-      </h2>
-      <div className="w-12 h-0.5 bg-cic-900 rounded mb-5" />
+      <div className="flex items-center gap-2.5 mb-4">
+        <div className="w-8 h-8 rounded-lg bg-violet-500 flex items-center justify-center shrink-0">
+          <Image className="w-4 h-4 text-white" />
+        </div>
+        <h2 className="text-2xl sm:text-3xl font-bold text-cic-900 tracking-tight">
+          Gallery
+        </h2>
+      </div>
 
       <div className="grid md:grid-cols-3 gap-4 mb-4">
         {main && (

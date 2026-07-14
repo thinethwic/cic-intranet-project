@@ -2,7 +2,16 @@ import HeroSection from "./components/Hero-section";
 import OurPeopleCard from "./components/OurPeople";
 import StatsSection from "./components/StatesSection";
 import UpcomingBirthdays from "./components/UpComingBirthDay";
-import { Flame, FileText, Pin, LockIcon, Search, Bell } from "lucide-react";
+import {
+  Flame,
+  FileText,
+  Pin,
+  LockIcon,
+  Search,
+  Bell,
+  Cake,
+  Video as VideoIcon,
+} from "lucide-react";
 
 import { Users, ChevronDown, ChevronUp } from "lucide-react";
 import visionImg from "@/assets/vision.jpg";
@@ -99,21 +108,33 @@ function CarouselSkeleton() {
 
 function BirthdaySkeleton() {
   return (
-    <div className="grid gap-6 md:grid-cols-3">
-      <div className="md:col-span-2 overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <div className="flex gap-4">
-          <Skeleton className="h-28 w-28 rounded-2xl" />
-          <div className="flex-1 space-y-3">
-            <Skeleton className="h-6 w-1/2" />
-            <Skeleton className="h-4 w-3/4" />
-            <Skeleton className="h-4 w-2/3" />
+    <div className="flex flex-col gap-3">
+      {/* Today's birthday card skeleton */}
+      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="flex items-center gap-4 px-6 pt-6 pb-4">
+          <Skeleton className="h-16 w-16 rounded-full shrink-0" />
+          <div className="flex-1 space-y-2">
+            <Skeleton className="h-3 w-24" />
+            <Skeleton className="h-5 w-40" />
+            <Skeleton className="h-3 w-28" />
           </div>
         </div>
+        <div className="h-px bg-slate-100 mx-6" />
+        <div className="px-6 py-4 space-y-2">
+          <Skeleton className="h-3 w-full" />
+          <Skeleton className="h-3 w-2/3" />
+        </div>
+        <div className="flex items-center justify-between px-6 pb-5">
+          <Skeleton className="h-8 w-36 rounded-full" />
+          <Skeleton className="h-8 w-24 rounded-lg" />
+        </div>
       </div>
-      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+
+      {/* Upcoming birthdays card skeleton */}
+      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
         <Skeleton className="h-5 w-32" />
         <div className="mt-4 space-y-4">
-          {Array.from({ length: 4 }).map((_, index) => (
+          {Array.from({ length: 3 }).map((_, index) => (
             <div key={index} className="flex items-center gap-3">
               <Skeleton className="h-10 w-10 rounded-full" />
               <div className="flex-1 space-y-2">
@@ -420,113 +441,110 @@ function HomePage() {
     <div>
       <HeroSection />
 
-      {/* Birthdays + Alert */}
+      {/* Announcements (left) + Birthdays (middle) + Alert (right) — mirrors the hero's 3-column row */}
       <section className="max-w-full mx-auto px-6 sm:px-8 py-4 sm:py-4">
-        <div className="flex flex-col md:flex-row gap-6">
-          <div className="w-full md:w-3/4">
-            <h2 className="text-2xl sm:text-3xl font-bold text-cic-900 tracking-tight mb-4">
-              Birthdays
-            </h2>
-            <div className="w-12 h-0.5 bg-cic-900 rounded mb-5" />
+        <div className="flex flex-col lg:flex-row items-start gap-4">
+          {/* LEFT — Announcements */}
+          <div
+            ref={announcementsReveal.ref}
+            className="w-full lg:w-75 shrink-0 flex flex-col gap-3"
+            style={{
+              opacity: announcementsReveal.visible ? 1 : 0,
+              transform: announcementsReveal.visible
+                ? "translateY(0)"
+                : "translateY(30px)",
+              transition: "opacity 0.7s ease, transform 0.7s ease",
+            }}
+          >
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-cic-900 flex items-center justify-center shrink-0">
+                <Bell className="w-4 h-4 text-white" />
+              </div>
+              <h2 className="text-lg sm:text-xl font-bold text-cic-900 tracking-tight">
+                Announcements
+              </h2>
+              {announcements.length > 0 && (
+                <span className="text-xs font-semibold bg-cic-100 text-cic-700 px-2 py-0.5 rounded-full">
+                  {announcements.length}
+                </span>
+              )}
+            </div>
+
+            <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-200">
+              {announcementsLoading ? (
+                <AnnouncementsSkeleton />
+              ) : announcements.length === 0 ? (
+                <div className="px-5 py-10 flex flex-col items-center justify-center gap-2">
+                  <Bell className="w-8 h-8 text-slate-300" />
+                  <p className="text-sm text-slate-400">
+                    No announcements at this time
+                  </p>
+                </div>
+              ) : (
+                <div className="divide-y divide-slate-100">
+                  {announcements.map((a) => (
+                    <div
+                      key={a.id}
+                      className="flex items-center gap-3 px-4 py-3 hover:bg-cic-50 transition-colors cursor-pointer"
+                    >
+                      {/* Thumbnail */}
+                      {a.image ? (
+                        <img
+                          src={a.image}
+                          alt={a.title}
+                          className="w-16 h-14 rounded-lg object-cover shrink-0"
+                        />
+                      ) : (
+                        <div className="w-16 h-14 rounded-lg bg-slate-50 flex items-center justify-center shrink-0">
+                          <Bell className="w-5 h-5 text-cic-800" />
+                        </div>
+                      )}
+                      {/* Text */}
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-cic-800 leading-snug line-clamp-2">
+                          {a.title}
+                        </p>
+                        {(a.time || a.location) && (
+                          <p className="text-xs text-slate-500 mt-0.5">
+                            {[a.time, a.location].filter(Boolean).join(" · ")}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* MIDDLE — Birthdays + Upcoming Birthdays */}
+          <div className="w-full lg:flex-1 min-w-0 flex flex-col gap-3">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-pink-500 flex items-center justify-center shrink-0">
+                <Cake className="w-4 h-4 text-white" />
+              </div>
+              <h2 className="text-lg sm:text-xl font-bold text-cic-900 tracking-tight">
+                Birthdays
+              </h2>
+            </div>
             {membersLoading ? (
               <BirthdaySkeleton />
             ) : membersError ? (
               <InlineErrorAlert message={membersError} />
             ) : (
-              <div className="flex flex-col md:flex-row gap-4 items-stretch">
-                <div className="w-full md:flex-1 md:min-w-0">
-                  {todayBirthdays.length === 0 ? (
-                    <NoBirthdayCard />
-                  ) : (
-                    <BirthdayCarousel members={todayBirthdays} />
-                  )}
-                </div>
-                <div className="w-full md:w-auto md:min-w-100 md:max-w-sm shrink-0 md:flex">
-                  <UpcomingBirthdays list={upcomingList} />
-                </div>
+              <div className="flex flex-col gap-3">
+                {todayBirthdays.length === 0 ? (
+                  <NoBirthdayCard />
+                ) : (
+                  <BirthdayCarousel members={todayBirthdays} />
+                )}
+                <UpcomingBirthdays list={upcomingList} />
               </div>
             )}
-
-            {/* Announcements — placed below Upcoming Birthdays */}
-            <div
-              ref={announcementsReveal.ref}
-              className="flex flex-col gap-4 mt-6"
-              style={{
-                opacity: announcementsReveal.visible ? 1 : 0,
-                transform: announcementsReveal.visible
-                  ? "translateY(0)"
-                  : "translateY(30px)",
-                transition: "opacity 0.7s ease, transform 0.7s ease",
-              }}
-            >
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-cic-900 flex items-center justify-center shrink-0">
-                  <Bell className="w-4 h-4 text-white" />
-                </div>
-                <h2 className="text-2xl sm:text-3xl font-bold text-cic-900 tracking-tight">
-                  Announcements
-                </h2>
-                {announcements.length > 0 && (
-                  <span className="text-xs font-semibold bg-cic-100 text-cic-700 px-2 py-0.5 rounded-full">
-                    {announcements.length}
-                  </span>
-                )}
-              </div>
-
-              <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-200">
-                {announcementsLoading ? (
-                  <AnnouncementsSkeleton />
-                ) : announcements.length === 0 ? (
-                  <div className="px-5 py-10 flex flex-col items-center justify-center gap-2">
-                    <Bell className="w-8 h-8 text-slate-300" />
-                    <p className="text-sm text-slate-400">
-                      No announcements at this time
-                    </p>
-                  </div>
-                ) : (
-                  <div
-                    className={`divide-y divide-slate-100 ${
-                      announcements.length > 2
-                        ? "max-h-40 overflow-y-auto"
-                        : ""
-                    }`}
-                  >
-                    {announcements.map((a) => (
-                      <div
-                        key={a.id}
-                        className="flex items-center gap-3 px-4 py-3 hover:bg-cic-50 transition-colors cursor-pointer"
-                      >
-                        {/* Thumbnail */}
-                        {a.image ? (
-                          <img
-                            src={a.image}
-                            alt={a.title}
-                            className="w-16 h-14 rounded-lg object-cover shrink-0"
-                          />
-                        ) : (
-                          <div className="w-16 h-14 rounded-lg bg-slate-50 flex items-center justify-center shrink-0">
-                            <Bell className="w-5 h-5 text-cic-800" />
-                          </div>
-                        )}
-                        {/* Text */}
-                        <div className="min-w-0">
-                          <p className="text-sm font-semibold text-cic-800 leading-snug line-clamp-2">
-                            {a.title}
-                          </p>
-                          {(a.time || a.location) && (
-                            <p className="text-xs text-slate-500 mt-0.5">
-                              {[a.time, a.location].filter(Boolean).join(" · ")}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
           </div>
-          <div className="w-full md:w-1/4">
+
+          {/* RIGHT — Alert / CEO message (width unchanged) */}
+          <div className="w-full lg:w-80 shrink-0">
             <AlertOrCEOCard />
           </div>
         </div>
@@ -888,10 +906,14 @@ function HomePage() {
 
           {/* ── RIGHT: Videos ── */}
           <div className="w-full flex flex-col">
-            <h2 className="text-2xl sm:text-3xl font-bold text-cic-900 tracking-tight mb-4">
-              Video
-            </h2>
-            <div className="w-12 h-0.5 bg-cic-900 rounded mb-5" />
+            <div className="flex items-center gap-2.5 mb-4">
+              <div className="w-8 h-8 rounded-lg bg-blue-500 flex items-center justify-center shrink-0">
+                <VideoIcon className="w-4 h-4 text-white" />
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-bold text-cic-900 tracking-tight">
+                Video
+              </h2>
+            </div>
             {videosLoading ? (
               <VideoSkeleton />
             ) : videosError ? (
