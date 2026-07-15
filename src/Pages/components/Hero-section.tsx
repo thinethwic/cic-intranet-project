@@ -1,4 +1,10 @@
-import { useState, useEffect, useMemo, type ComponentProps } from "react";
+import {
+  useState,
+  useEffect,
+  useMemo,
+  useRef,
+  type ComponentProps,
+} from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Dialog,
@@ -10,9 +16,10 @@ import { ChevronLeft, ChevronRight, Link2 } from "lucide-react";
 import { Link } from "react-router-dom";
 
 import slide1 from "../../assets/chicken_farm.png";
-import slide2 from "../../assets/Mask-group5.avif";
 import slide3 from "../../assets/Mask-group3.avif";
 import slide4 from "../../assets/poulry image.png";
+import slide5 from "../../assets/video1.mp4";
+import slide6 from "../../assets/video2.mp4";
 
 import { CalendarDays } from "lucide-react";
 import { Calendar, CalendarDayButton } from "@/components/ui/calendar";
@@ -32,7 +39,8 @@ import { getHoliday } from "@/data/sriLankanHolidays";
 import type { Event } from "@/types";
 
 interface Slide {
-  image: string;
+  type: "image" | "video";
+  src: string;
 }
 
 function formatDate(d: Date | undefined) {
@@ -78,20 +86,28 @@ function CalendarDayBadgeButton({
 
 const slides: Slide[] = [
   {
-    image: slide1,
+    type: "image",
+    src: slide1,
   },
   {
-    image: slide2,
+    type: "video",
+    src: slide5,
   },
   {
-    image: slide3,
+    type: "image",
+    src: slide3,
   },
   {
-    image: slide4,
+    type: "video",
+    src: slide6,
+  },
+  {
+    type: "image",
+    src: slide4,
   },
 ];
 
-const AUTO_SLIDE_INTERVAL = 8000;
+const IMAGE_SLIDE_DURATION = 4000;
 
 export default function HeroSection() {
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -99,13 +115,36 @@ export default function HeroSection() {
   const [openGroup, setOpenGroup] = useState<number | null>(null);
   const { groups: categoryGroups } = useHeroShortcuts();
   const activeGroup = categoryGroups.find((g) => g.id === openGroup);
+  // Keyed by slide index — there can be multiple video slides, each needs
+  // its own element reference (a single shared ref would only ever point
+  // at whichever <video> mounted last).
+  const videoRefs = useRef<Record<number, HTMLVideoElement | null>>({});
 
+  const goToNextSlide = () =>
+    setCurrentSlide((prev) => (prev + 1) % slides.length);
+
+  // Image slides auto-advance on a fixed timer; video slides advance
+  // themselves (via onEnded below) once they're actually finished playing.
   useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % slides.length);
-    }, AUTO_SLIDE_INTERVAL);
-    return () => clearInterval(timer);
-  }, []);
+    if (slides[currentSlide].type === "video") return;
+    const timer = setTimeout(goToNextSlide, IMAGE_SLIDE_DURATION);
+    return () => clearTimeout(timer);
+  }, [currentSlide]);
+
+  // Only play the current slide's video — otherwise it plays unseen in the
+  // background and may already be near the end (or have fired onEnded) by
+  // the time the carousel reaches it.
+  useEffect(() => {
+    Object.entries(videoRefs.current).forEach(([indexStr, video]) => {
+      if (!video) return;
+      if (Number(indexStr) === currentSlide) {
+        video.currentTime = 0;
+        video.play().catch(() => {});
+      } else {
+        video.pause();
+      }
+    });
+  }, [currentSlide]);
 
   useEffect(() => {
     const timeout = setTimeout(() => setCardsVisible(true), 300);
@@ -232,12 +271,26 @@ export default function HeroSection() {
                 className="absolute inset-0 transition-opacity duration-700"
                 style={{ opacity: i === currentSlide ? 1 : 0 }}
               >
-                <img
-                  src={slide.image}
-                  className="w-full h-full object-cover"
-                  loading={i === 0 ? "eager" : "lazy"}
-                  decoding={i === 0 ? "sync" : "async"}
-                />
+                {slide.type === "video" ? (
+                  <video
+                    ref={(el) => {
+                      videoRefs.current[i] = el;
+                    }}
+                    src={slide.src}
+                    className="w-full h-full object-cover"
+                    muted
+                    playsInline
+                    preload="metadata"
+                    onEnded={goToNextSlide}
+                  />
+                ) : (
+                  <img
+                    src={slide.src}
+                    className="w-full h-full object-cover"
+                    loading={i === 0 ? "eager" : "lazy"}
+                    decoding={i === 0 ? "sync" : "async"}
+                  />
+                )}
               </div>
             ))}
 
