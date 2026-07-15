@@ -60,6 +60,7 @@ import {
 } from "@/lib/api/ticketApi";
 import type { AdminUser } from "@/lib/api/ticketApi";
 import { getAdminUser } from "@/lib/api/authHeaders";
+import { getStoredAdminToken, isTokenExpired } from "@/lib/api/authSession";
 import { AdminPagination } from "./admin-components";
 import { getUserFriendlyErrorMessage } from "@/lib/api/apiUtils";
 import InlineErrorAlert from "@/components/shared/InlineErrorAlert";
@@ -416,6 +417,11 @@ export default function AdminTicketsPage() {
   useEffect(() => {
     if (!selectedTicket) return;
     const interval = setInterval(() => {
+      const token = getStoredAdminToken();
+      if (!token || isTokenExpired(token)) {
+        clearInterval(interval);
+        return;
+      }
       fetchComments(selectedTicket.id);
     }, 5000);
     return () => clearInterval(interval);
@@ -425,6 +431,12 @@ export default function AdminTicketsPage() {
   useEffect(() => {
     const interval = setInterval(async () => {
       if (!isSeededRef.current) return;
+
+      const token = getStoredAdminToken();
+      if (!token || isTokenExpired(token)) {
+        clearInterval(interval);
+        return;
+      }
 
       try {
         const fresh = await getAllTickets();

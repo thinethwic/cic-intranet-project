@@ -56,6 +56,7 @@ import {
   type TicketCategory,
 } from "@/lib/api/ticketApi";
 import { getAdminUser, logout } from "@/lib/api/authHeaders";
+import { getStoredAdminToken, isTokenExpired } from "@/lib/api/authSession";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import logo from "@/assets/Logo.jpg";
 import { AdminPagination } from "@/Pages/Admin/admin-components";
@@ -302,6 +303,11 @@ export default function HelpDeskPage() {
   useEffect(() => {
     if (!selectedTicket) return;
     const interval = setInterval(() => {
+      const token = getStoredAdminToken();
+      if (!token || isTokenExpired(token)) {
+        clearInterval(interval);
+        return;
+      }
       fetchComments(selectedTicket.id);
     }, 5000);
     return () => clearInterval(interval);
@@ -310,6 +316,12 @@ export default function HelpDeskPage() {
   useEffect(() => {
     const interval = setInterval(async () => {
       if (!isSeededRef.current) return;
+
+      const token = getStoredAdminToken();
+      if (!token || isTokenExpired(token)) {
+        clearInterval(interval);
+        return;
+      }
 
       try {
         const fresh = await getMyTickets();
