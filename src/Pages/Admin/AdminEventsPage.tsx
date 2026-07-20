@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   ActionDropdown,
   AdminPagination,
@@ -86,6 +87,7 @@ const EMPTY_EVENT_FORM = {
 
 const EMPTY_ANN_FORM = {
   title: "",
+  description: "",
   category: "HR",
   segment: "CIC_FEEDS",
 };
@@ -605,6 +607,8 @@ function AnnouncementsTab() {
   const [editing, setEditing] = useState<Announcement | null>(null);
   const [deleteItem, setDeleteItem] = useState<Announcement | null>(null);
   const [form, setForm] = useState(EMPTY_ANN_FORM);
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [page, setPage] = useState(1);
 
@@ -658,6 +662,8 @@ function AnnouncementsTab() {
   const openCreate = () => {
     setEditing(null);
     setForm(EMPTY_ANN_FORM);
+    setSelectedImage(null);
+    setImagePreview(null);
     setError("");
     setDialogOpen(true);
   };
@@ -666,11 +672,28 @@ function AnnouncementsTab() {
     setEditing(ann);
     setForm({
       title: ann.title,
+      description: ann.description ?? "",
       category: ann.category,
       segment: ann.segment,
     });
+    setSelectedImage(null);
+    setImagePreview(ann.image ?? null);
     setError("");
     setDialogOpen(true);
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] ?? null;
+    if (file && !ALLOWED_IMAGE_TYPES.includes(file.type)) {
+      setError(
+        `Unsupported file type "${file.type}". Please upload a JPG, PNG, WEBP, or GIF image.`,
+      );
+      setSelectedImage(null);
+      return;
+    }
+    setError("");
+    setSelectedImage(file);
+    if (file) setImagePreview(URL.createObjectURL(file));
   };
 
   const handleSave = async () => {
@@ -678,10 +701,16 @@ function AnnouncementsTab() {
     try {
       setSaving(true);
       setError("");
+      const formData = new FormData();
+      formData.append(
+        "data",
+        new Blob([JSON.stringify(form)], { type: "application/json" }),
+      );
+      if (selectedImage) formData.append("image", selectedImage);
       if (editing) {
-        await updateAnnouncement(editing.id, form);
+        await updateAnnouncement(editing.id, formData);
       } else {
-        await createAnnouncement(form);
+        await createAnnouncement(formData);
       }
       await fetchAnnouncements();
       setDialogOpen(false);
@@ -783,9 +812,17 @@ function AnnouncementsTab() {
             header: "Announcement",
             cell: (ann) => (
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-amber-50">
-                  <Megaphone className="h-4 w-4 text-amber-500" />
-                </div>
+                {ann.image ? (
+                  <img
+                    src={resolveFileUrl(ann.image)}
+                    alt=""
+                    className="h-10 w-10 shrink-0 rounded-2xl object-cover"
+                  />
+                ) : (
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-amber-50">
+                    <Megaphone className="h-4 w-4 text-amber-500" />
+                  </div>
+                )}
                 <div className="min-w-0">
                   <p className="truncate font-medium text-slate-800">
                     {ann.title}
@@ -853,6 +890,8 @@ function AnnouncementsTab() {
         onOpenChange={(o) => {
           if (!o) {
             setDialogOpen(false);
+            setSelectedImage(null);
+            setImagePreview(null);
             setError("");
           }
         }}
@@ -869,6 +908,31 @@ function AnnouncementsTab() {
           </DialogHeader>
 
           <div className="grid gap-4">
+            <div className="space-y-2">
+              <Label className="text-xs font-medium text-slate-600">
+                Image <span className="text-xs text-slate-400">(optional)</span>
+              </Label>
+              <label className="flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-200 p-4 transition-colors hover:border-blue-400 hover:bg-blue-50/40">
+                {imagePreview ? (
+                  <img
+                    src={resolveFileUrl(imagePreview)}
+                    className="mb-2 h-32 w-full rounded-lg object-cover"
+                  />
+                ) : (
+                  <Upload className="mb-1 h-6 w-6 text-blue-400" />
+                )}
+                <p className="text-xs text-slate-400">
+                  {selectedImage?.name || "Click to upload image"}
+                </p>
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  className="hidden"
+                  onChange={handleImageChange}
+                />
+              </label>
+            </div>
+
             <div className="space-y-1.5">
               <Label className="text-xs font-medium text-slate-600">
                 Title <span className="text-red-500">*</span>
@@ -879,6 +943,21 @@ function AnnouncementsTab() {
                 onChange={(e) =>
                   setForm((p) => ({ ...p, title: e.target.value }))
                 }
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-slate-600">
+                Description{" "}
+                <span className="text-xs text-slate-400">(optional)</span>
+              </Label>
+              <Textarea
+                placeholder="Add more details about this announcement..."
+                value={form.description}
+                onChange={(e) =>
+                  setForm((p) => ({ ...p, description: e.target.value }))
+                }
+                rows={3}
               />
             </div>
 

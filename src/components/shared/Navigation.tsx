@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { ChevronDown, Plus } from "lucide-react";
 import logo from "../../assets/Logo.jpg";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useMembers } from "@/hooks/useMembers";
 
 const DEPARTMENTS = ["HR", "Finance", "IT", "Sales", "Stores"];
 const COMPANIES = [
@@ -12,13 +14,50 @@ const COMPANIES = [
   "All Companies",
 ];
 
+const ROLE_ORDER = ["CEO", "COO", "CFO"];
+const ROLE_LABELS: Record<string, string> = {
+  CEO: "Chief Executive Officer",
+  COO: "Chief Operating Officer",
+  CFO: "Chief Financial Officer",
+};
+
+function getRoleFromEmail(email: string): string {
+  const prefix = email.split("@")[0].toUpperCase();
+  return ROLE_LABELS[prefix] ?? prefix;
+}
+
 export default function Navbar() {
   const [visible, setVisible] = useState(false);
   const [pinned, setPinned] = useState(false);
   const [companyOpen, setCompanyOpen] = useState(false);
   const [selectedCompany, setSelectedCompany] = useState("All Companies");
+  const [topMgmtOpen, setTopMgmtOpen] = useState(false);
   const isScrolled = useRef(false);
   const hoverZoneRef = useRef<HTMLDivElement>(null);
+  const topMgmtRef = useRef<HTMLDivElement>(null);
+
+  const { members } = useMembers();
+  const topManagement = members
+    .filter((m) => m.role === "TOP_MANAGEMENT")
+    .sort((a, b) => {
+      const aRole = a.email.split("@")[0].toUpperCase();
+      const bRole = b.email.split("@")[0].toUpperCase();
+      return ROLE_ORDER.indexOf(aRole) - ROLE_ORDER.indexOf(bRole);
+    });
+
+  useEffect(() => {
+    if (!topMgmtOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        topMgmtRef.current &&
+        !topMgmtRef.current.contains(e.target as Node)
+      ) {
+        setTopMgmtOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [topMgmtOpen]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -102,6 +141,65 @@ export default function Navbar() {
                     <ChevronDown size={16} className="opacity-60" />
                   </Link>
                 ))}
+
+                {/* Top Management dropdown */}
+                <div className="relative" ref={topMgmtRef}>
+                  <button
+                    type="button"
+                    onClick={() => setTopMgmtOpen((prev) => !prev)}
+                    className="text-slate-600 font-medium hover:text-cic-800 hover:bg-cic-50 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1"
+                  >
+                    Top Management
+                    <ChevronDown
+                      size={16}
+                      className={`opacity-60 transition-transform ${
+                        topMgmtOpen ? "rotate-180" : ""
+                      }`}
+                    />
+                  </button>
+
+                  {topMgmtOpen && (
+                    <div className="absolute left-0 mt-2 w-72 bg-white border border-slate-200 rounded-2xl shadow-lg overflow-hidden z-50 p-2">
+                      {topManagement.length === 0 ? (
+                        <p className="text-sm text-slate-400 text-center py-4">
+                          No top management members found.
+                        </p>
+                      ) : (
+                        <div className="flex flex-col gap-1">
+                          {topManagement.map((member) => (
+                            <div
+                              key={member.id}
+                              className="flex items-center gap-3 px-2 py-2 rounded-xl hover:bg-cic-50 transition-colors"
+                            >
+                              <Avatar className="w-10 h-10 shrink-0">
+                                {member.imgeURL && (
+                                  <AvatarImage
+                                    src={member.imgeURL}
+                                    alt={`${member.firstName} ${member.lastName}`}
+                                    className="object-cover w-full h-full"
+                                  />
+                                )}
+                                <AvatarFallback className="text-xs font-bold text-cic-800 bg-cic-100">
+                                  {member.firstName[0]}
+                                  {member.lastName[0]}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div className="min-w-0">
+                                <p className="text-sm font-semibold text-slate-800 truncate">
+                                  {member.title}. {member.firstName}{" "}
+                                  {member.lastName}
+                                </p>
+                                <p className="text-xs text-slate-500 truncate">
+                                  {getRoleFromEmail(member.email)}
+                                </p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
 
                 {/* Settings Icon */}
                 <button

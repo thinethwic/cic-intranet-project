@@ -1,5 +1,5 @@
 import { Card } from "@/components/ui/card";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight, AlertCircle } from "lucide-react";
@@ -79,8 +79,15 @@ export default function OurPeopleCard() {
     <Card className="relative text-center p-4 rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 w-full max-w-[260px] mx-auto md:max-w-none">
       <h3 className="text-sm font-semibold text-blue-900 mb-3">Our Staff</h3>
       <Avatar className="w-20 h-20 mx-auto mb-2">
+        {person.imgeURL && (
+          <AvatarImage
+            src={person.imgeURL}
+            alt={`${person.firstName} ${person.lastName}`}
+            className="object-cover w-full h-full"
+          />
+        )}
         <AvatarFallback className="text-lg">
-          {getInitials(person.firstName, person.lastName)} {/* ✅ */}
+          {getInitials(person.firstName, person.lastName)}
         </AvatarFallback>
       </Avatar>
       <p className="text-sm font-semibold">

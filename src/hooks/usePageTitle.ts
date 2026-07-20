@@ -20,6 +20,7 @@ const ROUTE_TITLES: Record<string, string> = {
     "/admin/users": "Users",
     "/admin/categories": "Categories",
     "/admin/auditLog": "Audit Logs",
+    "/admin/hero-shortcuts": "Hero Shortcuts",
 };
 
 const APP_NAME = "CIC Feeds Group";

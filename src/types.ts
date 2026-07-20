@@ -92,6 +92,8 @@ export interface News {
 export interface Announcement {
     id: number;
     title: string;
+    description?: string;
+    image?: string;
     category: string;
     segment: string;
     isRead: boolean;

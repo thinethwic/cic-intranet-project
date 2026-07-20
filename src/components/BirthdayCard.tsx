@@ -29,18 +29,18 @@ export default function BirthdayCard({ name, role, message, dob }: Props) {
   return (
     <Card className="rounded-2xl bg-white border border-slate-100 shadow-card p-5 flex flex-col gap-4">
       {/* Top section */}
-      <div className="flex items-center gap-4 px-6 pt-6 pb-4">
-        <Avatar className="w-16 h-16 border-2 border-orange-200 shrink-0">
+      <div className="flex items-start gap-3">
+        <Avatar className="w-14 h-14 border-2 border-orange-200 shrink-0">
           <AvatarFallback className="bg-orange-100 text-orange-600 font-bold text-lg">
             {initials}
           </AvatarFallback>
         </Avatar>
 
-        <div className="flex-1">
+        <div className="flex-1 min-w-0">
           <p className="text-xs font-semibold tracking-widest text-cic-700 uppercase mb-0.5">
             Today's Birthday
           </p>
-          <h2 className="text-lg font-bold text-slate-900 leading-tight">
+          <h2 className="text-lg font-bold text-slate-900 leading-tight wrap-break-word">
             {name}
           </h2>
           <p className="text-xs text-slate-400 mt-0.5">
@@ -48,26 +48,27 @@ export default function BirthdayCard({ name, role, message, dob }: Props) {
           </p>
         </div>
 
-        <div className="flex gap-0">
-          <div className="text-4xl select-none">🎈</div>
-          <div className="text-4xl select-none">🎈</div>
-        </div>
+        <div className="text-2xl select-none shrink-0">🎈</div>
       </div>
 
-      <div className="h-px bg-slate-100 mx-6" />
+      <div className="h-px bg-slate-100" />
 
-      <div className="px-6 py-4 flex-1">
+      <div className="flex-1">
         <p className="text-sm text-slate-500 italic leading-relaxed">
           {displayMessage}
         </p>
       </div>
 
-      <div className="flex items-center justify-between px-6 pb-5">
+      <div className="flex flex-wrap items-center gap-2">
         <div className="flex items-center gap-2 border border-slate-200 rounded-full px-3 py-1.5">
-          <Calendar className="w-3.5 h-3.5 text-slate-400" />
-          <span className="text-xs font-medium text-slate-700">{dateLabel}</span>
+          <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+          <span className="text-xs font-medium text-slate-700 whitespace-nowrap">
+            {dateLabel}
+          </span>
           <span className="text-slate-300 text-xs">•</span>
-          <span className="text-xs text-slate-500">{daysLabel}</span>
+          <span className="text-xs text-slate-500 whitespace-nowrap">
+            {daysLabel}
+          </span>
         </div>
 
         <Button

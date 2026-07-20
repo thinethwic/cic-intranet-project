@@ -182,47 +182,97 @@ export default function HeroSection() {
           {/* LEFT — category shortcuts, grouped into Android-style folders */}
           <div className="w-full lg:w-64 shrink-0">
             <div className="h-60 lg:h-[420px] overflow-y-auto rounded-2xl border border-slate-200 bg-slate-50 shadow-sm p-2.5 grid grid-cols-2 gap-2 content-start">
-              {categoryGroups.map((group, i) => (
-                <button
-                  key={group.id}
-                  type="button"
-                  onClick={() => setOpenGroup(group.id)}
-                  className="w-full text-left"
-                  style={{
-                    opacity: cardsVisible ? 1 : 0,
-                    transform: cardsVisible
-                      ? "translateY(0)"
-                      : "translateY(10px)",
-                    transition: `opacity 0.4s ease, transform 0.4s ease`,
-                    transitionDelay: `${150 + i * 60}ms`,
-                  }}
-                >
-                  <Card className="bg-white border border-slate-200 hover:border-slate-300 hover:shadow-md transition-all cursor-pointer group shadow-sm h-full">
-                    <CardContent className="flex flex-col items-center justify-center gap-1.5 py-2.5 px-2 text-center">
-                      <div className="grid grid-cols-2 gap-1 p-1.5 rounded-xl bg-slate-100 transition-all group-hover:scale-110 shrink-0">
-                        {group.shortcuts.slice(0, 4).map((item) => {
-                          const ItemIcon =
-                            HERO_SHORTCUT_ICONS[item.iconName] ?? Link2;
-                          const palette = HERO_SHORTCUT_COLORS[item.color];
-                          return (
-                            <div
-                              key={item.id}
-                              className={`w-3.5 h-3.5 rounded-[4px] flex items-center justify-center ${palette.iconBg}`}
+              {categoryGroups.map((group, i) => {
+                const isFeatured = i === 0;
+                const hasOverflow = isFeatured && group.shortcuts.length > 4;
+                const visibleShortcuts = hasOverflow
+                  ? group.shortcuts.slice(0, 3)
+                  : group.shortcuts.slice(0, 4);
+                const overflowCount =
+                  group.shortcuts.length - visibleShortcuts.length;
+                return (
+                  <Tooltip key={group.id}>
+                    <TooltipTrigger
+                      render={
+                        <button
+                          type="button"
+                          onClick={() => setOpenGroup(group.id)}
+                          className={`w-full text-left ${isFeatured ? "col-span-2" : ""}`}
+                          style={{
+                            opacity: cardsVisible ? 1 : 0,
+                            transform: cardsVisible
+                              ? "translateY(0)"
+                              : "translateY(10px)",
+                            transition: `opacity 0.4s ease, transform 0.4s ease`,
+                            transitionDelay: `${150 + i * 60}ms`,
+                          }}
+                        >
+                          <Card
+                            className={`transition-all cursor-pointer group shadow-sm h-full ${
+                              isFeatured
+                                ? "bg-cic-10 hover:shadow-md"
+                                : "bg-white border border-slate-200 hover:border-slate-300 hover:shadow-md"
+                            }`}
+                          >
+                            <CardContent
+                              className={`flex flex-col items-center justify-center text-center ${
+                                isFeatured
+                                  ? "gap-2 py-3 px-3"
+                                  : "gap-1.5 py-2.5 px-2"
+                              }`}
                             >
-                              <ItemIcon
-                                className={`w-2.5 h-2.5 ${palette.iconColor}`}
-                              />
-                            </div>
-                          );
-                        })}
-                      </div>
-                      <p className="text-[11px] sm:text-xs font-semibold text-slate-800 leading-tight line-clamp-2 wrap-break-word w-full">
-                        {group.name}
-                      </p>
-                    </CardContent>
-                  </Card>
-                </button>
-              ))}
+                              <div
+                                className={`grid gap-1 p-1.5 rounded-xl bg-slate-100 transition-all group-hover:scale-110 shrink-0 ${
+                                  isFeatured ? "grid-cols-4" : "grid-cols-2"
+                                }`}
+                              >
+                                {visibleShortcuts.map((item) => {
+                                  const ItemIcon =
+                                    HERO_SHORTCUT_ICONS[item.iconName] ??
+                                    Link2;
+                                  const palette =
+                                    HERO_SHORTCUT_COLORS[item.color];
+                                  return (
+                                    <div
+                                      key={item.id}
+                                      className={`rounded-[7px] flex items-center justify-center ${palette.iconBg} ${
+                                        isFeatured ? "w-8 h-8" : "w-6 h-6"
+                                      }`}
+                                    >
+                                      <ItemIcon
+                                        className={`${palette.iconColor} ${
+                                          isFeatured
+                                            ? "w-7.5 h-7.5"
+                                            : "w-5 h-5"
+                                        }`}
+                                      />
+                                    </div>
+                                  );
+                                })}
+                                {hasOverflow && (
+                                  <div className="w-8 h-8 rounded-[7px] flex items-center justify-center bg-cic-900 text-white text-xs font-bold">
+                                    +{overflowCount}
+                                  </div>
+                                )}
+                              </div>
+                              <p
+                                className={`font-semibold text-slate-800 leading-tight line-clamp-2 wrap-break-word ${
+                                  isFeatured
+                                    ? "text-sm text-left w-auto"
+                                    : "text-[11px] sm:text-xs w-full"
+                                }`}
+                              >
+                                {group.name}
+                              </p>
+                            </CardContent>
+                          </Card>
+                        </button>
+                      }
+                    />
+                    <TooltipContent side="top">{group.name}</TooltipContent>
+                  </Tooltip>
+                );
+              })}
             </div>
           </div>
 
@@ -250,7 +300,7 @@ export default function HeroSection() {
                         className={`p-2.5 rounded-xl transition-all group-hover:scale-110 ${palette.iconBg}`}
                       >
                         <ItemIcon
-                          className={`w-5 h-5 stroke-[1.5] ${palette.iconColor}`}
+                          className={`w-7 h-7 stroke-[1.5] ${palette.iconColor}`}
                         />
                       </div>
                       <p className="text-[11px] font-semibold text-slate-700 leading-tight line-clamp-2">

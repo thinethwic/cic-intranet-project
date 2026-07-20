@@ -1,6 +1,5 @@
 import HeroSection from "./components/Hero-section";
 import OurPeopleCard from "./components/OurPeople";
-import StatsSection from "./components/StatesSection";
 import UpcomingBirthdays from "./components/UpComingBirthDay";
 import {
   Flame,
@@ -13,7 +12,7 @@ import {
   Video as VideoIcon,
 } from "lucide-react";
 
-import { Users, ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import visionImg from "@/assets/vision.jpg";
 import missionImg from "@/assets/mission.jpg";
 import GallerySection from "./components/GallerySection";
@@ -41,6 +40,7 @@ import InlineErrorAlert from "@/components/shared/InlineErrorAlert";
 import FeaturedNewsPanel from "./components/FeaturedNewsPanel";
 import PinnedCard from "./Our Segments/components/PinnedCard";
 import { viewDocument, downloadDocument } from "@/lib/api/documentApi";
+import { resolveFileUrl } from "@/lib/api/fileUtils";
 import { getAdminSession } from "@/lib/api/authSession";
 import {
   getLoginDialogSnapshot,
@@ -49,7 +49,6 @@ import {
 } from "@/lib/loginDialogStore";
 import DocGrid from "./Our Segments/components/DocGrid";
 import { useAnnouncements } from "@/hooks/useAnnouncements";
-import TopManagementCarousel from "./Our Segments/components/TopManagementCarousel";
 
 // ─── Skeleton helpers (unchanged) ────────────────────────────────────────────
 
@@ -201,6 +200,23 @@ function PinnedDocsSkeleton() {
   );
 }
 
+function DocGridSkeleton() {
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+      {Array.from({ length: 6 }).map((_, i) => (
+        <div
+          key={i}
+          className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm space-y-3"
+        >
+          <Skeleton className="w-9 h-9 rounded-lg" />
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-3 w-1/2" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // ─── Main component ───────────────────────────────────────────────────────────
 
 const VIDEO_VISIBLE = 2;
@@ -218,7 +234,11 @@ function HomePage() {
     error: membersError,
   } = useMembers();
   // ▼ NEW — global documents (no segment filter)
-  const { documents, loading: docsLoading } = useDocuments(undefined);
+  const {
+    documents,
+    loading: docsLoading,
+    error: docsError,
+  } = useDocuments(undefined);
 
   // ── Document section state ──────────────────────────────────────────────────
   const [activeTab, setActiveTab] = useState("All");
@@ -265,8 +285,11 @@ function HomePage() {
     openLoginDialog();
   };
 
-  const { announcements = [], loading: announcementsLoading } =
-    useAnnouncements();
+  const {
+    announcements = [],
+    loading: announcementsLoading,
+    error: announcementsError,
+  } = useAnnouncements();
 
   const tabs = ["All", "HR & Policies", "Finance", "Operations"];
 
@@ -434,20 +457,45 @@ function HomePage() {
 
   const announcementsReveal = useScrollReveal();
   const pinnedReveal = useScrollReveal();
-  const topManagementReveal = useScrollReveal();
 
   // ── Render ──────────────────────────────────────────────────────────────────
   return (
     <div>
       <HeroSection />
 
-      {/* Announcements (left) + Birthdays (middle) + Alert (right) — mirrors the hero's 3-column row */}
+      {/* Birthdays (left) + Announcements (middle) + Alert (right) — mirrors the hero's 3-column row */}
       <section className="max-w-full mx-auto px-6 sm:px-8 py-4 sm:py-4">
         <div className="flex flex-col lg:flex-row items-start gap-4">
-          {/* LEFT — Announcements */}
+          {/* LEFT — Birthdays + Upcoming Birthdays */}
+          <div className="w-full lg:w-90 shrink-0 flex flex-col gap-3">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-pink-500 flex items-center justify-center shrink-0">
+                <Cake className="w-4 h-4 text-white" />
+              </div>
+              <h2 className="text-lg sm:text-xl font-bold text-cic-900 tracking-tight">
+                Birthdays
+              </h2>
+            </div>
+            {membersLoading ? (
+              <BirthdaySkeleton />
+            ) : membersError ? (
+              <InlineErrorAlert message={membersError} />
+            ) : (
+              <div className="flex flex-col gap-3">
+                {todayBirthdays.length === 0 ? (
+                  <NoBirthdayCard />
+                ) : (
+                  <BirthdayCarousel members={todayBirthdays} />
+                )}
+                <UpcomingBirthdays list={upcomingList} />
+              </div>
+            )}
+          </div>
+
+          {/* MIDDLE — Announcements */}
           <div
             ref={announcementsReveal.ref}
-            className="w-full lg:w-75 shrink-0 flex flex-col gap-3"
+            className="w-full lg:flex-1 min-w-0 flex flex-col gap-3"
             style={{
               opacity: announcementsReveal.visible ? 1 : 0,
               transform: announcementsReveal.visible
@@ -473,6 +521,10 @@ function HomePage() {
             <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-200">
               {announcementsLoading ? (
                 <AnnouncementsSkeleton />
+              ) : announcementsError ? (
+                <div className="px-4 py-3">
+                  <InlineErrorAlert message={announcementsError} />
+                </div>
               ) : announcements.length === 0 ? (
                 <div className="px-5 py-10 flex flex-col items-center justify-center gap-2">
                   <Bell className="w-8 h-8 text-slate-300" />
@@ -490,7 +542,7 @@ function HomePage() {
                       {/* Thumbnail */}
                       {a.image ? (
                         <img
-                          src={a.image}
+                          src={resolveFileUrl(a.image)}
                           alt={a.title}
                           className="w-16 h-14 rounded-lg object-cover shrink-0"
                         />
@@ -504,9 +556,9 @@ function HomePage() {
                         <p className="text-sm font-semibold text-cic-800 leading-snug line-clamp-2">
                           {a.title}
                         </p>
-                        {(a.time || a.location) && (
-                          <p className="text-xs text-slate-500 mt-0.5">
-                            {[a.time, a.location].filter(Boolean).join(" · ")}
+                        {a.description && (
+                          <p className="text-xs text-slate-500 mt-0.5 line-clamp-1">
+                            {a.description}
                           </p>
                         )}
                       </div>
@@ -515,32 +567,6 @@ function HomePage() {
                 </div>
               )}
             </div>
-          </div>
-
-          {/* MIDDLE — Birthdays + Upcoming Birthdays */}
-          <div className="w-full lg:flex-1 min-w-0 flex flex-col gap-3">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-pink-500 flex items-center justify-center shrink-0">
-                <Cake className="w-4 h-4 text-white" />
-              </div>
-              <h2 className="text-lg sm:text-xl font-bold text-cic-900 tracking-tight">
-                Birthdays
-              </h2>
-            </div>
-            {membersLoading ? (
-              <BirthdaySkeleton />
-            ) : membersError ? (
-              <InlineErrorAlert message={membersError} />
-            ) : (
-              <div className="flex flex-col gap-3">
-                {todayBirthdays.length === 0 ? (
-                  <NoBirthdayCard />
-                ) : (
-                  <BirthdayCarousel members={todayBirthdays} />
-                )}
-                <UpcomingBirthdays list={upcomingList} />
-              </div>
-            )}
           </div>
 
           {/* RIGHT — Alert / CEO message (width unchanged) */}
@@ -591,6 +617,10 @@ function HomePage() {
                 </div>
                 {docsLoading ? (
                   <PinnedDocsSkeleton />
+                ) : docsError ? (
+                  <div className="px-4 py-3">
+                    <InlineErrorAlert message={docsError} />
+                  </div>
                 ) : pinnedDocs.length === 0 ? (
                   <div className="px-5 py-10 flex flex-col items-center justify-center gap-2">
                     <Pin className="w-8 h-8 text-slate-200" />
@@ -690,10 +720,9 @@ function HomePage() {
 
             {/* Document grid with pagination */}
             {docsLoading ? (
-              <div className="py-12 flex flex-col items-center gap-3">
-                <div className="w-6 h-6 border-2 border-cic-600 border-t-transparent rounded-full animate-spin" />
-                <p className="text-sm text-slate-400">Loading documents...</p>
-              </div>
+              <DocGridSkeleton />
+            ) : docsError ? (
+              <InlineErrorAlert message={docsError} />
             ) : (
               <DocGrid
                 documents={filteredDocuments}
@@ -701,34 +730,6 @@ function HomePage() {
                 onDownload={handleDownload}
               />
             )}
-          </div>
-        </div>
-      </section>
-
-      {/* ── Top Management ──────────────────────────────────────────────── */}
-      <section className="bg-cic-800 max-w-full mx-auto px-6 sm:px-8 py-4 sm:py-4">
-        <div
-          ref={topManagementReveal.ref}
-          className="flex flex-col gap-4"
-          style={{
-            opacity: topManagementReveal.visible ? 1 : 0,
-            transform: topManagementReveal.visible
-              ? "translateY(0)"
-              : "translateY(30px)",
-            transition: "opacity 0.7s ease, transform 0.7s ease",
-          }}
-        >
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center shrink-0">
-              <Users className="w-4 h-4 text-cic-900" />
-            </div>
-            <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
-              Top Management
-            </h2>
-          </div>
-
-          <div className="rounded-2xl shadow-sm">
-            <TopManagementCarousel visible={topManagementReveal.visible} />
           </div>
         </div>
       </section>
