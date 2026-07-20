@@ -49,6 +49,13 @@ import {
 } from "@/lib/loginDialogStore";
 import DocGrid from "./Our Segments/components/DocGrid";
 import { useAnnouncements } from "@/hooks/useAnnouncements";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import type { Announcement } from "@/types";
 
 // ─── Skeleton helpers (unchanged) ────────────────────────────────────────────
 
@@ -219,11 +226,13 @@ function DocGridSkeleton() {
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-const VIDEO_VISIBLE = 2;
+const VIDEO_VISIBLE = 6;
 
 function HomePage() {
   const [activeVideo, setActiveVideo] = useState<string | null>(null);
   const [videoStartIndex, setVideoStartIndex] = useState(0);
+  const [activeAnnouncement, setActiveAnnouncement] =
+    useState<Announcement | null>(null);
 
   // ── Data hooks ──────────────────────────────────────────────────────────────
   const { videos, loading: videosLoading, error: videosError } = useVideos();
@@ -533,7 +542,11 @@ function HomePage() {
                   </p>
                 </div>
               ) : (
-                <div className="divide-y divide-slate-100">
+                <div
+                  className={`divide-y divide-slate-100 ${
+                    announcements.length > 7 ? "max-h-160 overflow-y-auto" : ""
+                  }`}
+                >
                   {announcements.map((a) => (
                     <div
                       key={a.id}
@@ -544,12 +557,18 @@ function HomePage() {
                         <img
                           src={resolveFileUrl(a.image)}
                           alt={a.title}
+                          onClick={() => setActiveAnnouncement(a)}
                           className="w-16 h-14 rounded-lg object-cover shrink-0"
                         />
                       ) : (
-                        <div className="w-16 h-14 rounded-lg bg-slate-50 flex items-center justify-center shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => setActiveAnnouncement(a)}
+                          className="w-16 h-14 rounded-lg bg-slate-50 flex items-center justify-center shrink-0"
+                          aria-label="View announcement details"
+                        >
                           <Bell className="w-5 h-5 text-cic-800" />
-                        </div>
+                        </button>
                       )}
                       {/* Text */}
                       <div className="min-w-0">
@@ -567,6 +586,38 @@ function HomePage() {
                 </div>
               )}
             </div>
+
+            {/* Announcement details modal */}
+            <Dialog
+              open={!!activeAnnouncement}
+              onOpenChange={(o) => !o && setActiveAnnouncement(null)}
+            >
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>{activeAnnouncement?.title}</DialogTitle>
+                </DialogHeader>
+                {activeAnnouncement?.image && (
+                  <img
+                    src={resolveFileUrl(activeAnnouncement.image)}
+                    alt={activeAnnouncement.title}
+                    className="w-full max-h-80 rounded-lg object-cover"
+                  />
+                )}
+                {activeAnnouncement?.description && (
+                  <p className="text-sm text-slate-600 whitespace-pre-wrap">
+                    {activeAnnouncement.description}
+                  </p>
+                )}
+                <div className="flex items-center gap-2 pt-1">
+                  <span className="text-xs font-semibold bg-cic-100 text-cic-700 px-2.5 py-1 rounded-full">
+                    {activeAnnouncement?.category}
+                  </span>
+                  <span className="text-xs font-medium text-slate-400">
+                    {activeAnnouncement?.segment}
+                  </span>
+                </div>
+              </DialogContent>
+            </Dialog>
           </div>
 
           {/* RIGHT — Alert / CEO message (width unchanged) */}
@@ -938,7 +989,7 @@ function HomePage() {
 
                 return (
                   <div className="flex gap-2">
-                    <div className="flex-1 flex flex-col gap-2">
+                    <div className="flex-1 grid grid-cols-2 gap-2">
                       {visibleVideos.map((video) => (
                         <VideoCard
                           key={video.id}

@@ -1,7 +1,8 @@
 // components/AnnouncementItem.tsx
 import { useState } from "react";
-import { Eye, Loader2 } from "lucide-react";
+import { Eye, Loader2, Bell } from "lucide-react";
 import { markAnnouncementAsRead } from "@/lib/api/announcementApi";
+import { resolveFileUrl } from "@/lib/api/fileUtils";
 
 interface Props {
   id: number;
@@ -9,6 +10,7 @@ interface Props {
   category: string;
   segment: string;
   isRead: boolean;
+  image?: string;
   onMarkedRead?: (id: number) => void; // optional callback to notify parent
 }
 
@@ -17,6 +19,7 @@ export default function AnnouncementItem({
   title,
   category,
   isRead: initialRead,
+  image,
   onMarkedRead,
 }: Props) {
   const [isRead, setIsRead] = useState(initialRead);
@@ -43,6 +46,17 @@ export default function AnnouncementItem({
       <span
         className={`mt-1.5 w-2 h-2 rounded-full flex-shrink-0 ${isRead ? "bg-gray-300" : "bg-blue-500"}`}
       />
+      {image ? (
+        <img
+          src={resolveFileUrl(image)}
+          alt={title}
+          className="w-14 h-12 rounded-lg object-cover shrink-0"
+        />
+      ) : (
+        <div className="w-14 h-12 rounded-lg bg-slate-50 flex items-center justify-center shrink-0">
+          <Bell className="w-4 h-4 text-cic-800" />
+        </div>
+      )}
       <div className="flex-1 min-w-0">
         <p
           className={`font-medium text-sm ${isRead ? "text-gray-400" : "text-gray-900"}`}

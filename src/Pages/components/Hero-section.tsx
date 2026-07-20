@@ -36,6 +36,7 @@ import {
 } from "@/lib/heroShortcutIcons";
 import EventItem from "../Our Segments/components/EventItem";
 import { getHoliday } from "@/data/sriLankanHolidays";
+import { resolveFileUrl } from "@/lib/api/fileUtils";
 import type { Event } from "@/types";
 
 interface Slide {
@@ -511,6 +512,9 @@ export default function HeroSection() {
                         title={event.title}
                         time={event.time}
                         location={event.location}
+                        image={
+                          event.image ? resolveFileUrl(event.image) : undefined
+                        }
                       />
                     );
                   })

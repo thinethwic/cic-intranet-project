@@ -119,7 +119,7 @@ export default function VideoCard({
   return (
     <div
       onClick={onClick}
-      className="relative min-w-100 h-75 rounded-xl overflow-hidden cursor-pointer group transition-all duration-300"
+      className="relative w-full aspect-video rounded-xl overflow-hidden cursor-pointer group transition-all duration-300"
     >
       {/* 🎬 VIDEO PREVIEW */}
       {isYouTube ? (

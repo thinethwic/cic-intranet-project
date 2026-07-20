@@ -23,7 +23,11 @@ export default function UpcomingBirthdays({ list }: Props) {
         </h3>
       </div>
 
-      <div className="flex flex-col gap-2 flex-1 overflow-y-auto pr-1">
+      <div
+        className={`flex flex-col gap-2 flex-1 overflow-y-auto pr-1 ${
+          list.length > 4 ? "max-h-60" : ""
+        }`}
+      >
         {list.length === 0 ? (
           <p className="text-xs text-gray-400 text-center py-4">
             No upcoming birthdays.
