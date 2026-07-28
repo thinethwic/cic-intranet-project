@@ -3,6 +3,7 @@ import logo from "../../assets/Logo.jpg";
 import { Link } from "react-router-dom";
 import { FaFacebook, FaLinkedin, FaYoutube } from "react-icons/fa";
 import { Mail, MapPin, Phone, Globe } from "lucide-react";
+import { Label } from "../ui/label";
 
 const companyLinks = [
   { key: "Home", Link: "/" },
@@ -10,10 +11,10 @@ const companyLinks = [
 ];
 
 const segments = [
-  { SegKey: "CIC Feeds", Link: "/our-segments/cic-feeds" },
-  { SegKey: "CIC Poultry", Link: "/our-segments/cic-poulry" },
-  { SegKey: "CIC Vetcare", Link: "/our-segments/cic-vetcare" },
-  { SegKey: "Asia Vet", Link: "/our-segments/asia-vet" },
+  { SegKey: "CIC Feeds" },
+  { SegKey: "CIC Poultry" },
+  { SegKey: "CIC Vetcare" },
+  { SegKey: "Asia Vet" },
 ];
 
 export default function Footer() {
@@ -103,14 +104,11 @@ export default function Footer() {
               Our Segments
             </h3>
             <ul className="space-y-2">
-              {segments.map(({ SegKey: label, Link: path }) => (
+              {segments.map(({ SegKey: label }) => (
                 <li key={label}>
-                  <a
-                    href={path}
-                    className="text-sm text-slate-300 hover:text-white transition-colors duration-200"
-                  >
+                  <Label className="text-sm text-slate-300 hover:text-white transition-colors duration-200">
                     {label}
-                  </a>
+                  </Label>
                 </li>
               ))}
             </ul>

@@ -49,6 +49,7 @@ import {
 } from "@/lib/loginDialogStore";
 import DocGrid from "./Our Segments/components/DocGrid";
 import { useAnnouncements } from "@/hooks/useAnnouncements";
+import { useCompanyFilter } from "@/contexts/CompanyFilterContext";
 import {
   Dialog,
   DialogContent,
@@ -242,12 +243,15 @@ function HomePage() {
     loading: membersLoading,
     error: membersError,
   } = useMembers();
-  // ▼ NEW — global documents (no segment filter)
+  // Re-filters to the selected company's segment; "All Companies" fetches everything.
+  const { selectedCompany } = useCompanyFilter();
+  const activeSegment = selectedCompany === "ALL" ? undefined : selectedCompany;
+
   const {
     documents,
     loading: docsLoading,
     error: docsError,
-  } = useDocuments(undefined);
+  } = useDocuments(activeSegment);
 
   // ── Document section state ──────────────────────────────────────────────────
   const [activeTab, setActiveTab] = useState("All");
@@ -256,6 +260,22 @@ function HomePage() {
   const [privateAccessError, setPrivateAccessError] = useState<string | null>(
     null,
   );
+  const [highlightedDocId, setHighlightedDocId] = useState<number | null>(
+    null,
+  );
+
+  // Briefly flashes the highlight, then clears it.
+  useEffect(() => {
+    if (highlightedDocId == null) return;
+    const timeout = setTimeout(() => setHighlightedDocId(null), 2500);
+    return () => clearTimeout(timeout);
+  }, [highlightedDocId]);
+
+  const jumpToDocument = (docId: number) => {
+    setActiveTab("All");
+    setSearchQuery("");
+    setHighlightedDocId(docId);
+  };
 
   // Re-render whenever the global LoginDialog opens/closes so we notice a
   // session that just appeared (e.g. the user just signed in via the popup).
@@ -298,7 +318,7 @@ function HomePage() {
     announcements = [],
     loading: announcementsLoading,
     error: announcementsError,
-  } = useAnnouncements();
+  } = useAnnouncements(activeSegment);
 
   const tabs = ["All", "HR & Policies", "Finance", "Operations"];
 
@@ -648,7 +668,7 @@ function HomePage() {
       {/* ── Upcoming Events (left) + Document Center (right) ──────────────── */}
       <section className="max-w-full mx-auto px-6 sm:px-8 py-4 sm:py-4">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-          {/* ── LEFT: Upcoming Events + Calendar ─────────────────────────── */}
+          {/* ── LEFT: Pinned For You ─────────────────────────── */}
           <div className="flex flex-col gap-4">
             <div ref={pinnedReveal.ref} className="flex flex-col gap-4">
               <div className="flex items-center gap-2.5">
@@ -684,6 +704,7 @@ function HomePage() {
                     {pinnedDocs.slice(0, 5).map((doc) => (
                       <div
                         key={doc.id}
+                        onClick={() => jumpToDocument(doc.id)}
                         className="px-4 py-3 hover:bg-cic-50 transition-colors cursor-pointer"
                       >
                         <PinnedCard title={doc.title} category={doc.category} />
@@ -779,6 +800,7 @@ function HomePage() {
                 documents={filteredDocuments}
                 onView={handleView}
                 onDownload={handleDownload}
+                highlightId={highlightedDocId}
               />
             )}
           </div>

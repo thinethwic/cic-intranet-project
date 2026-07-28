@@ -18,12 +18,14 @@ interface DocGridProps {
   documents: Doc[];
   onView: (id: number) => void;
   onDownload: (id: number, title: string) => void;
+  highlightId?: number | null;
 }
 
 export default function DocGrid({
   documents,
   onView,
   onDownload,
+  highlightId,
 }: DocGridProps) {
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -33,6 +35,21 @@ export default function DocGrid({
   useEffect(() => {
     setCurrentPage(1);
   }, [documents]);
+
+  // Jump to whichever page contains the highlighted document, then scroll it
+  // into view once the page has actually re-rendered with that card present.
+  useEffect(() => {
+    if (highlightId == null) return;
+    const idx = documents.findIndex((d) => d.id === highlightId);
+    if (idx === -1) return;
+    setCurrentPage(Math.floor(idx / DOCS_PER_PAGE) + 1);
+  }, [highlightId, documents]);
+
+  useEffect(() => {
+    if (highlightId == null) return;
+    const el = document.getElementById(`document-card-${highlightId}`);
+    el?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [highlightId, currentPage]);
 
   const paginated = documents.slice(
     (currentPage - 1) * DOCS_PER_PAGE,
@@ -53,17 +70,26 @@ export default function DocGrid({
       {/* Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
         {paginated.map((doc) => (
-          <DocumentCard
+          <div
             key={doc.id}
-            title={doc.title}
-            category={doc.category}
-            type={doc.type}
-            fileUrl={doc.fileUrl}
-            allowDownload={doc.allowDownload}
-            allowView={doc.allowView}
-            onView={() => onView(doc.id)}
-            onDownload={() => onDownload(doc.id, doc.title)}
-          />
+            id={`document-card-${doc.id}`}
+            className={`rounded-xl transition-all ${
+              highlightId === doc.id
+                ? "ring-2 ring-amber-400 ring-offset-2"
+                : ""
+            }`}
+          >
+            <DocumentCard
+              title={doc.title}
+              category={doc.category}
+              type={doc.type}
+              fileUrl={doc.fileUrl}
+              allowDownload={doc.allowDownload}
+              allowView={doc.allowView}
+              onView={() => onView(doc.id)}
+              onDownload={() => onDownload(doc.id, doc.title)}
+            />
+          </div>
         ))}
       </div>
 

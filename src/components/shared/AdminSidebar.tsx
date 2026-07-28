@@ -14,6 +14,7 @@ import {
   AlertCircleIcon,
   Activity,
   LayoutGrid,
+  FolderTree,
 } from "lucide-react";
 import {
   Sidebar,
@@ -127,6 +128,12 @@ const navItems: NavItem[] = [
     name: "Hero Shortcuts",
     icon: LayoutGrid,
     path: "/admin/hero-shortcuts",
+    roles: ["SUPER_ADMIN"],
+  },
+  {
+    name: "Navigation Items",
+    icon: FolderTree,
+    path: "/admin/nav-items",
     roles: ["SUPER_ADMIN"],
   },
 ];

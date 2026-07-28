@@ -23,6 +23,13 @@ export const mapSegmentToPath = (segment: Segment): string => {
     return segmentToPath[segment];
 };
 
+export const segmentLabels: Record<Segment, string> = {
+    CIC_FEEDS: "CIC Feeds",
+    CIC_POULTRY: "CIC Poulry",
+    CIC_VET_CARE: "CIC Vetcare",
+    AISA_VET: "Asiavet",
+};
+
 export const roleLabels: Record<string, string> = {
     TOP_MANAGEMENT: "Top Management",
     STAFF: "Staff",

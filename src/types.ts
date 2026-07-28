@@ -1,3 +1,5 @@
+import type { Segment } from "./utils/segmentMapper";
+
 export type TicketStatus = "OPEN" | "IN_PROGRESS" | "RESOLVED" | "UNRESOLVED";
 export type TicketPriority = "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
 
@@ -183,4 +185,14 @@ export interface HeroShortcutGroup {
     name: string;
     sortOrder: number;
     shortcuts: HeroShortcut[];
+}
+
+export interface NavItem {
+    id: number;
+    label: string;
+    url: string | null;
+    segment: Segment | null;
+    sortOrder: number;
+    parentId: number | null;
+    children: NavItem[];
 }

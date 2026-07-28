@@ -15,8 +15,9 @@ import {
 import { ChevronLeft, ChevronRight, Link2 } from "lucide-react";
 import { Link } from "react-router-dom";
 
-import slide1 from "../../assets/chicken_farm.png";
-import slide3 from "../../assets/Mask-group3.avif";
+import slide1 from "../../assets/poulry_slide.png";
+import slide2 from "../../assets/FeedsMill.png";
+import slide3 from "../../assets/vetcare_slide.png";
 import slide4 from "../../assets/poulry image.png";
 import slide5 from "../../assets/video1.mp4";
 import slide6 from "../../assets/video2.mp4";
@@ -29,6 +30,7 @@ import {
   TooltipContent,
 } from "@/components/ui/tooltip";
 import { useEvents } from "@/hooks/useEvents";
+import { useCompanyFilter } from "@/contexts/CompanyFilterContext";
 import { useHeroShortcuts } from "@/hooks/useHeroShortcuts";
 import {
   HERO_SHORTCUT_ICONS,
@@ -89,6 +91,10 @@ const slides: Slide[] = [
   {
     type: "image",
     src: slide1,
+  },
+  {
+    type: "image",
+    src: slide2,
   },
   {
     type: "video",
@@ -152,7 +158,10 @@ export default function HeroSection() {
     return () => clearTimeout(timeout);
   }, []);
 
-  const { events, loading: eventsLoading } = useEvents();
+  // Re-filters to the selected company's segment; "All Companies" fetches everything.
+  const { selectedCompany } = useCompanyFilter();
+  const activeSegment = selectedCompany === "ALL" ? undefined : selectedCompany;
+  const { events, loading: eventsLoading } = useEvents(activeSegment);
   const [date, setDate] = useState<Date | undefined>(new Date());
 
   const selectedDateStr = formatDate(date);
@@ -229,8 +238,7 @@ export default function HeroSection() {
                               >
                                 {visibleShortcuts.map((item) => {
                                   const ItemIcon =
-                                    HERO_SHORTCUT_ICONS[item.iconName] ??
-                                    Link2;
+                                    HERO_SHORTCUT_ICONS[item.iconName] ?? Link2;
                                   const palette =
                                     HERO_SHORTCUT_COLORS[item.color];
                                   return (
@@ -242,9 +250,7 @@ export default function HeroSection() {
                                     >
                                       <ItemIcon
                                         className={`${palette.iconColor} ${
-                                          isFeatured
-                                            ? "w-7.5 h-7.5"
-                                            : "w-5 h-5"
+                                          isFeatured ? "w-7.5 h-7.5" : "w-5 h-5"
                                         }`}
                                       />
                                     </div>

@@ -1,18 +1,103 @@
 import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
-import { ChevronDown, Plus } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import logo from "../../assets/Logo.jpg";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useMembers } from "@/hooks/useMembers";
+import { useNavItems } from "@/hooks/useNavItems";
+import { segmentLabels } from "@/utils/segmentMapper";
+import { useCompanyFilter, type CompanyFilter } from "@/contexts/CompanyFilterContext";
+import type { NavItem } from "@/types";
 
-const DEPARTMENTS = ["HR", "Finance", "IT", "Sales", "Stores"];
-const COMPANIES = [
-  "CIC Feeds",
-  "CIC Poulry",
-  "CIC Vetcare",
-  "Asiavet",
-  "All Companies",
-];
+// Hides items (and their whole subtree) whose segment doesn't match the
+// selected company; segment-less items always show, applying to all companies.
+function filterBySegment(items: NavItem[], selected: CompanyFilter): NavItem[] {
+  return items
+    .filter(
+      (item) =>
+        selected === "ALL" ||
+        item.segment === null ||
+        item.segment === selected,
+    )
+    .map((item) => ({
+      ...item,
+      children: filterBySegment(item.children, selected),
+    }));
+}
+
+interface NavMenuItemProps {
+  item: NavItem;
+  depth: number;
+}
+
+function NavMenuItem({ item, depth }: NavMenuItemProps) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [open]);
+
+  const hasChildren = item.children.length > 0;
+  const rowClass =
+    depth === 0
+      ? "text-slate-600 font-medium hover:text-cic-800 hover:bg-cic-50 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1"
+      : "text-slate-600 text-sm font-medium hover:text-cic-800 hover:bg-cic-50 px-3 py-2 rounded-xl transition-colors flex items-center justify-between gap-3 w-full whitespace-nowrap";
+
+  if (!hasChildren) {
+    if (!item.url) {
+      return (
+        <span className={`${rowClass} opacity-50 cursor-default`}>
+          {item.label}
+        </span>
+      );
+    }
+    return (
+      <Link to={item.url} className={rowClass}>
+        {item.label}
+      </Link>
+    );
+  }
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        type="button"
+        onClick={() => setOpen((p) => !p)}
+        className={rowClass}
+      >
+        {item.label}
+        <ChevronDown
+          size={16}
+          className={`opacity-60 transition-transform ${
+            depth === 0 ? (open ? "rotate-180" : "") : "-rotate-90"
+          }`}
+        />
+      </button>
+
+      {open && (
+        <div
+          className={`absolute bg-white border border-slate-200 rounded-2xl shadow-lg z-50 p-2 min-w-50 ${
+            depth === 0 ? "left-0 top-full mt-2" : "left-full top-0 ml-1"
+          }`}
+        >
+          <div className="flex flex-col gap-1">
+            {item.children.map((child) => (
+              <NavMenuItem key={child.id} item={child} depth={depth + 1} />
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 const ROLE_ORDER = ["CEO", "COO", "CFO"];
 const ROLE_LABELS: Record<string, string> = {
@@ -30,11 +115,14 @@ export default function Navbar() {
   const [visible, setVisible] = useState(false);
   const [pinned, setPinned] = useState(false);
   const [companyOpen, setCompanyOpen] = useState(false);
-  const [selectedCompany, setSelectedCompany] = useState("All Companies");
+  const { selectedCompany, setSelectedCompany } = useCompanyFilter();
   const [topMgmtOpen, setTopMgmtOpen] = useState(false);
   const isScrolled = useRef(false);
   const hoverZoneRef = useRef<HTMLDivElement>(null);
   const topMgmtRef = useRef<HTMLDivElement>(null);
+
+  const { tree } = useNavItems();
+  const visibleNavItems = filterBySegment(tree, selectedCompany);
 
   const { members } = useMembers();
   const topManagement = members
@@ -129,17 +217,10 @@ export default function Navbar() {
                 />
               </Link>
 
-              {/* Departments */}
+              {/* Navigation items (admin-managed) */}
               <div className="hidden md:flex items-center gap-8">
-                {DEPARTMENTS.map((dept) => (
-                  <Link
-                    key={dept}
-                    to={`/${dept.toLowerCase()}`}
-                    className="text-slate-600 font-medium hover:text-cic-800 hover:bg-cic-50 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1"
-                  >
-                    {dept}
-                    <ChevronDown size={16} className="opacity-60" />
-                  </Link>
+                {visibleNavItems.map((item) => (
+                  <NavMenuItem key={item.id} item={item} depth={0} />
                 ))}
 
                 {/* Top Management dropdown */}
@@ -200,25 +281,19 @@ export default function Navbar() {
                     </div>
                   )}
                 </div>
-
-                {/* Settings Icon */}
-                <button
-                  aria-label="Settings"
-                  className="p-2 hover:bg-slate-100 rounded-full transition-colors"
-                >
-                  <Plus size={20} className="text-slate-600" />
-                </button>
               </div>
             </div>
 
-            {/* Right: Company Selector */}
+            {/* Right: Company Selector — filters nav items by segment */}
             <div className="relative">
               <button
                 onClick={() => setCompanyOpen(!companyOpen)}
                 className="hidden sm:flex items-center gap-2 px-4 py-2 border border-slate-200 rounded-full shadow-sm hover:bg-slate-50 transition-colors"
               >
                 <span className="text-sm font-medium text-slate-700">
-                  {selectedCompany}
+                  {selectedCompany === "ALL"
+                    ? "All Companies"
+                    : segmentLabels[selectedCompany]}
                 </span>
                 <ChevronDown
                   size={18}
@@ -231,7 +306,9 @@ export default function Navbar() {
               {/* Dropdown */}
               {companyOpen && (
                 <div className="absolute right-0 mt-2 w-48 bg-white border border-slate-200 rounded-2xl shadow-lg overflow-hidden z-50">
-                  {COMPANIES.map((company) => (
+                  {(
+                    ["ALL", ...Object.keys(segmentLabels)] as CompanyFilter[]
+                  ).map((company) => (
                     <button
                       key={company}
                       onClick={() => {
@@ -244,7 +321,9 @@ export default function Navbar() {
                           : "text-slate-700"
                       }`}
                     >
-                      {company}
+                      {company === "ALL"
+                        ? "All Companies"
+                        : segmentLabels[company]}
                     </button>
                   ))}
                 </div>

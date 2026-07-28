@@ -12,25 +12,36 @@ import NotFoundPage from "./components/shared/NotFoundPage";
 
 // Lazy-loaded pages — deferred until first navigation
 const HomePage = lazy(() => import("./Pages/Home-page"));
-const HomePageFeeds = lazy(() => import("./Pages/Our Segments/CIC Feeds/HomePageFeeds"));
-const HomePageAsiavet = lazy(() => import("./Pages/Our Segments/Asia Vet/HomePageAsiavet"));
 const NewsDetailPage = lazy(() => import("./components/NewsDetailPage"));
-const HelpDeskPage = lazy(() => import("./Pages/Our Segments/components/HelpDeskPage"));
-const TaskManagerPage = lazy(() => import("./Pages/Our Segments/components/TaskManagerPage"));
+const HelpDeskPage = lazy(
+  () => import("./Pages/Our Segments/components/HelpDeskPage"),
+);
+const TaskManagerPage = lazy(
+  () => import("./Pages/Our Segments/components/TaskManagerPage"),
+);
 const AdminLayout = lazy(() => import("./components/AdminLayout"));
 const AdminDashboard = lazy(() => import("./Pages/Admin/AdminDashboard"));
 const AdminVideosPage = lazy(() => import("./Pages/Admin/AdminVideo"));
-const AdminDocumentsPage = lazy(() => import("./Pages/Admin/AdminDocumentsPage"));
+const AdminDocumentsPage = lazy(
+  () => import("./Pages/Admin/AdminDocumentsPage"),
+);
 const AdminNewsPage = lazy(() => import("./Pages/Admin/AdminNewsPage"));
 const AdminAlertsPage = lazy(() => import("./Pages/Admin/AdminAlertsPage"));
 const AdminEventsPage = lazy(() => import("./Pages/Admin/AdminEventsPage"));
 const AdminGalleryPage = lazy(() => import("./Pages/Admin/AdminGalleryPage"));
-const AdminManagementPage = lazy(() => import("./Pages/Admin/AdminManagementPage"));
+const AdminManagementPage = lazy(
+  () => import("./Pages/Admin/AdminManagementPage"),
+);
 const AdminUsersPage = lazy(() => import("./Pages/Admin/AdminUsersPage"));
 const AdminTicketsPage = lazy(() => import("./Pages/Admin/AdminTicketsPage"));
-const AdminCategoriesPage = lazy(() => import("./Pages/Admin/AdminCategoriesPage"));
+const AdminCategoriesPage = lazy(
+  () => import("./Pages/Admin/AdminCategoriesPage"),
+);
 const AdminAuditLogPage = lazy(() => import("./Pages/Admin/AdminAuditLogPage"));
-const AdminHeroShortcutsPage = lazy(() => import("./Pages/Admin/AdminHeroShortcutsPage"));
+const AdminHeroShortcutsPage = lazy(
+  () => import("./Pages/Admin/AdminHeroShortcutsPage"),
+);
+const AdminNavItemsPage = lazy(() => import("./Pages/Admin/AdminNavItemsPage"));
 
 function PageSpinner() {
   return (
@@ -49,8 +60,6 @@ function App() {
         {/* ── Public routes ── */}
         <Route element={<Layout />}>
           <Route path="/" element={<HomePage />} />
-          <Route path="/our-segments/cic-feeds" element={<HomePageFeeds />} />
-          <Route path="/our-segments/asia-vet" element={<HomePageAsiavet />} />
           <Route path="/news/:id" element={<NewsDetailPage />} />
         </Route>
 
@@ -79,7 +88,11 @@ function App() {
               <Route path="users" element={<AdminUsersPage />} />
               <Route path="categories" element={<AdminCategoriesPage />} />
               <Route path="auditLog" element={<AdminAuditLogPage />} />
-              <Route path="hero-shortcuts" element={<AdminHeroShortcutsPage />} />
+              <Route
+                path="hero-shortcuts"
+                element={<AdminHeroShortcutsPage />}
+              />
+              <Route path="nav-items" element={<AdminNavItemsPage />} />
             </Route>
           </Route>
         </Route>
