@@ -36,6 +36,7 @@ export interface TicketComment {
 
 export type TaskStatus = "TODO" | "IN_PROGRESS" | "DONE";
 export type TaskPriority = "LOW" | "MEDIUM" | "HIGH";
+export type TaskCategory = "GENERAL" | "COMPLIANCE";
 
 export interface TaskAttachment {
     id: number;
@@ -53,6 +54,8 @@ export interface Task {
     status: TaskStatus;
     priority: TaskPriority;
     dueDate: string | null;
+    category: TaskCategory;
+    recurring: boolean;
     createdAt: string;
     updatedAt: string;
     owner: { id: number; name: string; email: string };

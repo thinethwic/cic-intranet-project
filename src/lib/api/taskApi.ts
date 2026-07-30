@@ -2,6 +2,7 @@ import type {
   Task,
   TaskStatus,
   TaskPriority,
+  TaskCategory,
   TaskAttachment,
   TaskDocument,
 } from "@/types";
@@ -20,6 +21,8 @@ export interface CreateTaskPayload {
   description?: string | null;
   priority: TaskPriority;
   dueDate?: string | null;
+  category?: TaskCategory;
+  recurring?: boolean;
 }
 
 export interface UpdateTaskPayload {
@@ -28,11 +31,16 @@ export interface UpdateTaskPayload {
   status?: TaskStatus;
   priority?: TaskPriority;
   dueDate?: string | null;
+  category?: TaskCategory;
+  recurring?: boolean;
 }
 
 export interface TaskFilters {
   status?: TaskStatus;
   priority?: TaskPriority;
+  category?: TaskCategory;
+  dueDateFrom?: string;
+  dueDateTo?: string;
   q?: string;
 }
 
@@ -48,6 +56,9 @@ export const getMyTasks = async (
   });
   if (filters.status) params.set("status", filters.status);
   if (filters.priority) params.set("priority", filters.priority);
+  if (filters.category) params.set("category", filters.category);
+  if (filters.dueDateFrom) params.set("dueDateFrom", filters.dueDateFrom);
+  if (filters.dueDateTo) params.set("dueDateTo", filters.dueDateTo);
   if (filters.q) params.set("q", filters.q);
 
   const res = await apiFetch(`${BASE_URL}/api/tasks/my?${params}`);

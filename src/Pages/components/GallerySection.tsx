@@ -52,7 +52,7 @@ export default function GallerySection() {
   if (loading) {
     return (
       <div className="w-full">
-        <h2 className="text-2xl sm:text-3xl font-bold text-cic-900 tracking-tight mb-4">
+        <h2 className="text-xl sm:text-2xl font-bold text-cic-900 tracking-tight mb-4">
           Gallery
         </h2>
         <div className="w-12 h-0.5 bg-cic-900 rounded mb-5" />
@@ -75,7 +75,7 @@ export default function GallerySection() {
   if (error) {
     return (
       <div className="w-full">
-        <h2 className="text-2xl sm:text-3xl font-bold text-cic-900 tracking-tight mb-4">
+        <h2 className="text-xl sm:text-2xl font-bold text-cic-900 tracking-tight mb-4">
           Gallery
         </h2>
         <div className="w-12 h-0.5 bg-cic-900 rounded mb-5" />
@@ -93,7 +93,7 @@ export default function GallerySection() {
   if (!images || images.length === 0) {
     return (
       <div className="w-full">
-        <h2 className="text-2xl sm:text-3xl font-bold text-cic-900 tracking-tight mb-4">
+        <h2 className="text-xl sm:text-2xl font-bold text-cic-900 tracking-tight mb-4">
           Gallery
         </h2>
         <div className="w-12 h-0.5 bg-cic-900 rounded mb-5" />
@@ -122,7 +122,7 @@ export default function GallerySection() {
         <div className="w-8 h-8 rounded-lg bg-violet-500 flex items-center justify-center shrink-0">
           <Image className="w-4 h-4 text-white" />
         </div>
-        <h2 className="text-2xl sm:text-3xl font-bold text-cic-900 tracking-tight">
+        <h2 className="text-xl sm:text-2xl font-bold text-cic-900 tracking-tight">
           Gallery
         </h2>
       </div>

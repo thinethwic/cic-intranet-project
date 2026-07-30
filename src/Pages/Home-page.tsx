@@ -260,9 +260,7 @@ function HomePage() {
   const [privateAccessError, setPrivateAccessError] = useState<string | null>(
     null,
   );
-  const [highlightedDocId, setHighlightedDocId] = useState<number | null>(
-    null,
-  );
+  const [highlightedDocId, setHighlightedDocId] = useState<number | null>(null);
 
   // Briefly flashes the highlight, then clears it.
   useEffect(() => {
@@ -501,7 +499,7 @@ function HomePage() {
               <div className="w-8 h-8 rounded-lg bg-pink-500 flex items-center justify-center shrink-0">
                 <Cake className="w-4 h-4 text-white" />
               </div>
-              <h2 className="text-lg sm:text-xl font-bold text-cic-900 tracking-tight">
+              <h2 className="text-xl sm:text-2xl font-bold text-cic-900 tracking-tight">
                 Birthdays
               </h2>
             </div>
@@ -537,7 +535,7 @@ function HomePage() {
               <div className="w-8 h-8 rounded-lg bg-cic-900 flex items-center justify-center shrink-0">
                 <Bell className="w-4 h-4 text-white" />
               </div>
-              <h2 className="text-lg sm:text-xl font-bold text-cic-900 tracking-tight">
+              <h2 className="text-xl sm:text-2xl font-bold text-cic-900 tracking-tight">
                 Announcements
               </h2>
               {announcements.length > 0 && (
@@ -675,7 +673,7 @@ function HomePage() {
                 <div className="w-8 h-8 rounded-lg bg-amber-500 flex items-center justify-center shrink-0">
                   <Pin className="w-4 h-4 text-cic-900" />
                 </div>
-                <h2 className="text-2xl sm:text-3xl font-bold text-cic-900 tracking-tight">
+                <h2 className="text-xl sm:text-2xl font-bold text-cic-900 tracking-tight">
                   Pinned For You
                 </h2>
               </div>
@@ -723,7 +721,7 @@ function HomePage() {
                 <div className="w-8 h-8 rounded-lg bg-cic-900 flex items-center justify-center shrink-0">
                   <FileText className="w-4 h-4 text-white" />
                 </div>
-                <h2 className="text-2xl sm:text-3xl font-bold text-cic-900 tracking-tight">
+                <h2 className="text-xl sm:text-2xl font-bold text-cic-900 tracking-tight">
                   Document Center
                 </h2>
               </div>
@@ -814,7 +812,7 @@ function HomePage() {
           style={{ gridTemplateColumns: "1fr 350px" }}
         >
           <div>
-            <h2 className="text-2xl sm:text-3xl font-bold text-cic-900 tracking-tight mb-4">
+            <h2 className="text-xl sm:text-2xl font-bold text-cic-900 tracking-tight mb-4">
               Welcome to CIC Feeds Group
             </h2>
             <div className="w-12 h-0.5 bg-cic-900 rounded mb-5" />
@@ -856,7 +854,7 @@ function HomePage() {
               <span className="inline-block text-xs font-semibold text-cic-300 uppercase tracking-[0.15em] mb-3">
                 Who We Are
               </span>
-              <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight mb-3">
+              <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight mb-3">
                 OUR Vision
               </h2>
               <div className="w-10 h-0.5 bg-cic-300/60 rounded mb-5" />
@@ -957,7 +955,7 @@ function HomePage() {
               <span className="inline-block text-xs font-semibold text-cic-300 uppercase tracking-[0.15em] mb-3">
                 Our Purpose
               </span>
-              <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight mb-3">
+              <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight mb-3">
                 OUR Mission
               </h2>
               <div className="w-10 h-0.5 bg-cic-300/60 rounded mb-5 ml-auto" />
@@ -984,7 +982,7 @@ function HomePage() {
               <div className="w-8 h-8 rounded-lg bg-blue-500 flex items-center justify-center shrink-0">
                 <VideoIcon className="w-4 h-4 text-white" />
               </div>
-              <h2 className="text-2xl sm:text-3xl font-bold text-cic-900 tracking-tight">
+              <h2 className="text-xl sm:text-2xl font-bold text-cic-900 tracking-tight">
                 Video
               </h2>
             </div>

@@ -408,7 +408,7 @@ export default function HeroSection() {
               <div className="w-8 h-8 rounded-lg bg-cic-900 flex items-center justify-center shrink-0">
                 <CalendarDays className="w-4 h-4 text-white" />
               </div>
-              <h2 className="text-lg sm:text-xl font-bold text-cic-900 tracking-tight">
+              <h2 className="text-xl sm:text-2xl font-bold text-cic-900 tracking-tight">
                 Upcoming Events
               </h2>
             </div>

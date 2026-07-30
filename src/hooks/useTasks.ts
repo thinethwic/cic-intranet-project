@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { Task, TaskStatus, TaskPriority } from "@/types";
+import type { Task, TaskStatus, TaskPriority, TaskCategory } from "@/types";
 import { getMyTasks } from "@/lib/api/taskApi";
 import { getCached, setCached } from "@/lib/api/apiCache";
 import type { PageResponse } from "@/lib/api/apiUtils";
@@ -9,6 +9,9 @@ const TTL = 2 * 60 * 1000;
 export interface UseTasksFilters {
   status?: TaskStatus;
   priority?: TaskPriority;
+  category?: TaskCategory;
+  dueDateFrom?: string;
+  dueDateTo?: string;
   q?: string;
 }
 
@@ -17,7 +20,7 @@ export const useTasks = (
   size: number,
   filters: UseTasksFilters = {},
 ) => {
-  const cacheKey = `tasks:my:${page}:${size}:${filters.status ?? "all"}:${filters.priority ?? "all"}:${filters.q ?? ""}`;
+  const cacheKey = `tasks:my:${page}:${size}:${filters.status ?? "all"}:${filters.priority ?? "all"}:${filters.category ?? "all"}:${filters.dueDateFrom ?? ""}:${filters.dueDateTo ?? ""}:${filters.q ?? ""}`;
   const [tasks, setTasks] = useState<Task[]>(
     () => getCached<PageResponse<Task>>(cacheKey)?.content ?? [],
   );

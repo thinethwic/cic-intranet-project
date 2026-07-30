@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Plus,
   Search,
@@ -18,9 +18,14 @@ import {
   MoreVertical,
   LogOut,
   Users,
+  ShieldCheck,
+  RefreshCw,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
+import { Calendar as DatePickerCalendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
@@ -41,7 +46,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import type { Task, TaskAttachment, TaskPriority, TaskStatus } from "@/types";
+import type {
+  Task,
+  TaskAttachment,
+  TaskPriority,
+  TaskStatus,
+  TaskCategory,
+} from "@/types";
 import {
   createTask,
   updateTask,
@@ -60,10 +71,22 @@ import { useTaskDocuments } from "@/hooks/useTaskDocuments";
 import { AdminPagination } from "@/Pages/Admin/admin-components";
 import logo from "@/assets/Logo.jpg";
 
-const BOARD_PAGE_SIZE = 100;
+const COLUMN_PAGE_SIZE = 15;
 const DOCS_PAGE_SIZE = 10;
+const COMPLIANCE_PAGE_SIZE = 40;
 const PRIORITIES: TaskPriority[] = ["LOW", "MEDIUM", "HIGH"];
 const COLUMNS: TaskStatus[] = ["TODO", "IN_PROGRESS", "DONE"];
+const CATEGORIES: TaskCategory[] = ["GENERAL", "COMPLIANCE"];
+
+const CATEGORY_LABELS: Record<TaskCategory, string> = {
+  GENERAL: "General",
+  COMPLIANCE: "Compliance",
+};
+
+const MONTH_NAMES = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+];
 
 const STATUS_CONFIG: Record<
   TaskStatus,
@@ -97,6 +120,14 @@ const PRIORITY_CONFIG: Record<TaskPriority, { class: string }> = {
 
 const todayStr = () => new Date().toISOString().slice(0, 10);
 
+const parseDateStr = (s: string) => {
+  const [y, m, d] = s.split("-").map(Number);
+  return new Date(y, m - 1, d);
+};
+
+const formatDateStr = (d: Date) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
 const fmtDate = (d: string) =>
   new Date(d).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
 
@@ -112,37 +143,96 @@ const makeEmptyForm = () => ({
   description: "",
   priority: "MEDIUM" as TaskPriority,
   dueDate: "",
+  category: "GENERAL" as TaskCategory,
+  recurring: false,
 });
 
 export default function TaskManagerPage() {
   const currentUser = useCurrentUser();
-  const [activeTab, setActiveTab] = useState<"board" | "documents">("board");
+  const [activeTab, setActiveTab] = useState<"board" | "documents" | "compliance">(
+    "board",
+  );
 
   // ── Board state ────────────────────────────────────────────────────────────
   const [search, setSearch] = useState("");
   const [priorityFilter, setPriorityFilter] = useState<TaskPriority | "All">(
     "All",
   );
+  // Board is date-scoped by default so the team lands on "what's due today".
+  const [dateFilter, setDateFilter] = useState<string>(() => todayStr());
+  const [showDateFilter, setShowDateFilter] = useState(false);
+  const dateFilterRef = useRef<HTMLDivElement>(null);
 
-  const {
-    tasks,
-    loading: tasksLoading,
-    error: tasksError,
-    refetch: refetchTasks,
-  } = useTasks(0, BOARD_PAGE_SIZE, {
+  useEffect(() => {
+    if (!showDateFilter) return;
+    const onClickOutside = (e: MouseEvent) => {
+      if (
+        dateFilterRef.current &&
+        !dateFilterRef.current.contains(e.target as Node)
+      ) {
+        setShowDateFilter(false);
+      }
+    };
+    document.addEventListener("mousedown", onClickOutside);
+    return () => document.removeEventListener("mousedown", onClickOutside);
+  }, [showDateFilter]);
+
+  // Each column paginates independently (a fixed-size page of the flat task
+  // list wouldn't split evenly across To Do/In Progress/Done), starting
+  // small and growing via "Load more" instead of fetching everything upfront.
+  const [todoLimit, setTodoLimit] = useState(COLUMN_PAGE_SIZE);
+  const [inProgressLimit, setInProgressLimit] = useState(COLUMN_PAGE_SIZE);
+  const [doneLimit, setDoneLimit] = useState(COLUMN_PAGE_SIZE);
+
+  useEffect(() => {
+    setTodoLimit(COLUMN_PAGE_SIZE);
+    setInProgressLimit(COLUMN_PAGE_SIZE);
+    setDoneLimit(COLUMN_PAGE_SIZE);
+  }, [search, priorityFilter, dateFilter]);
+
+  const boardSharedFilters = {
     priority: priorityFilter === "All" ? undefined : priorityFilter,
     q: search || undefined,
+    dueDateFrom: dateFilter || undefined,
+    dueDateTo: dateFilter || undefined,
+  };
+
+  const todoResult = useTasks(0, todoLimit, {
+    ...boardSharedFilters,
+    status: "TODO",
+  });
+  const inProgressResult = useTasks(0, inProgressLimit, {
+    ...boardSharedFilters,
+    status: "IN_PROGRESS",
+  });
+  const doneResult = useTasks(0, doneLimit, {
+    ...boardSharedFilters,
+    status: "DONE",
   });
 
+  const columnData: Record<
+    TaskStatus,
+    { result: typeof todoResult; limit: number; setLimit: (fn: (l: number) => number) => void }
+  > = {
+    TODO: { result: todoResult, limit: todoLimit, setLimit: setTodoLimit },
+    IN_PROGRESS: {
+      result: inProgressResult,
+      limit: inProgressLimit,
+      setLimit: setInProgressLimit,
+    },
+    DONE: { result: doneResult, limit: doneLimit, setLimit: setDoneLimit },
+  };
+
   const today = todayStr();
+  const openTasks = [...todoResult.tasks, ...inProgressResult.tasks];
   const stats = {
-    total: tasks.length,
-    dueToday: tasks.filter((t) => t.dueDate === today && t.status !== "DONE")
-      .length,
-    overdue: tasks.filter(
-      (t) => t.dueDate && t.dueDate < today && t.status !== "DONE",
-    ).length,
-    completed: tasks.filter((t) => t.status === "DONE").length,
+    total:
+      todoResult.totalElements +
+      inProgressResult.totalElements +
+      doneResult.totalElements,
+    dueToday: openTasks.filter((t) => t.dueDate === today).length,
+    overdue: openTasks.filter((t) => t.dueDate && t.dueDate < today).length,
+    completed: doneResult.totalElements,
   };
 
   // ── Documents state ────────────────────────────────────────────────────────
@@ -160,6 +250,105 @@ export default function TaskManagerPage() {
   useEffect(() => {
     setDocsPage(1);
   }, [docsSearch]);
+
+  // ── Compliance state ───────────────────────────────────────────────────────
+  const [complianceYear, setComplianceYear] = useState(
+    () => new Date().getFullYear(),
+  );
+  const [complianceLimit, setComplianceLimit] = useState(COMPLIANCE_PAGE_SIZE);
+
+  useEffect(() => {
+    setComplianceLimit(COMPLIANCE_PAGE_SIZE);
+  }, [complianceYear]);
+
+  const {
+    tasks: complianceTasks,
+    totalElements: complianceTotalElements,
+    loading: complianceLoading,
+    error: complianceError,
+    refetch: refetchCompliance,
+  } = useTasks(0, complianceLimit, {
+    category: "COMPLIANCE",
+    dueDateFrom: `${complianceYear}-01-01`,
+    dueDateTo: `${complianceYear}-12-31`,
+  });
+
+  const complianceByMonth = MONTH_NAMES.map((name, i) => ({
+    name,
+    tasks: complianceTasks.filter(
+      (t) => t.dueDate && Number(t.dueDate.slice(5, 7)) - 1 === i,
+    ),
+  })).filter((m) => m.tasks.length > 0);
+
+  // ── Bulk compliance add (pick a month, click days on a calendar) ───────────
+  const [showBulkAdd, setShowBulkAdd] = useState(false);
+  const [bulkMonth, setBulkMonth] = useState(() => new Date().getMonth());
+  const [bulkSelectedDates, setBulkSelectedDates] = useState<Date[]>([]);
+  const [bulkDayTitles, setBulkDayTitles] = useState<Record<number, string>>(
+    {},
+  );
+  const [bulkRecurring, setBulkRecurring] = useState(false);
+  const [bulkSaving, setBulkSaving] = useState(false);
+
+  const bulkFilledCount = bulkSelectedDates.filter((d) =>
+    (bulkDayTitles[d.getDate()] ?? "").trim(),
+  ).length;
+
+  const resetBulkForm = () => {
+    setBulkMonth(new Date().getMonth());
+    setBulkSelectedDates([]);
+    setBulkDayTitles({});
+    setBulkRecurring(false);
+  };
+
+  const handleBulkMonthChange = (month: number) => {
+    setBulkMonth(month);
+    setBulkSelectedDates([]);
+    setBulkDayTitles({});
+  };
+
+  const handleBulkDaysSelect = (dates: Date[] | undefined) => {
+    const next = dates ?? [];
+    setBulkSelectedDates(next);
+    setBulkDayTitles((prev) => {
+      const keep = new Set(next.map((d) => d.getDate()));
+      const nextTitles: Record<number, string> = {};
+      keep.forEach((day) => {
+        nextTitles[day] = prev[day] ?? "";
+      });
+      return nextTitles;
+    });
+  };
+
+  const handleBulkCreate = async () => {
+    const entries = bulkSelectedDates
+      .map((d) => ({ day: d.getDate(), title: (bulkDayTitles[d.getDate()] ?? "").trim() }))
+      .filter((e) => e.title);
+    if (entries.length === 0) return;
+
+    try {
+      setBulkSaving(true);
+      await Promise.all(
+        entries.map(({ day, title }) => {
+          const dueDate = `${complianceYear}-${String(bulkMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+          return createTask({
+            title,
+            priority: "MEDIUM",
+            dueDate,
+            category: "COMPLIANCE",
+            recurring: bulkRecurring,
+          });
+        }),
+      );
+      refreshEverything();
+      resetBulkForm();
+      setShowBulkAdd(false);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setBulkSaving(false);
+    }
+  };
 
   // ── Create dialog ──────────────────────────────────────────────────────────
   const [showCreate, setShowCreate] = useState(false);
@@ -190,8 +379,11 @@ export default function TaskManagerPage() {
 
   const refreshEverything = () => {
     invalidateCache("tasks:");
-    refetchTasks();
+    todoResult.refetch();
+    inProgressResult.refetch();
+    doneResult.refetch();
     refetchDocuments();
+    refetchCompliance();
   };
 
   const handleCreate = async () => {
@@ -203,6 +395,8 @@ export default function TaskManagerPage() {
         description: form.description.trim() || null,
         priority: form.priority,
         dueDate: form.dueDate || null,
+        category: form.category,
+        recurring: form.recurring,
       });
       refreshEverything();
       setForm(makeEmptyForm());
@@ -221,6 +415,8 @@ export default function TaskManagerPage() {
       description: task.description ?? "",
       priority: task.priority,
       dueDate: task.dueDate ?? "",
+      category: task.category,
+      recurring: task.recurring,
     });
     setEditStatus(task.status);
   };
@@ -244,6 +440,8 @@ export default function TaskManagerPage() {
         priority: editForm.priority,
         dueDate: editForm.dueDate || null,
         status: editStatus,
+        category: editForm.category,
+        recurring: editForm.recurring,
       });
       refreshEverything();
       setEditingTask(null);
@@ -265,6 +463,8 @@ export default function TaskManagerPage() {
         priority: task.priority,
         dueDate: task.dueDate,
         status,
+        category: task.category,
+        recurring: task.recurring,
       });
       refreshEverything();
     } catch (err) {
@@ -424,6 +624,17 @@ export default function TaskManagerPage() {
                 </span>
               )}
             </button>
+            <button
+              onClick={() => setActiveTab("compliance")}
+              className={`inline-flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-medium transition-colors ${
+                activeTab === "compliance"
+                  ? "bg-cic-900 text-white"
+                  : "text-slate-500 hover:text-cic-700"
+              }`}
+            >
+              <ShieldCheck className="h-4 w-4" />
+              Compliance
+            </button>
           </div>
         </div>
 
@@ -477,68 +688,151 @@ export default function TaskManagerPage() {
                   </button>
                 ))}
               </div>
+              <div className="relative" ref={dateFilterRef}>
+                <button
+                  onClick={() => setShowDateFilter((v) => !v)}
+                  className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
+                    dateFilter
+                      ? "border-cic-900 bg-cic-900 text-white"
+                      : "border-slate-200 bg-white text-slate-500 hover:border-cic-200 hover:text-cic-700"
+                  }`}
+                >
+                  <Calendar className="h-3.5 w-3.5" />
+                  {dateFilter
+                    ? dateFilter === today
+                      ? "Today"
+                      : fmtDate(dateFilter)
+                    : "All dates"}
+                </button>
+                {showDateFilter && (
+                  <div className="absolute left-0 z-20 mt-2 rounded-xl border border-slate-200 bg-white p-2 shadow-lg">
+                    <div className="flex items-center justify-between gap-3 px-1 pb-1">
+                      <button
+                        onClick={() => {
+                          setDateFilter(today);
+                          setShowDateFilter(false);
+                        }}
+                        className="text-xs font-medium text-cic-700 hover:underline"
+                      >
+                        Today
+                      </button>
+                      <button
+                        onClick={() => {
+                          setDateFilter("");
+                          setShowDateFilter(false);
+                        }}
+                        className="text-xs font-medium text-slate-400 hover:text-slate-600 hover:underline"
+                      >
+                        All dates
+                      </button>
+                    </div>
+                    <DatePickerCalendar
+                      mode="single"
+                      selected={dateFilter ? parseDateStr(dateFilter) : undefined}
+                      onSelect={(d) => {
+                        if (d) {
+                          setDateFilter(formatDateStr(d));
+                          setShowDateFilter(false);
+                        }
+                      }}
+                      className="p-0"
+                    />
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* ── Kanban Board ── */}
-            {tasksError ? (
-              <Card className="border border-dashed border-red-200 bg-white shadow-sm">
-                <CardContent className="flex min-h-48 flex-col items-center justify-center gap-3 text-center px-6">
-                  <p className="text-sm font-medium text-red-500">{tasksError}</p>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                {COLUMNS.map((col) => {
-                  const config = STATUS_CONFIG[col];
-                  const colTasks = tasks.filter((t) => t.status === col);
-                  return (
-                    <div key={col} className="flex flex-col gap-3">
-                      <div className="flex items-center gap-2 px-1">
-                        <span className={`h-2 w-2 rounded-full ${config.dot}`} />
-                        <h3 className="text-sm font-semibold text-slate-700">
-                          {config.label}
-                        </h3>
-                        <span className="text-xs font-medium text-slate-400">
-                          {colTasks.length}
-                        </span>
-                      </div>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+              {COLUMNS.map((col) => {
+                const config = STATUS_CONFIG[col];
+                const { result: colResult, setLimit: setColLimit } =
+                  columnData[col];
+                const colTasks = colResult.tasks;
+                const hasMore = colTasks.length < colResult.totalElements;
+                return (
+                  <div key={col} className="flex flex-col gap-3">
+                    <div className="flex items-center gap-2 px-1">
+                      <span className={`h-2 w-2 rounded-full ${config.dot}`} />
+                      <h3 className="text-sm font-semibold text-slate-700">
+                        {config.label}
+                      </h3>
+                      <span className="text-xs font-medium text-slate-400">
+                        {colResult.totalElements}
+                      </span>
+                    </div>
 
-                      <div className="flex flex-col gap-3 max-h-[70vh] overflow-y-auto pr-1">
-                        {tasksLoading ? (
-                          [...Array(2)].map((_, i) => (
-                            <Card key={i} className="border border-slate-200 bg-white shadow-sm">
-                              <CardContent className="p-4 space-y-2.5">
-                                <Skeleton className="h-4 w-16 rounded-md" />
-                                <Skeleton className="h-5 w-3/4" />
-                                <Skeleton className="h-4 w-full" />
-                              </CardContent>
-                            </Card>
-                          ))
-                        ) : colTasks.length === 0 ? (
-                          <div className="rounded-xl border border-dashed border-slate-200 bg-white/60 py-8 text-center">
-                            <p className="text-xs text-slate-400">No tasks here</p>
-                          </div>
-                        ) : (
-                          colTasks.map((task) => {
+                    <div className="flex flex-col gap-3 max-h-[70vh] overflow-y-auto pr-1">
+                      {colResult.error ? (
+                        <div className="rounded-xl border border-dashed border-red-200 bg-white py-6 text-center">
+                          <p className="text-xs font-medium text-red-500">
+                            {colResult.error}
+                          </p>
+                        </div>
+                      ) : colResult.loading ? (
+                        [...Array(2)].map((_, i) => (
+                          <Card key={i} className="shrink-0 border border-slate-200 bg-white shadow-sm">
+                            <CardContent className="p-4 space-y-2.5">
+                              <Skeleton className="h-4 w-16 rounded-md" />
+                              <Skeleton className="h-5 w-3/4" />
+                              <Skeleton className="h-4 w-full" />
+                            </CardContent>
+                          </Card>
+                        ))
+                      ) : colTasks.length === 0 ? (
+                        <div className="rounded-xl border border-dashed border-slate-200 bg-white/60 py-8 text-center">
+                          <p className="text-xs text-slate-400">No tasks here</p>
+                        </div>
+                      ) : (
+                        colTasks.map((task) => {
                             const priority = PRIORITY_CONFIG[task.priority];
                             const isOverdue =
                               !!task.dueDate &&
                               task.dueDate < today &&
                               task.status !== "DONE";
+                            const isDueToday =
+                              !!task.dueDate &&
+                              task.dueDate === today &&
+                              task.status !== "DONE";
                             return (
                               <Card
                                 key={task.id}
-                                onClick={() => openEdit(task)}
-                                className="group cursor-pointer border border-slate-200 bg-white shadow-sm transition-all hover:border-cic-200 hover:shadow-md"
+                                className={`group shrink-0 border shadow-sm transition-all hover:shadow-md ${
+                                  isDueToday
+                                    ? "border-amber-300 bg-amber-50/60 hover:border-amber-400"
+                                    : "border-slate-200 bg-white hover:border-cic-200"
+                                }`}
                               >
                                 <CardContent className="p-4 space-y-2.5">
                                   <div className="flex items-start justify-between gap-2">
-                                    <Badge
-                                      variant="outline"
-                                      className={`rounded-full text-xs font-semibold px-2.5 py-0.5 ${priority.class}`}
-                                    >
-                                      {task.priority}
-                                    </Badge>
+                                    <div className="flex flex-1 min-w-0 flex-wrap items-center gap-1.5">
+                                      <Badge
+                                        variant="outline"
+                                        className={`rounded-full text-xs font-semibold px-2.5 py-0.5 ${priority.class}`}
+                                      >
+                                        {task.priority}
+                                      </Badge>
+                                      {isDueToday && (
+                                        <Badge
+                                          variant="outline"
+                                          className="rounded-full text-xs font-semibold px-2.5 py-0.5 bg-amber-100 text-amber-700 border-amber-200"
+                                        >
+                                          Due Today
+                                        </Badge>
+                                      )}
+                                      {task.category === "COMPLIANCE" && (
+                                        <Badge
+                                          variant="outline"
+                                          className="flex items-center gap-1 rounded-full text-xs font-semibold px-2.5 py-0.5 bg-violet-50 text-violet-700 border-violet-200"
+                                        >
+                                          <ShieldCheck className="h-3 w-3" />
+                                          Compliance
+                                          {task.recurring && (
+                                            <RefreshCw className="h-3 w-3" />
+                                          )}
+                                        </Badge>
+                                      )}
+                                    </div>
                                     <DropdownMenu>
                                       <DropdownMenuTrigger onClick={(e) => e.stopPropagation()}>
                                         <Button
@@ -550,13 +844,21 @@ export default function TaskManagerPage() {
                                         </Button>
                                       </DropdownMenuTrigger>
                                       <DropdownMenuContent align="end">
-                                        <DropdownMenuItem onClick={() => openEdit(task)}>
+                                        <DropdownMenuItem
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            openEdit(task);
+                                          }}
+                                        >
                                           Edit
                                         </DropdownMenuItem>
                                         {COLUMNS.filter((c) => c !== task.status).map((c) => (
                                           <DropdownMenuItem
                                             key={c}
-                                            onClick={() => handleQuickStatusChange(task, c)}
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              handleQuickStatusChange(task, c);
+                                            }}
                                           >
                                             Move to {STATUS_CONFIG[c].label}
                                           </DropdownMenuItem>
@@ -564,7 +866,10 @@ export default function TaskManagerPage() {
                                         <DropdownMenuSeparator />
                                         <DropdownMenuItem
                                           variant="destructive"
-                                          onClick={() => handleDelete(task)}
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleDelete(task);
+                                          }}
                                         >
                                           Delete
                                         </DropdownMenuItem>
@@ -583,7 +888,11 @@ export default function TaskManagerPage() {
                                     {task.dueDate ? (
                                       <div
                                         className={`flex items-center gap-1 text-xs ${
-                                          isOverdue ? "text-red-500 font-medium" : "text-slate-400"
+                                          isOverdue
+                                            ? "text-red-500 font-medium"
+                                            : isDueToday
+                                              ? "text-amber-600 font-medium"
+                                              : "text-slate-400"
                                         }`}
                                       >
                                         <Calendar className="h-3.5 w-3.5" />
@@ -604,14 +913,28 @@ export default function TaskManagerPage() {
                             );
                           })
                         )}
+                        {hasMore && !colResult.loading && !colResult.error && (
+                          <button
+                            onClick={() =>
+                              setColLimit((l) => l + COLUMN_PAGE_SIZE)
+                            }
+                            className="shrink-0 rounded-xl border border-dashed border-slate-200 bg-white/60 py-2.5 text-xs font-semibold text-slate-500 hover:border-cic-200 hover:text-cic-700 transition-colors"
+                          >
+                            Load{" "}
+                            {Math.min(
+                              COLUMN_PAGE_SIZE,
+                              colResult.totalElements - colTasks.length,
+                            )}{" "}
+                            more
+                          </button>
+                        )}
                       </div>
                     </div>
                   );
                 })}
               </div>
-            )}
           </>
-        ) : (
+        ) : activeTab === "documents" ? (
           <>
             {/* ── My Documents ── */}
             <div className="relative sm:w-80">
@@ -713,6 +1036,135 @@ export default function TaskManagerPage() {
               onPageChange={setDocsPage}
             />
           </>
+        ) : (
+          <>
+            {/* ── Compliance (yearly recurring obligations) ── */}
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-9 w-9 rounded-xl border-slate-200"
+                  onClick={() => setComplianceYear((y) => y - 1)}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span className="text-lg font-semibold text-slate-800 tabular-nums">
+                  {complianceYear}
+                </span>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-9 w-9 rounded-xl border-slate-200"
+                  onClick={() => setComplianceYear((y) => y + 1)}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+              <Button
+                onClick={() => setShowBulkAdd(true)}
+                className="h-9 rounded-xl bg-cic-900 px-4 text-sm text-white hover:bg-blue-800"
+              >
+                <Plus className="mr-1.5 h-4 w-4" />
+                Add Compliance Tasks
+              </Button>
+            </div>
+
+            {complianceError ? (
+              <Card className="border border-dashed border-red-200 bg-white shadow-sm">
+                <CardContent className="flex min-h-48 flex-col items-center justify-center gap-3 text-center px-6">
+                  <p className="text-sm font-medium text-red-500">{complianceError}</p>
+                </CardContent>
+              </Card>
+            ) : complianceLoading ? (
+              <div className="space-y-3">
+                {[...Array(3)].map((_, i) => (
+                  <Skeleton key={i} className="h-16 w-full rounded-xl" />
+                ))}
+              </div>
+            ) : complianceByMonth.length === 0 ? (
+              <div className="flex min-h-64 flex-col items-center justify-center gap-4 text-center px-6">
+                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100">
+                  <ShieldCheck className="h-7 w-7 text-slate-300" />
+                </div>
+                <div>
+                  <h3 className="text-base font-semibold text-slate-700">
+                    No compliance tasks for {complianceYear}
+                  </h3>
+                  <p className="mt-1.5 text-sm text-slate-400 max-w-xs">
+                    Create a task with category "Compliance" to track it here.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {complianceByMonth.map((month) => (
+                  <Card key={month.name} className="border border-slate-200 bg-white shadow-sm overflow-hidden">
+                    <div className="px-5 py-3 border-b border-slate-100 bg-slate-50/80">
+                      <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest">
+                        {month.name}
+                      </p>
+                    </div>
+                    <div className="divide-y divide-slate-100">
+                      {month.tasks.map((task) => {
+                        const status = STATUS_CONFIG[task.status];
+                        return (
+                          <div
+                            key={task.id}
+                            onClick={() => openEdit(task)}
+                            className="flex items-center gap-3 px-5 py-4 hover:bg-slate-50 transition-colors cursor-pointer"
+                          >
+                            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-violet-50 shrink-0">
+                              <ShieldCheck className="h-4 w-4 text-violet-700" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-medium text-slate-800 truncate">
+                                {task.title}
+                              </p>
+                              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-0.5">
+                                {task.dueDate && (
+                                  <span className="text-xs text-slate-400">
+                                    {fmtDate(task.dueDate)}
+                                  </span>
+                                )}
+                                {task.recurring && (
+                                  <span className="flex items-center gap-1 text-xs text-slate-400">
+                                    <RefreshCw className="h-3 w-3" />
+                                    Yearly
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            <Badge
+                              variant="outline"
+                              className={`rounded-full text-xs font-semibold px-2.5 py-0.5 shrink-0 ${status.class}`}
+                            >
+                              {status.label}
+                            </Badge>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </Card>
+                ))}
+                {complianceTasks.length < complianceTotalElements && (
+                  <button
+                    onClick={() =>
+                      setComplianceLimit((l) => l + COMPLIANCE_PAGE_SIZE)
+                    }
+                    className="w-full rounded-xl border border-dashed border-slate-200 bg-white/60 py-2.5 text-xs font-semibold text-slate-500 hover:border-cic-200 hover:text-cic-700 transition-colors"
+                  >
+                    Load{" "}
+                    {Math.min(
+                      COMPLIANCE_PAGE_SIZE,
+                      complianceTotalElements - complianceTasks.length,
+                    )}{" "}
+                    more
+                  </button>
+                )}
+              </div>
+            )}
+          </>
         )}
       </div>
 
@@ -724,7 +1176,7 @@ export default function TaskManagerPage() {
           setShowCreate(open);
         }}
       >
-        <DialogContent className="rounded-2xl sm:max-w-lg">
+        <DialogContent className="rounded-2xl sm:max-w-lg max-h-[90vh] overflow-y-auto overflow-x-hidden no-scrollbar">
           <DialogHeader>
             <DialogTitle>New Task</DialogTitle>
             <DialogDescription>
@@ -779,6 +1231,39 @@ export default function TaskManagerPage() {
                 />
               </div>
             </div>
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium text-slate-700">Category</Label>
+              <select
+                value={form.category}
+                onChange={(e) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    category: e.target.value as TaskCategory,
+                    recurring: e.target.value === "COMPLIANCE" ? prev.recurring : false,
+                  }))
+                }
+                className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-800 outline-none focus:ring-2 focus:ring-cic-200"
+              >
+                {CATEGORIES.map((c) => (
+                  <option key={c} value={c}>
+                    {CATEGORY_LABELS[c]}
+                  </option>
+                ))}
+              </select>
+            </div>
+            {form.category === "COMPLIANCE" && (
+              <label className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={form.recurring}
+                  onChange={(e) =>
+                    setForm((prev) => ({ ...prev, recurring: e.target.checked }))
+                  }
+                  className="h-4 w-4 rounded border-slate-300 text-cic-900 focus:ring-cic-200"
+                />
+                Repeats yearly — auto-create next year's task once this is marked Done
+              </label>
+            )}
           </div>
           <DialogFooter>
             <Button
@@ -804,7 +1289,7 @@ export default function TaskManagerPage() {
 
       {/* ── Edit Task Dialog ── */}
       <Dialog open={!!editingTask} onOpenChange={(open) => !open && setEditingTask(null)}>
-        <DialogContent className="rounded-2xl sm:max-w-lg">
+        <DialogContent className="rounded-2xl sm:max-w-lg max-h-[90vh] overflow-y-auto overflow-x-hidden no-scrollbar">
           <DialogHeader>
             <DialogTitle>Edit Task</DialogTitle>
             <DialogDescription>
@@ -874,6 +1359,42 @@ export default function TaskManagerPage() {
               </div>
             </div>
 
+            <div className="grid grid-cols-2 gap-4 items-end">
+              <div className="space-y-1.5">
+                <Label className="text-sm font-medium text-slate-700">Category</Label>
+                <select
+                  value={editForm.category}
+                  onChange={(e) =>
+                    setEditForm((prev) => ({
+                      ...prev,
+                      category: e.target.value as TaskCategory,
+                      recurring: e.target.value === "COMPLIANCE" ? prev.recurring : false,
+                    }))
+                  }
+                  className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-800 outline-none focus:ring-2 focus:ring-cic-200"
+                >
+                  {CATEGORIES.map((c) => (
+                    <option key={c} value={c}>
+                      {CATEGORY_LABELS[c]}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              {editForm.category === "COMPLIANCE" && (
+                <label className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer pb-2.5">
+                  <input
+                    type="checkbox"
+                    checked={editForm.recurring}
+                    onChange={(e) =>
+                      setEditForm((prev) => ({ ...prev, recurring: e.target.checked }))
+                    }
+                    className="h-4 w-4 rounded border-slate-300 text-cic-900 focus:ring-cic-200"
+                  />
+                  Repeats yearly
+                </label>
+              )}
+            </div>
+
             <div className="border-t border-slate-100 pt-4 space-y-3">
               <div className="flex items-center justify-between">
                 <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest">
@@ -901,7 +1422,7 @@ export default function TaskManagerPage() {
               ) : attachments.length === 0 ? (
                 <p className="text-sm text-slate-400 py-2">No attachments yet.</p>
               ) : (
-                <div className="space-y-2">
+                <div className="space-y-2 max-h-48 overflow-y-auto overflow-x-hidden no-scrollbar pr-1">
                   {attachments.map((a) => (
                     <div
                       key={a.id}
@@ -960,6 +1481,118 @@ export default function TaskManagerPage() {
                 {saving ? "Saving..." : "Save Changes"}
               </Button>
             </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Bulk Add Compliance Tasks Dialog ── */}
+      <Dialog
+        open={showBulkAdd}
+        onOpenChange={(open) => {
+          if (!open) resetBulkForm();
+          setShowBulkAdd(open);
+        }}
+      >
+        <DialogContent className="rounded-2xl sm:max-w-xl max-h-[90vh] overflow-y-auto overflow-x-hidden no-scrollbar flex flex-col gap-4">
+          <DialogHeader>
+            <DialogTitle>Add Compliance Tasks for {complianceYear}</DialogTitle>
+            <DialogDescription>
+              Pick a month, click every day that needs a compliance task, then give
+              each one a title. They're all created together when you submit.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-1.5">
+            <Label className="text-sm font-medium text-slate-700">Month</Label>
+            <select
+              value={bulkMonth}
+              onChange={(e) => handleBulkMonthChange(Number(e.target.value))}
+              className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-800 outline-none focus:ring-2 focus:ring-cic-200"
+            >
+              {MONTH_NAMES.map((name, i) => (
+                <option key={name} value={i}>
+                  {name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="w-full overflow-x-auto no-scrollbar">
+            <DatePickerCalendar
+              mode="multiple"
+              month={new Date(complianceYear, bulkMonth, 1)}
+              onMonthChange={(m) => handleBulkMonthChange(m.getMonth())}
+              startMonth={new Date(complianceYear, 0, 1)}
+              endMonth={new Date(complianceYear, 11, 1)}
+              selected={bulkSelectedDates}
+              onSelect={handleBulkDaysSelect}
+              className="mx-auto p-0 [--cell-size:min(2.25rem,10vw)]"
+            />
+          </div>
+
+          {bulkSelectedDates.length === 0 ? (
+            <p className="text-sm text-slate-400 text-center py-3">
+              Click days on the calendar above to add a task for each.
+            </p>
+          ) : (
+            <div className="space-y-2 max-h-40 overflow-y-auto overflow-x-hidden no-scrollbar pr-1">
+              {[...bulkSelectedDates]
+                .sort((a, b) => a.getDate() - b.getDate())
+                .map((d) => {
+                  const day = d.getDate();
+                  return (
+                    <div key={day} className="flex items-center gap-2">
+                      <span className="w-16 shrink-0 text-sm font-medium text-slate-600">
+                        {MONTH_NAMES[bulkMonth].slice(0, 3)} {day}
+                      </span>
+                      <Input
+                        placeholder="Task title"
+                        value={bulkDayTitles[day] ?? ""}
+                        onChange={(e) =>
+                          setBulkDayTitles((prev) => ({
+                            ...prev,
+                            [day]: e.target.value,
+                          }))
+                        }
+                        className="h-10 flex-1 rounded-xl border-slate-200 bg-slate-50 shadow-none focus-visible:ring-cic-200 text-sm"
+                      />
+                    </div>
+                  );
+                })}
+            </div>
+          )}
+
+          <label className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={bulkRecurring}
+              onChange={(e) => setBulkRecurring(e.target.checked)}
+              className="h-4 w-4 rounded border-slate-300 text-cic-900 focus:ring-cic-200"
+            />
+            Repeat all of these yearly — auto-create next year's copy once marked Done
+          </label>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                resetBulkForm();
+                setShowBulkAdd(false);
+              }}
+              className="rounded-xl border-slate-200 h-10 px-5"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleBulkCreate}
+              disabled={bulkSaving || bulkFilledCount === 0}
+              className="rounded-xl bg-cic-900 text-white hover:bg-blue-800 h-10 px-6"
+            >
+              {bulkSaving
+                ? "Creating..."
+                : bulkFilledCount === 0
+                  ? "Create Tasks"
+                  : `Create ${bulkFilledCount} Task${bulkFilledCount === 1 ? "" : "s"}`}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
