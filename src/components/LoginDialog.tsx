@@ -49,21 +49,6 @@ export default function LoginDialog() {
     };
   }, [open]);
 
-  // ── Close on Escape ────────────────────────────────────────────────────────
-  useEffect(() => {
-    if (!open) return;
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") closeLoginDialog();
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [open]);
-
-  const handleClose = () => {
-    closeLoginDialog();
-    setError(null);
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) return;
@@ -105,15 +90,9 @@ export default function LoginDialog() {
   if (!open) return null;
 
   return (
-    <div
-      className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center z-100"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) handleClose();
-      }}
-    >
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center z-100">
       <div className="relative bg-white rounded-t-3xl sm:rounded-2xl w-full sm:w-90 shadow-2xl border border-slate-100 overflow-hidden">
         <button
-          onClick={handleClose}
           aria-label="Close"
           disabled
           className="absolute top-3 right-3 z-10 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-colors"
@@ -168,7 +147,6 @@ export default function LoginDialog() {
           <div className="flex gap-2 pt-1 pb-3 sm:pb-0">
             <button
               type="button"
-              onClick={handleClose}
               disabled
               className="flex-1 text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 px-4 py-2.5 rounded-xl transition-colors"
             >
