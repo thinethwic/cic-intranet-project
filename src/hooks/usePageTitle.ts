@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
 
 const ROUTE_TITLES: Record<string, string> = {
-    "/": "Home",
+    "/": "Help Desk",
     "/our-segments/cic-feeds": "CIC Feeds",
     "/our-segments/cic-vetcare": "CIC Vetcare",
     "/our-segments/cic-poulry": "CIC Poultry",
