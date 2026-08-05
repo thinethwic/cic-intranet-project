@@ -475,10 +475,9 @@ export default function HelpDeskPage() {
 
   // ── Handlers ──────────────────────────────────────────────────────────────
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     localStorage.setItem("helpdesk_last_active", new Date().toISOString());
-    logout();
-    window.location.replace("/");
+    await logout("/");
   };
 
   const handleCreate = async () => {
