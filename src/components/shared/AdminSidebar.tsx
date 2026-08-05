@@ -1,20 +1,20 @@
 import { Link, NavLink, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
-  FileText,
-  Video,
-  Calendar,
-  Image,
-  Newspaper,
+  //FileText,
+  //Video,
+  //Calendar,
+  //Image,
+  //Newspaper,
   Users,
   Ticket,
-  BriefcaseBusiness,
+  //BriefcaseBusiness,
   LogOut,
   ChevronRight,
-  AlertCircleIcon,
+  //AlertCircleIcon,
   Activity,
-  LayoutGrid,
-  FolderTree,
+  //LayoutGrid,
+  //FolderTree,
 } from "lucide-react";
 import {
   Sidebar,
@@ -50,46 +50,46 @@ const navItems: NavItem[] = [
     path: "/admin",
     roles: ["SUPER_ADMIN"],
   },
-  {
-    name: "Documents",
-    icon: FileText,
-    path: "/admin/documents",
-    roles: ["SUPER_ADMIN"],
-  },
-  {
-    name: "Videos",
-    icon: Video,
-    path: "/admin/videos",
-    roles: ["SUPER_ADMIN"],
-  },
-  {
-    name: "News",
-    icon: Newspaper,
-    path: "/admin/news",
-    roles: ["SUPER_ADMIN"],
-  },
-  {
-    name: "Alert",
-    icon: AlertCircleIcon,
-    path: "/admin/alert",
-    roles: ["SUPER_ADMIN"],
-  },
-  {
-    name: "Events",
-    icon: Calendar,
-    path: "/admin/events",
-    roles: ["SUPER_ADMIN"],
-    children: [
-      { name: "Events", path: "/admin/events?tab=events" },
-      { name: "Announcements", path: "/admin/events?tab=announcements" },
-    ],
-  },
-  {
-    name: "Gallery",
-    icon: Image,
-    path: "/admin/gallery",
-    roles: ["SUPER_ADMIN"],
-  },
+  //  {
+  //  name: "Documents",
+  //icon: FileText,
+  //  path: "/admin/documents",
+  //  roles: ["SUPER_ADMIN"],
+  //},
+  //{
+  // name: "Videos",
+  // icon: Video,
+  // path: "/admin/videos",
+  //roles: ["SUPER_ADMIN"],
+  //},
+  //{
+  //  name: "News",
+  //  icon: Newspaper,
+  //  path: "/admin/news",
+  //  roles: ["SUPER_ADMIN"],
+  //},
+  //{
+  //  name: "Alert",
+  //  icon: AlertCircleIcon,
+  //  path: "/admin/alert",
+  //  roles: ["SUPER_ADMIN"],
+  //},
+  //{
+  //  name: "Events",
+  //  icon: Calendar,
+  //  path: "/admin/events",
+  //  roles: ["SUPER_ADMIN"],
+  //  children: [
+  //    { name: "Events", path: "/admin/events?tab=events" },
+  //    { name: "Announcements", path: "/admin/events?tab=announcements" },
+  //  ],
+  //},
+  //{
+  //  name: "Gallery",
+  //  icon: Image,
+  //  path: "/admin/gallery",
+  //  roles: ["SUPER_ADMIN"],
+  //},
   {
     name: "Ticket",
     icon: Ticket,
@@ -106,12 +106,12 @@ const navItems: NavItem[] = [
       { name: "Departments", path: "/admin/categories?tab=departments" },
     ],
   },
-  {
-    name: "Management",
-    icon: BriefcaseBusiness,
-    path: "/admin/management",
-    roles: ["SUPER_ADMIN"],
-  },
+  //{
+  //  name: "Management",
+  //  icon: BriefcaseBusiness,
+  //  path: "/admin/management",
+  //  roles: ["SUPER_ADMIN"],
+  //},
   {
     name: "Users",
     icon: Users,
@@ -124,18 +124,18 @@ const navItems: NavItem[] = [
     path: "/admin/auditLog",
     roles: ["SUPER_ADMIN"],
   },
-  {
-    name: "Hero Shortcuts",
-    icon: LayoutGrid,
-    path: "/admin/hero-shortcuts",
-    roles: ["SUPER_ADMIN"],
-  },
-  {
-    name: "Navigation Items",
-    icon: FolderTree,
-    path: "/admin/nav-items",
-    roles: ["SUPER_ADMIN"],
-  },
+  //{
+  //  name: "Hero Shortcuts",
+  //  icon: LayoutGrid,
+  //  path: "/admin/hero-shortcuts",
+  //  roles: ["SUPER_ADMIN"],
+  //},
+  //{
+  //  name: "Navigation Items",
+  //  icon: FolderTree,
+  //  path: "/admin/nav-items",
+  //  roles: ["SUPER_ADMIN"],
+  //},
 ];
 
 export default function AdminSidebar() {

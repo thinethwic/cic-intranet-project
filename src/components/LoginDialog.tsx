@@ -3,7 +3,11 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { X } from "lucide-react";
 import logo from "@/assets/Logo.jpg";
 import { loginAuthorized } from "@/lib/api/authApi";
-import { getAdminSession, setAdminSession, type UserRole } from "@/lib/api/authSession";
+import {
+  getAdminSession,
+  setAdminSession,
+  type UserRole,
+} from "@/lib/api/authSession";
 import {
   closeLoginDialog,
   getLoginDialogReturnTo,
@@ -111,6 +115,7 @@ export default function LoginDialog() {
         <button
           onClick={handleClose}
           aria-label="Close"
+          disabled
           className="absolute top-3 right-3 z-10 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-colors"
         >
           <X className="w-4 h-4 text-slate-500" />
@@ -164,6 +169,7 @@ export default function LoginDialog() {
             <button
               type="button"
               onClick={handleClose}
+              disabled
               className="flex-1 text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 px-4 py-2.5 rounded-xl transition-colors"
             >
               Not now

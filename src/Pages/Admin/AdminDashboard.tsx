@@ -2,14 +2,14 @@ import {
   Calendar,
   Clock,
   FileText,
-  Image,
+  //Image,
   Megaphone,
   Newspaper,
-  Plus,
-  Users,
+  //Plus,
+  //Users,
   Video,
 } from "lucide-react";
-import { Link } from "react-router-dom";
+//import { Link } from "react-router-dom";
 import { CardContent } from "@/components/ui/card";
 import {
   AdminCard,
@@ -26,7 +26,8 @@ import { useDocuments } from "@/hooks/useDocuments";
 import { useMembers } from "@/hooks/useMembers";
 import InlineErrorAlert from "@/components/shared/InlineErrorAlert";
 
-const quickLinks = [
+{
+  /*const quickLinks = [
   {
     label: "Create News",
     description: "Publish a company update",
@@ -69,7 +70,8 @@ const quickLinks = [
     icon: Users,
     tone: "bg-slate-100 text-slate-700",
   },
-];
+];*/
+}
 
 export default function AdminDashboard() {
   const now = new Date();
@@ -107,7 +109,12 @@ export default function AdminDashboard() {
     error: membersError,
   } = useMembers();
   const dashboardError =
-    newsError || videosError || eventsError || documentsError || membersError || "";
+    newsError ||
+    videosError ||
+    eventsError ||
+    documentsError ||
+    membersError ||
+    "";
 
   const hotCount = newsList.filter((item) => item.isHot).length;
 
@@ -172,7 +179,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* ── Quick Actions ── */}
-      <AdminCard>
+      {/*<AdminCard>
         <AdminCardTitle title="Quick Actions" meta="Admin shortcuts" />
         <CardContent className="grid grid-cols-1 gap-4 px-6 sm:grid-cols-2 lg:grid-cols-3">
           {quickLinks.map((link) => (
@@ -194,7 +201,7 @@ export default function AdminDashboard() {
             </Link>
           ))}
         </CardContent>
-      </AdminCard>
+      </AdminCard>*/}
 
       {/* ── Bottom Cards ── */}
       <div className="grid gap-6 lg:grid-cols-3">
