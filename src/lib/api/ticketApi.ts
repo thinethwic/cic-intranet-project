@@ -37,7 +37,7 @@ export interface Comment {
     commentedBy: {
         id: number;
         name: string;
-        role: "SUPER_ADMIN" | "ADMIN" | "AUTHORIZED" | "SERVICE";
+        role: "SUPER_ADMIN" | "ADMIN" | "AUTHORIZED" | "SERVICE" | "HOD_LEVEL";
     };
     isInternal: boolean;
     createdAt: string;
@@ -53,7 +53,7 @@ export interface AdminUser {
     name: string;
     email: string;
     username: string;
-    role: "SUPER_ADMIN" | "ADMIN" | "AUTHORIZED";
+    role: "SUPER_ADMIN" | "ADMIN" | "AUTHORIZED" | "HOD_LEVEL";
     active: boolean;
     segment?: string;
 }
@@ -154,7 +154,7 @@ export const getComments = async (
 
 export const getAllTickets = async (): Promise<Ticket[]> => {
     const user = getAdminUser();
-    const isAdmin = user?.role === "ADMIN";
+    const isAdmin = user?.role === "HOD_LEVEL";
 
     const url = isAdmin
         ? `${BASE_URL}/api/admin/tickets/my-segment?page=0&size=100`
@@ -171,7 +171,7 @@ export const getTicketsPage = async (
     size = 10
 ): Promise<PageResponse<Ticket>> => {
     const user = getAdminUser();
-    const isAdmin = user?.role === "ADMIN";
+    const isAdmin = user?.role === "HOD_LEVEL";
 
     const url = isAdmin
         ? `${BASE_URL}/api/admin/tickets/my-segment?page=${page}&size=${size}`

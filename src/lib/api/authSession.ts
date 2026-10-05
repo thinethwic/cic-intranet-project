@@ -1,6 +1,6 @@
 import { openLoginDialog } from "@/lib/loginDialogStore";
 
-export type UserRole = "SUPER_ADMIN" | "ADMIN" | "AUTHORIZED" | "SERVICE";
+export type UserRole = "SUPER_ADMIN" | "ADMIN" | "AUTHORIZED" | "SERVICE" | "HOD_LEVEL";
 
 export interface AdminUser {
   userId: number;

@@ -28,7 +28,7 @@ export interface TicketComment {
     commentedBy: {
         id: number;
         name: string;
-        role: "ADMIN" | "AUTHORIZED" | "SERVICE"; // ← add this
+        role: "ADMIN" | "AUTHORIZED" | "SERVICE" | "HOD_LEVEL"; // ← add this
     };
     isInternal: boolean;
     createdAt: string;

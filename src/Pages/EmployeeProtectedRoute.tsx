@@ -13,7 +13,7 @@ import {
   subscribeLoginDialog,
 } from "@/lib/loginDialogStore";
 
-const ADMIN_ROLES: UserRole[] = ["SUPER_ADMIN", "ADMIN"];
+const ADMIN_ROLES: UserRole[] = ["SUPER_ADMIN", "ADMIN", "HOD_LEVEL"];
 const ALLOWED_ROLES: UserRole[] = ["SERVICE", "AUTHORIZED", ...ADMIN_ROLES];
 
 export default function EmployeeProtectedRoute() {

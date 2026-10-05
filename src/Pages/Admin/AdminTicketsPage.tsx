@@ -127,6 +127,9 @@ const SEGMENT_CONFIG: Record<string, { label: string; className: string }> = {
   },
 };
 
+const statusLabel = (value: string) =>
+  STATUS_CONFIG[value as TicketStatus]?.label ?? value; // "All" falls back to "All"
+
 const CATEGORY_OPTIONS = ["IT", "HR", "FINANCE", "FACILITIES", "OTHER"];
 const PRIORITY_OPTIONS: TicketPriority[] = [
   "LOW",
@@ -180,14 +183,18 @@ function FilterDropdown({
   onChange,
   className,
   disabled,
+  getLabel,
 }: {
   options: string[];
   value: string;
   onChange: (value: string) => void;
   className?: string;
   disabled?: boolean;
+  getLabel?: (value: string) => string;
 }) {
   const isActive = value !== options[0];
+  const label = (v: string) => (getLabel ? getLabel(v) : v);
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger>
@@ -198,7 +205,7 @@ function FilterDropdown({
             isActive ? "border-cic-500 text-cic-600" : ""
           } ${className ?? ""} ${disabled ? "opacity-60 cursor-not-allowed" : ""}`}
         >
-          <span>{value === "IN_PROGRESS" ? "In Progress" : value}</span>
+          <span>{label(value)}</span>
           <ChevronDown className="h-3.5 w-3.5 opacity-50" />
         </Button>
       </DropdownMenuTrigger>
@@ -210,10 +217,8 @@ function FilterDropdown({
             onClick={() => onChange(option)}
             className="flex cursor-pointer items-center justify-between text-sm"
           >
-            {option === "IN_PROGRESS" ? "In Progress" : option}
-            {value === option && (
-              <Check className="h-3.5 w-3.5 text-cic-600" />
-            )}
+            {label(option)}
+            {value === option && <Check className="h-3.5 w-3.5 text-cic-600" />}
           </DropdownMenuItem>
         ))}
       </DropdownMenuContent>
@@ -271,7 +276,8 @@ const fmtDateTime = (value: string) =>
 
 export default function AdminTicketsPage() {
   const currentViewer = getAdminUser();
-  const isAdmin = currentViewer?.role === "ADMIN";
+  const isAdmin = currentViewer?.role === "HOD_LEVEL";
+  const isAdminRole = currentViewer?.role === "ADMIN"; // banner only
   const adminSegment = currentViewer?.segment ?? null;
   const adminDepartment = currentViewer?.department ?? null;
   const activeUserId = currentViewer?.userId ?? null;
@@ -342,7 +348,7 @@ export default function AdminTicketsPage() {
     if (entries.length === 0) return null;
     const first = entries[0];
     const role = first.commentedBy.role;
-    if (role === "ADMIN" || role === "SUPER_ADMIN") {
+    if (role === "ADMIN" || role === "SUPER_ADMIN" || role === "HOD_LEVEL") {
       return first.commentedBy.id;
     }
     return null;
@@ -840,23 +846,23 @@ export default function AdminTicketsPage() {
 
   return (
     <div className="space-y-6 p-6">
-      {/* ── Admin Welcome Banner ── */}
+      {/* ── HOD Welcome Banner ── */}
       {isAdmin && (
         <div className="rounded-xl border border-cic-100 bg-linear-to-r from-cic-50 to-slate-50 px-5 py-4 flex items-center justify-between gap-4">
           <div>
             <p className="text-xs text-slate-400 uppercase tracking-wide font-medium mb-0.5">
-              Admin Portal
+              HOD Level Portal
             </p>
             <h2 className="text-base font-semibold text-slate-800">
-              Welcome back, {currentViewer?.name ?? "Admin"} 👋
+              Welcome back, {currentViewer?.name ?? "HOD"} 👋
             </h2>
             {(adminSegment || adminDepartment) && (
               <p className="text-xs text-slate-500 mt-0.5">
                 {isITAdmin ? (
                   <>
                     You're managing{" "}
-                    <span className="font-medium text-cic-700">IT</span>{" "}
-                    tickets across{" "}
+                    <span className="font-medium text-cic-700">IT</span> tickets
+                    across{" "}
                     <span className="font-medium text-cic-700">
                       All Locations
                     </span>
@@ -909,6 +915,32 @@ export default function AdminTicketsPage() {
                 )}
               </>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Admin Welcome Banner ── */}
+      {isAdminRole && (
+        <div className="rounded-xl border border-cic-100 bg-linear-to-r from-cic-50 to-slate-50 px-5 py-4 flex items-center justify-between gap-4">
+          <div>
+            <p className="text-xs text-slate-400 uppercase tracking-wide font-medium mb-0.5">
+              Admin Portal
+            </p>
+            <h2 className="text-base font-semibold text-slate-800">
+              Welcome back, {currentViewer?.name ?? "Admin"} 👋
+            </h2>
+            <p className="text-xs text-slate-500 mt-0.5">
+              You're managing{" "}
+              <span className="font-medium text-cic-700">
+                all support tickets
+              </span>
+            </p>
+          </div>
+          <div className="hidden sm:flex items-center gap-2">
+            <div className="flex items-center gap-2 rounded-lg border border-cic-200 bg-cic-50 px-3 py-2 text-xs font-medium text-cic-700">
+              <ShieldCheck className="h-4 w-4" />
+              Admin · All Tickets
+            </div>
           </div>
         </div>
       )}
@@ -1106,6 +1138,7 @@ export default function AdminTicketsPage() {
           options={["All", ...STATUS_OPTIONS]}
           value={statusFilter}
           onChange={setStatusFilter}
+          getLabel={statusLabel}
         />
         <FilterDropdown
           options={["All", ...PRIORITY_OPTIONS]}
@@ -1825,6 +1858,7 @@ export default function AdminTicketsPage() {
                     status: value as TicketStatus,
                   }))
                 }
+                getLabel={statusLabel}
                 className="w-full"
               />
             </div>

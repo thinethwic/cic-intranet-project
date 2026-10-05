@@ -8,7 +8,7 @@ import {
   subscribeLoginDialog,
 } from "@/lib/loginDialogStore";
 
-const ADMIN_ROLES = new Set(["SUPER_ADMIN", "ADMIN"]);
+const ADMIN_ROLES = new Set(["SUPER_ADMIN", "ADMIN", "HOD_LEVEL"]);
 
 export default function ProtectedRoute() {
   const location = useLocation();

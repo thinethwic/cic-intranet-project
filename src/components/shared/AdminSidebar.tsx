@@ -94,13 +94,13 @@ const navItems: NavItem[] = [
     name: "Ticket",
     icon: Ticket,
     path: "/admin/ticket",
-    roles: ["SUPER_ADMIN", "ADMIN"],
+    roles: ["SUPER_ADMIN", "ADMIN", "HOD_LEVEL"],
   },
   {
     name: "Category",
     icon: Ticket,
     path: "/admin/categories",
-    roles: ["SUPER_ADMIN"],
+    roles: ["SUPER_ADMIN", "ADMIN"],
     children: [
       { name: "Category", path: "/admin/categories?tab=categories" },
       { name: "Departments", path: "/admin/categories?tab=departments" },
@@ -168,6 +168,13 @@ export default function AdminSidebar() {
   const role = adminUser?.role ?? "";
   const visibleNavItems = navItems.filter((item) => item.roles.includes(role));
 
+  const itemClass = (active: boolean) =>
+    `group flex items-center gap-3 rounded-lg text-sm w-full transition-all duration-150 ${
+      active
+        ? "bg-cic-700 text-white shadow-sm shadow-cic-900/30 hover:bg-cic-700 hover:text-white data-[active=true]:bg-cic-700 data-[active=true]:text-white"
+        : "text-slate-400 hover:bg-slate-800 hover:text-slate-100"
+    }`;
+
   return (
     <Sidebar className="border-r-0 bg-slate-900 text-slate-100">
       <SidebarHeader className="px-5 py-5 border-b border-slate-700/60">
@@ -204,12 +211,8 @@ export default function AdminSidebar() {
                       {/* Parent with submenu */}
                       <SidebarMenuButton
                         onClick={() => toggleMenu(item.name)}
-                        className={`group flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm w-full transition-all duration-150
-                          ${
-                            isActive(item.path)
-                              ? "bg-cic-700 text-white shadow-sm shadow-cic-900/30"
-                              : "text-slate-400 hover:bg-slate-800 hover:text-slate-100"
-                          }`}
+                        isActive={isActive(item.path)}
+                        className={`${itemClass(isActive(item.path))} px-3 py-2.5`}
                       >
                         <item.icon
                           className={`w-4 h-4 shrink-0 ${
@@ -236,22 +239,22 @@ export default function AdminSidebar() {
                               key={child.path}
                               to={child.path}
                               className={() => {
-                                const childParams = new URLSearchParams(
+                                const childTab = new URLSearchParams(
                                   child.path.split("?")[1] ?? "",
-                                );
+                                ).get("tab");
                                 const currentTab = new URLSearchParams(
                                   location.search,
                                 ).get("tab");
-                                const childTab = childParams.get("tab");
                                 const active = childTab
                                   ? currentTab === childTab
                                   : location.pathname === child.path;
-                                return `flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-colors
-    ${
-      active
-        ? "text-cic-300"
-        : "text-slate-500 hover:text-slate-200 hover:bg-slate-800"
-    }`;
+
+                                return `flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all duration-150 
+                                ${
+                                  active
+                                    ? "bg-cic-700 text-white shadow-sm shadow-cic-900/30"
+                                    : "text-slate-400 hover:bg-slate-800 hover:text-slate-100"
+                                }`;
                               }}
                             >
                               <span className="w-1 h-1 rounded-full bg-current opacity-60 shrink-0" />
@@ -265,13 +268,7 @@ export default function AdminSidebar() {
                     /* Regular item — no submenu */
                     <SidebarMenuButton
                       isActive={isActive(item.path)}
-                      className={`group relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm
-                        transition-all duration-150
-                        ${
-                          isActive(item.path)
-                            ? "bg-cic-700 text-white shadow-sm shadow-cic-900/30"
-                            : "text-slate-400 hover:bg-slate-800 hover:text-slate-100"
-                        }`}
+                      className={`${itemClass(isActive(item.path))} px-3 py-2.5`}
                     >
                       <NavLink
                         to={item.path}

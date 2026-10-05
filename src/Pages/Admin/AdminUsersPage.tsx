@@ -53,6 +53,7 @@ import {
 import { getAdminUsersPage } from "@/lib/api/ticketApi";
 import { getUserFriendlyErrorMessage } from "@/lib/api/apiUtils";
 import InlineErrorAlert from "@/components/shared/InlineErrorAlert";
+import { userRoleLabels } from "@/utils/segmentMapper";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 const API = `${BASE_URL}/api/v1/users`;
@@ -62,15 +63,28 @@ interface User {
   username: string;
   name: string;
   email: string;
-  role: "SUPER_ADMIN" | "ADMIN" | "AUTHORIZED" | "SERVICE";
+  role: "SUPER_ADMIN" | "ADMIN" | "AUTHORIZED" | "SERVICE" | "HOD_LEVEL";
   active: boolean;
   segment?: string;
   department?: string;
   createdAt?: string;
 }
 
-const ROLE_OPTIONS = ["SUPER_ADMIN", "ADMIN", "AUTHORIZED", "SERVICE"];
-const FILTER_ROLES = ["All", "SUPER_ADMIN", "ADMIN", "AUTHORIZED", "SERVICE"];
+const ROLE_OPTIONS = [
+  "SUPER_ADMIN",
+  "ADMIN",
+  "AUTHORIZED",
+  "SERVICE",
+  "HOD_LEVEL",
+];
+const FILTER_ROLES = [
+  "All",
+  "SUPER_ADMIN",
+  "ADMIN",
+  "AUTHORIZED",
+  "SERVICE",
+  "HOD_LEVEL",
+];
 const FILTER_STATUS = ["All", "Active", "Inactive"];
 const SEGMENT_OPTIONS = [
   "CIC_FEEDS",
@@ -92,11 +106,41 @@ const EMPTY_FORM = {
   email: "",
   password: "",
   confirmPassword: "", // ← add
-  role: "AUTHORIZED" as "SUPER_ADMIN" | "ADMIN" | "AUTHORIZED" | "SERVICE",
+  role: "SERVICE" as
+    | "SUPER_ADMIN"
+    | "ADMIN"
+    | "AUTHORIZED"
+    | "SERVICE"
+    | "HOD_LEVEL",
   active: true,
   segment: "",
   department: "",
 };
+
+const ROLE_BADGE: Record<string, { icon: LucideIcon; className: string }> = {
+  SUPER_ADMIN: {
+    icon: ShieldCheck,
+    className: "bg-red-50 text-red-800 border-red-200",
+  },
+  ADMIN: {
+    icon: ShieldCheck,
+    className: "bg-purple-50 text-purple-800 border-purple-200",
+  },
+  HOD_LEVEL: {
+    icon: Users,
+    className: "bg-blue-50 text-blue-800 border-blue-200",
+  },
+  AUTHORIZED: {
+    icon: UserCheck,
+    className: "bg-cic-50 text-cic-800 border-cic-200",
+  },
+  SERVICE: {
+    icon: Settings,
+    className: "bg-amber-50 text-amber-800 border-amber-200",
+  },
+};
+
+const getRoleLabel = (role: string) => userRoleLabels[role] ?? role;
 
 // ── Stat card ─────────────────────────────────────────────────────────────────
 
@@ -618,19 +662,6 @@ export default function AdminUsersPage() {
     }
   };
 
-  const roleColor = (role: string) =>
-    role === "ADMIN"
-      ? "bg-purple-50 text-purple-800 border-purple-200"
-      : role === "SERVICE"
-        ? "bg-amber-50 text-amber-800 border-amber-200"
-        : "bg-cic-50 text-cic-800 border-cic-200";
-
-  const ROLE_CONFIG: Record<string, { icon: LucideIcon; label: string }> = {
-    SUPER_ADMIN: { icon: ShieldCheck, label: "SUPER ADMIN" },
-    ADMIN: { icon: ShieldCheck, label: "ADMIN" },
-    SERVICE: { icon: Settings, label: "SERVICE" },
-  };
-
   return (
     <div className="space-y-6 p-6">
       {/* Header */}
@@ -698,13 +729,13 @@ export default function AdminUsersPage() {
               variant="outline"
               className={`h-9 text-sm ${roleFilter !== "All" ? "border-cic-500 text-cic-600" : ""}`}
             >
-              {roleFilter === "All" ? "All roles" : roleFilter}
+              {roleFilter === "All" ? "All roles" : getRoleLabel(roleFilter)}
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent>
             {FILTER_ROLES.map((r) => (
               <DropdownMenuItem key={r} onClick={() => setRoleFilter(r)}>
-                {r === "All" ? "All roles" : r}
+                {r === "All" ? "All roles" : getRoleLabel(r)}
               </DropdownMenuItem>
             ))}
           </DropdownMenuContent>
@@ -810,16 +841,18 @@ export default function AdminUsersPage() {
                     </TableCell>
                     <TableCell className="py-3.5">
                       {(() => {
-                        const { icon: Icon, label } = ROLE_CONFIG[
-                          user.role
-                        ] ?? { icon: ShieldOff, label: "AUTHORIZED" };
+                        const badge = ROLE_BADGE[user.role];
+                        const Icon = badge?.icon ?? ShieldOff;
                         return (
                           <Badge
                             variant="outline"
-                            className={`text-xs font-medium px-2 ${roleColor(user.role)}`}
+                            className={`text-xs font-medium px-2 ${
+                              badge?.className ??
+                              "bg-slate-50 text-slate-700 border-slate-200"
+                            }`}
                           >
                             <Icon className="w-2.5 h-2.5 mr-1 inline" />
-                            {label}
+                            {getRoleLabel(user.role)}
                           </Badge>
                         );
                       })()}
@@ -994,7 +1027,7 @@ export default function AdminUsersPage() {
                     variant="outline"
                     className="w-full justify-between text-sm font-normal"
                   >
-                    {createForm.role}
+                    {getRoleLabel(createForm.role)}
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width]">
@@ -1005,7 +1038,7 @@ export default function AdminUsersPage() {
                         setCreateForm((p) => ({ ...p, role: r as any }))
                       }
                     >
-                      {r}
+                      {getRoleLabel(r)}
                     </DropdownMenuItem>
                   ))}
                 </DropdownMenuContent>
@@ -1210,7 +1243,7 @@ export default function AdminUsersPage() {
                     variant="outline"
                     className="w-full justify-between text-sm font-normal"
                   >
-                    {editForm.role}
+                    {getRoleLabel(editForm.role)}
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-[--radix-dropdown-menu-trigger-width]">
@@ -1221,7 +1254,7 @@ export default function AdminUsersPage() {
                         setEditForm((p) => ({ ...p, role: r as any }))
                       }
                     >
-                      {r}
+                      {getRoleLabel(r)}
                     </DropdownMenuItem>
                   ))}
                 </DropdownMenuContent>

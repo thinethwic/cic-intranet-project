@@ -2,25 +2,20 @@ import { lazy, Suspense } from "react";
 import { Route, Routes } from "react-router-dom";
 import { usePageTitle } from "./hooks/usePageTitle";
 import { useIdleLogout } from "./hooks/useIdleLogout";
-
 // Eagerly loaded — always needed
 //import Layout from "./components/Layout";
 import ProtectedRoute from "@/ProtectedRoute";
-import SuperAdminRoute from "@/SuperAdminRoute";
 import EmployeeProtectedRoute from "./Pages/EmployeeProtectedRoute";
 import NotFoundPage from "./components/shared/NotFoundPage";
+import RoleRoute from "@/SuperAdminRoute";
 
-// Lazy-loaded pages — deferred until first navigation
-//const HomePage = lazy(() => import("./Pages/Home-page"));
-// const NewsDetailPage = lazy(() => import("./components/NewsDetailPage"));
 const HelpDeskPage = lazy(
   () => import("./Pages/Our Segments/components/HelpDeskPage"),
 );
-//const TaskManagerPage = lazy(
-//  () => import("./Pages/Our Segments/components/TaskManagerPage"),
-//);
+
 const AdminLayout = lazy(() => import("./components/AdminLayout"));
 const AdminDashboard = lazy(() => import("./Pages/Admin/AdminDashboard"));
+
 {
   /*const AdminVideosPage = lazy(() => import("./Pages/Admin/AdminVideo"));
 const AdminDocumentsPage = lazy(
@@ -33,17 +28,24 @@ const AdminGalleryPage = lazy(() => import("./Pages/Admin/AdminGalleryPage"));
 const AdminManagementPage = lazy(
   () => import("./Pages/Admin/AdminManagementPage"),
 ); */
+  // Lazy-loaded pages — deferred until first navigation
+  // const HomePage = lazy(() => import("./Pages/Home-page"));
+  // const NewsDetailPage = lazy(() => import("./components/NewsDetailPage"));
+  //const AdminHeroShortcutsPage = lazy(
+  //  () => import("./Pages/Admin/AdminHeroShortcutsPage"),
+  //);
+  //const AdminNavItemsPage = lazy(() => import("./Pages/Admin/AdminNavItemsPage"));
+  //const TaskManagerPage = lazy(
+  //  () => import("./Pages/Our Segments/components/TaskManagerPage"),
+  //);
 }
+
 const AdminUsersPage = lazy(() => import("./Pages/Admin/AdminUsersPage"));
 const AdminTicketsPage = lazy(() => import("./Pages/Admin/AdminTicketsPage"));
 const AdminCategoriesPage = lazy(
   () => import("./Pages/Admin/AdminCategoriesPage"),
 );
 const AdminAuditLogPage = lazy(() => import("./Pages/Admin/AdminAuditLogPage"));
-//const AdminHeroShortcutsPage = lazy(
-//  () => import("./Pages/Admin/AdminHeroShortcutsPage"),
-//);
-//const AdminNavItemsPage = lazy(() => import("./Pages/Admin/AdminNavItemsPage"));
 
 function PageSpinner() {
   return (
@@ -74,28 +76,43 @@ function App() {
         {/* ── Admin routes (SUPER_ADMIN + ADMIN) ── */}
         <Route element={<ProtectedRoute />}>
           <Route path="/admin" element={<AdminLayout />}>
-            {/* Shared: ADMIN + SUPER_ADMIN */}
+            {/* Shared: HOD_LEVEL */}
+
             <Route path="ticket" element={<AdminTicketsPage />} />
 
+            {/* ADMIN + SUPER_ADMIN */}
+            <Route
+              element={<RoleRoute allowedRoles={["ADMIN", "SUPER_ADMIN"]} />}
+            >
+              <Route path="ticket" element={<AdminTicketsPage />} />
+              <Route path="categories" element={<AdminCategoriesPage />} />
+              {/* add any other page ADMIN may open here */}
+            </Route>
             {/* SUPER_ADMIN only */}
-            <Route element={<SuperAdminRoute />}>
+            <Route element={<RoleRoute allowedRoles={["SUPER_ADMIN"]} />}>
               <Route index element={<AdminDashboard />} />
-              {/*<Route path="videos" element={<AdminVideosPage />} />
+              <Route path="users" element={<AdminUsersPage />} />
+              <Route path="auditLog" element={<AdminAuditLogPage />} />
+            </Route>
+
+            {/* <Route element={<SuperAdminRoute />}>
+              <Route index element={<AdminDashboard />} />
+              {/* <Route path="videos" element={<AdminVideosPage />} />
               <Route path="documents" element={<AdminDocumentsPage />} />
               <Route path="news" element={<AdminNewsPage />} />
               <Route path="alert" element={<AdminAlertsPage />} />
               <Route path="events" element={<AdminEventsPage />} />
               <Route path="gallery" element={<AdminGalleryPage />} />
                <Route path="management" element={<AdminManagementPage />} /> */}
+            {/* <Route path="categories" element={<AdminCategoriesPage />} />
               <Route path="users" element={<AdminUsersPage />} />
-              <Route path="categories" element={<AdminCategoriesPage />} />
-              <Route path="auditLog" element={<AdminAuditLogPage />} />
-              {/*<Route
+              <Route path="auditLog" element={<AdminAuditLogPage />} /> */}
+            {/*<Route
                 path="hero-shortcuts"
                 element={<AdminHeroShortcutsPage />}
               />
               <Route path="nav-items" element={<AdminNavItemsPage />} /> */}
-            </Route>
+            {/* </Route> */}
           </Route>
         </Route>
 
