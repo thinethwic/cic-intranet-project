@@ -55,6 +55,11 @@ import {
   type Comment,
   type TicketCategory,
 } from "@/lib/api/ticketApi";
+// Adjust this path to the file that contains your departments API
+import {
+  adminGetDepartments,
+  type SegmentValue,
+} from "@/lib/api/departmentApi";
 import { getAdminUser, logout } from "@/lib/api/authHeaders";
 import { getStoredAdminToken, isTokenExpired } from "@/lib/api/authSession";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
@@ -172,9 +177,7 @@ export default function HelpDeskPage() {
 
   const currentUser = useCurrentUser();
 
-  // ✅ No more URL-path / query-param based segment detection — the help desk
-  // now lives on a general page, so the segment always comes from the
-  // logged-in user's own profile. Used for both viewing tickets and creating them.
+  // Segment of the logged-in user's own account.
   const currentSegment = isKnownSegment(currentUser?.segment)
     ? currentUser?.segment
     : undefined;
@@ -194,8 +197,17 @@ export default function HelpDeskPage() {
   const [commentsLoading, setCommentsLoading] = useState(false);
   const [newMessageAlert, setNewMessageAlert] = useState(false);
 
+  const [departments, setDepartments] = useState<string[]>([]);
+  const [departmentsLoading, setDepartmentsLoading] = useState(false);
+  const [categoriesLoading, setCategoriesLoading] = useState(false);
+
   const currentViewer = getAdminUser();
   const activeUserId = currentUser?.userId ?? currentViewer?.userId ?? null;
+
+  // ADMIN and SUPER_ADMIN choose segment + department themselves.
+  // Every other role uses the segment/department from their own account.
+  const role = currentUser?.role ?? currentViewer?.role;
+  const canPickRouting = role === "ADMIN" || role === "SUPER_ADMIN";
 
   const notifKey = `helpdesk_notifications_${activeUserId ?? "guest"}`;
 
@@ -248,20 +260,30 @@ export default function HelpDeskPage() {
   };
 
   // ── Form ──────────────────────────────────────────────────────────────────
-  // ✅ Segment in the create-ticket form is always the logged-in user's own segment,
-  // not the URL/path segment the help desk page happens to be viewed under.
+  // Admins start with an empty segment/department and pick them.
+  // Other roles start from their own account values.
   const makeEmptyForm = () => ({
     title: "",
     description: "",
-    category: categories[0]?.name ?? "",
+    category: canPickRouting ? "" : (categories[0]?.name ?? ""),
     priority: "MEDIUM" as TicketPriority,
-    segment: currentSegment ?? "",
-    department: currentUser?.department ?? (null as string | null),
+    segment: canPickRouting ? "" : (currentSegment ?? ""),
+    department: canPickRouting
+      ? (null as string | null)
+      : (currentUser?.department ?? null),
     attachments: [] as AttachedImage[],
     submittedByName: "",
   });
 
   const [form, setForm] = useState(makeEmptyForm);
+
+  // Segment/department that drive the category list.
+  const effectiveSegment = canPickRouting
+    ? form.segment || undefined
+    : currentSegment;
+  const effectiveDepartment = canPickRouting
+    ? form.department || undefined
+    : currentUser?.department;
 
   // ── Refs ──────────────────────────────────────────────────────────────────
   const commentsEndRef = useRef<HTMLDivElement>(null);
@@ -273,18 +295,69 @@ export default function HelpDeskPage() {
 
   // ── Effects ───────────────────────────────────────────────────────────────
 
+  // Admins: load departments for the chosen segment
   useEffect(() => {
-    if (!currentSegment) return;
-    getCategories(currentSegment, currentUser?.department)
+    if (!canPickRouting || !form.segment) {
+      setDepartments([]);
+      return;
+    }
+    let cancelled = false;
+    setDepartmentsLoading(true);
+    adminGetDepartments(form.segment as SegmentValue)
       .then((data) => {
+        if (!cancelled) setDepartments(data.map((d) => d.name));
+      })
+      .catch(() => {
+        if (!cancelled) setDepartments([]);
+      })
+      .finally(() => {
+        if (!cancelled) setDepartmentsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [canPickRouting, form.segment]);
+
+  // Non-admins: keep the form segment in sync with the account segment
+  // (covers currentUser resolving asynchronously after first render).
+  useEffect(() => {
+    if (canPickRouting) return;
+    setForm((prev) => ({ ...prev, segment: currentSegment ?? "" }));
+  }, [currentSegment, canPickRouting]);
+
+  // Categories follow the effective segment + department
+  useEffect(() => {
+    // Admins can open Category right away (segment/department optional);
+    // other roles always use their own account segment.
+    if (!canPickRouting && !effectiveSegment) {
+      setCategories([]);
+      return;
+    }
+    let cancelled = false;
+    setCategoriesLoading(true);
+    getCategories(effectiveSegment as string, effectiveDepartment)
+      .then((data) => {
+        if (cancelled) return;
         setCategories(data);
         setForm((prev) => ({
           ...prev,
-          category: prev.category || data[0]?.name || "",
+          category: data.some((c) => c.name === prev.category)
+            ? prev.category
+            : (data[0]?.name ?? ""),
         }));
       })
-      .catch(console.error);
-  }, [currentSegment, currentUser?.department]);
+      .catch((err) => {
+        if (cancelled) return;
+        console.error("Failed to load categories", err);
+        setCategories([]);
+      })
+      .finally(() => {
+        if (!cancelled) setCategoriesLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [canPickRouting, effectiveSegment, effectiveDepartment]);
 
   useEffect(() => {
     fetchMyTickets();
@@ -293,12 +366,6 @@ export default function HelpDeskPage() {
   useEffect(() => {
     selectedTicketRef.current = selectedTicket;
   }, [selectedTicket]);
-
-  // ✅ Keep the form's segment in sync with the user's own segment
-  // (guards against currentUser resolving asynchronously after first render).
-  useEffect(() => {
-    setForm((prev) => ({ ...prev, segment: currentSegment ?? "" }));
-  }, [currentSegment]);
 
   useEffect(() => {
     if (!selectedTicket) return;
@@ -335,7 +402,7 @@ export default function HelpDeskPage() {
             const commentData = await getComments(ticket.id);
             const latestComment = getLatestCommentSnapshot(commentData);
 
-            // ✅ Read FIRST, then update
+            // Read FIRST, then update
             const previousCommentId = latestCommentIdRef.current[ticket.id];
             latestCommentIdRef.current[ticket.id] = latestComment?.id ?? -1;
 
@@ -383,7 +450,7 @@ export default function HelpDeskPage() {
             const snapshot = getLatestCommentSnapshot(commentData);
             latestCommentIdRef.current[ticket.id] = snapshot?.id ?? -1;
 
-            // ✅ Check for missed messages while logged out
+            // Check for missed messages while logged out
             if (lastActive) {
               const missedComments = commentData.filter(
                 (c) =>
@@ -407,7 +474,7 @@ export default function HelpDeskPage() {
         }),
       );
 
-      // ✅ Clear last_active after processing missed notifications
+      // Clear last_active after processing missed notifications
       localStorage.removeItem("helpdesk_last_active");
 
       isSeededRef.current = true;
@@ -482,6 +549,7 @@ export default function HelpDeskPage() {
 
   const handleCreate = async () => {
     if (!form.title.trim() || !form.description.trim()) return;
+    if (canPickRouting && !form.segment) return;
     try {
       setSaving(true);
       await createTicket({
@@ -489,8 +557,10 @@ export default function HelpDeskPage() {
         description: form.description.trim(),
         category: form.category,
         priority: form.priority,
-        // ✅ Always send the logged-in user's own segment, never the URL/page segment.
-        segment: currentSegment ?? form.segment,
+        // Admins send the segment they picked; everyone else sends their own.
+        segment: canPickRouting
+          ? form.segment
+          : (currentSegment ?? form.segment),
         department: form.department?.trim() || null,
         submittedByName: form.submittedByName.trim(),
         attachments:
@@ -575,7 +645,8 @@ export default function HelpDeskPage() {
   };
 
   // ── Derived state ─────────────────────────────────────────────────────────
-  // ✅ Always restricted to the user's own segment — no "All segments" escape hatch.
+  // Admins / super admins see all of their tickets; other roles are
+  // restricted to their own segment.
   const filtered = useMemo(() => {
     return tickets.filter((t) => {
       const q = search.toLowerCase();
@@ -583,13 +654,19 @@ export default function HelpDeskPage() {
         (t.title.toLowerCase().includes(q) ||
           t.ticketNumber.toLowerCase().includes(q)) &&
         (statusFilter === "All" || t.status === statusFilter) &&
-        t.segment === currentSegment &&
+        (canPickRouting || t.segment === currentSegment) &&
         (categoryFilter === "All" || t.category === categoryFilter)
       );
     });
-  }, [tickets, search, statusFilter, categoryFilter, currentSegment]);
+  }, [
+    tickets,
+    search,
+    statusFilter,
+    categoryFilter,
+    currentSegment,
+    canPickRouting,
+  ]);
 
-  // ✅ These must come AFTER filtered is declared
   const totalPages = Math.max(1, Math.ceil(filtered.length / TICKET_PAGE_SIZE));
   const paginated = filtered.slice(
     (page - 1) * TICKET_PAGE_SIZE,
@@ -639,9 +716,8 @@ export default function HelpDeskPage() {
   ];
 
   // ── Guard ─────────────────────────────────────────────────────────────────
-  // While the user is still being resolved (currentUser is undefined on first
-  // render), show a loading state instead of redirecting — otherwise this page
-  // would bounce back to "/" before the user's segment ever loads.
+  // While the user is still being resolved, show a loading state instead of
+  // redirecting.
   if (currentUser === undefined) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
@@ -650,11 +726,12 @@ export default function HelpDeskPage() {
     );
   }
 
-  // Only once the user has actually resolved and still has no known segment
-  // do we send them away.
-  if (!currentSegment) {
+  // Admins / super admins may have no segment on their account — they pick one
+  // when creating a ticket. Everyone else without a known segment is sent away.
+  if (!currentSegment && !canPickRouting) {
     return <Navigate to="/" replace />;
   }
+
   const parseAttachments = (raw?: string | null): string[] => {
     if (!raw) return [];
     try {
@@ -1201,7 +1278,9 @@ export default function HelpDeskPage() {
                       >
                         {categories.length === 0 ? (
                           <option value="" disabled>
-                            Loading...
+                            {categoriesLoading
+                              ? "Loading..."
+                              : "No categories found"}
                           </option>
                         ) : (
                           categories.map((cat) => (
@@ -1267,37 +1346,89 @@ export default function HelpDeskPage() {
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
+                    {/* Segment */}
+                    <div className="space-y-1.5">
+                      <Label className="text-sm font-medium text-slate-700">
+                        Segment{" "}
+                        {canPickRouting && (
+                          <span className="text-red-500">*</span>
+                        )}
+                      </Label>
+                      {canPickRouting ? (
+                        <select
+                          value={form.segment}
+                          onChange={(e) =>
+                            setForm((prev) => ({
+                              ...prev,
+                              segment: e.target.value,
+                              department: null,
+                            }))
+                          }
+                          className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-800 outline-none focus:ring-2 focus:ring-cic-200"
+                        >
+                          <option value="">Select segment</option>
+                          {Object.entries(SEGMENT_CONFIG).map(([key, cfg]) => (
+                            <option key={key} value={key}>
+                              {cfg.label}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <div
+                          className={`flex h-11 w-full items-center rounded-xl border px-3 text-sm font-medium ${
+                            SEGMENT_CONFIG[currentSegment ?? ""]?.class ??
+                            "bg-slate-50 text-slate-500 border-slate-200"
+                          }`}
+                        >
+                          {SEGMENT_CONFIG[currentSegment ?? ""]?.label ??
+                            currentSegment ??
+                            "-"}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Department */}
                     <div className="space-y-1.5">
                       <Label className="text-sm font-medium text-slate-700">
                         Department
                       </Label>
-                      <div className="relative">
-                        <Building2 className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                        <Input
-                          placeholder="e.g. Sales, HR"
+                      {canPickRouting ? (
+                        <select
                           value={form.department ?? ""}
                           onChange={(e) =>
                             setForm((prev) => ({
                               ...prev,
-                              department: e.target.value,
+                              department: e.target.value || null,
                             }))
                           }
-                          readOnly={!!currentUser?.department}
-                          className={`h-11 rounded-xl border-slate-200 bg-slate-50 pl-10 shadow-none focus-visible:ring-cic-200 text-sm ${currentUser?.department ? "cursor-default opacity-60" : ""}`}
-                        />
-                      </div>
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label className="text-sm font-medium text-slate-700">
-                        Segment
-                      </Label>
-                      <div
-                        className={`flex h-11 w-full items-center rounded-xl border px-3 text-sm font-medium ${SEGMENT_CONFIG[currentSegment ?? ""]?.class ?? "bg-slate-50 text-slate-500 border-slate-200"}`}
-                      >
-                        {SEGMENT_CONFIG[currentSegment ?? ""]?.label ??
-                          currentSegment ??
-                          "-"}
-                      </div>
+                          disabled={!form.segment || departmentsLoading}
+                          className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-800 outline-none focus:ring-2 focus:ring-cic-200 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          <option value="">
+                            {!form.segment
+                              ? "Select a segment first"
+                              : departmentsLoading
+                                ? "Loading..."
+                                : departments.length === 0
+                                  ? "No departments found"
+                                  : "Select department"}
+                          </option>
+                          {departments.map((d) => (
+                            <option key={d} value={d}>
+                              {d}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <div className="relative">
+                          <Building2 className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                          <Input
+                            value={form.department ?? ""}
+                            readOnly
+                            className="h-11 cursor-default rounded-xl border-slate-200 bg-slate-50 pl-10 text-sm opacity-60 shadow-none"
+                          />
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1321,6 +1452,7 @@ export default function HelpDeskPage() {
                   !form.title.trim() ||
                   !form.description.trim() ||
                   !form.submittedByName.trim() ||
+                  (canPickRouting && !form.segment) ||
                   saving
                 }
                 className="rounded-xl bg-cic-900 text-white hover:bg-blue-800 h-10 px-6"

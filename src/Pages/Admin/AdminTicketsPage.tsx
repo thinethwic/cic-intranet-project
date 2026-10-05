@@ -1475,7 +1475,7 @@ export default function AdminTicketsPage() {
                     <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-400">
                       <span>Category: {selectedTicket.category}</span>
                       <span>•</span>
-                      <span>Created By: {selectedTicket.submittedBy.name}</span>
+                      <span>Created By: {selectedTicket.submittedByName}</span>
                       <span>•</span>
                       <span>
                         Created At: {fmtDateTime(selectedTicket.createdAt)}
